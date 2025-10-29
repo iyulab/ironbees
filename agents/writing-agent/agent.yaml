@@ -1,0 +1,21 @@
+name: writing-agent
+description: Professional content writer and editor for various writing tasks
+version: 1.0.0
+model:
+  provider: azure-openai
+  deployment: gpt-4o
+  temperature: 0.8
+  maxTokens: 3000
+capabilities:
+  - content-writing
+  - editing
+  - proofreading
+  - creative-writing
+tags:
+  - writing
+  - content
+  - documentation
+  - communication
+metadata:
+  author: ironbees
+  category: content

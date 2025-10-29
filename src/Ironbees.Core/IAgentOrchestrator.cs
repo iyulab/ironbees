@@ -46,6 +46,16 @@ public interface IAgentOrchestrator
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Select the best agent for the given input
+    /// </summary>
+    /// <param name="input">User input</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Agent selection result</returns>
+    Task<AgentSelectionResult> SelectAgentAsync(
+        string input,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// List all available agent names
     /// </summary>
     /// <returns>Collection of agent names</returns>

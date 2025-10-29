@@ -1,0 +1,21 @@
+name: review-agent
+description: Comprehensive reviewer for code, documents, and processes
+version: 1.0.0
+model:
+  provider: azure-openai
+  deployment: gpt-4o
+  temperature: 0.6
+  maxTokens: 3500
+capabilities:
+  - code-review
+  - document-review
+  - process-review
+  - quality-assurance
+tags:
+  - review
+  - quality
+  - assessment
+  - validation
+metadata:
+  author: ironbees
+  category: quality-assurance

@@ -1,340 +1,158 @@
-# 🐝 ironbees
+# 🐝 Ironbees
 
-> Convention-based agent orchestration layer for practical LLM applications
+> 컨벤션 기반 멀티 에이전트 오케스트레이션 프레임워크
 
-ironbees는 파일시스템 기반 규칙으로 LLM 에이전트를 구성하고 오케스트레이션하는 경량 레이어입니다. 복잡한 LLM 프레임워크 위에서 실용적인 에이전트 관리를 제공합니다.
+Ironbees는 .NET 환경에서 LLM 에이전트를 관리하고 조율하는 경량 프레임워크입니다. YAML 기반 설정으로 에이전트를 정의하고, 파이프라인을 통해 복잡한 워크플로우를 구성할 수 있습니다.
 
-## Why ironbees?
+## 핵심 기능
 
-LLM 애플리케이션을 만들 때 반복되는 패턴이 있습니다:
+- **컨벤션 기반**: 파일 구조만으로 에이전트 자동 로딩
+- **지능형 선택**: 입력 분석을 통한 자동 에이전트 선택
+- **파이프라인**: 순차/병렬 실행 및 조건부 워크플로우
+- **협업 패턴**: 다중 에이전트 결과 집계 (Voting, BestOfN, Ensemble, FirstSuccess)
+- **대화 관리**: 세션 기반 컨텍스트 및 히스토리 관리
+- **내장 에이전트**: RAG, Function Calling, Router, Memory, Summarization
+- **확장성**: 플러그인 가능한 Selector, Adapter, Strategy
 
-- 여러 전문화된 에이전트가 필요함
-- 사용자 입력에 따라 적절한 에이전트 선택
-- 입력 검증, 출력 필터링 같은 전/후처리
-- 에이전트 설정을 코드가 아닌 파일로 관리
+## 빠른 시작
 
-ironbees는 이런 패턴을 **convention 기반 접근**으로 단순화합니다.
-
-```
-user-input → [preprocessing] → [agent selection] → LLM → [postprocessing] → output
-```
-
-## Architecture Position
-
-ironbees는 LLM 프레임워크와 애플리케이션 사이의 얇은 오케스트레이션 레이어입니다:
-
-```
-┌─────────────────────────────────────┐
-│   Your Application                  │  비즈니스 로직, UI, 인증
-├─────────────────────────────────────┤
-│   ironbees                          │  에이전트 로딩, 선택, 파이프라인
-├─────────────────────────────────────┤
-│   LLM Framework                     │  Agent Framework, Semantic Kernel
-│   (Agent Framework, LangChain, etc) │  LangChain, LlamaIndex 등
-├─────────────────────────────────────┤
-│   LLM Provider                      │  OpenAI, Anthropic, Azure
-└─────────────────────────────────────┘
-```
-
-## Quick Start
-
-### Installation
+### 설치
 
 ```bash
-dotnet add package ironbees
+dotnet add package Ironbees.Core
+dotnet add package Ironbees.AgentFramework  # Azure OpenAI용
 ```
 
-### Basic Usage
+### 1. 에이전트 정의
 
-```csharp
-using Ironbees;
-
-// 에이전트 디렉토리 지정
-var orchestrator = new AgentOrchestrator("./agents");
-
-// 자동으로 적절한 에이전트 선택 및 실행
-var response = await orchestrator.ProcessAsync("코드를 리뷰해줘");
-Console.WriteLine(response);
+`agents/coding-agent/agent.yaml`:
+```yaml
+name: coding-agent
+description: Expert software developer
+capabilities: [code-generation, code-review]
+tags: [programming, development]
+model:
+  deployment: gpt-4
+  temperature: 0.7
 ```
 
-### Agent Structure
-
-에이전트는 파일시스템 기반 규칙을 따릅니다:
-
-```
-/agents/
-  /coding-agent/
-    system-prompt.md      # 시스템 프롬프트
-    tools.md              # 도구 정의
-    mcp-config.json       # MCP 설정
-    examples/             # Few-shot 예제
-  /analysis-agent/
-    system-prompt.md
-    tools.md
-    ...
-```
-
-**Example: `/agents/coding-agent/system-prompt.md`**
+`agents/coding-agent/system-prompt.md`:
 ```markdown
-You are an expert software developer.
-Write clean, maintainable code following best practices.
-Always explain your design decisions.
+You are an expert software developer...
 ```
 
-**Example: `/agents/coding-agent/mcp-config.json`**
-```json
+### 2. 서비스 구성
+
+```csharp
+services.AddIronbees(options =>
 {
-  "servers": {
-    "filesystem": {
-      "command": "mcp-server-filesystem",
-      "args": ["--root", "./workspace"]
-    }
-  }
-}
-```
-
-## Core Features
-
-### 1. Convention-based Agent Loading
-
-파일 구조만 맞추면 자동으로 로드됩니다:
-
-```csharp
-var orchestrator = new AgentOrchestrator("./agents");
-// /agents/ 아래의 모든 에이전트 자동 로드
-```
-
-### 2. Automatic Agent Selection
-
-사용자 입력을 분석하여 적합한 에이전트를 자동 선택:
-
-```csharp
-// "코드 작성"이라는 키워드로 coding-agent 자동 선택
-await orchestrator.ProcessAsync("Python으로 API 서버 코드 작성해줘");
-
-// 또는 명시적 지정
-await orchestrator.ProcessAsync(
-    "코드 작성해줘", 
-    agentName: "coding-agent"
-);
-```
-
-### 3. Pipeline Processing
-
-입력 전처리와 출력 후처리를 위한 확장 지점:
-
-```csharp
-// 전처리: 보안 검증, 컨텍스트 주입
-orchestrator.AddPreprocessor(async (input, context) => 
-{
-    // 민감정보 필터링
-    var filtered = FilterSensitiveData(input);
-    
-    // 컨텍스트 추가
-    context["user_id"] = GetCurrentUserId();
-    context["timestamp"] = DateTime.UtcNow;
-    
-    return filtered;
+    options.AzureOpenAIEndpoint = "https://your-resource.openai.azure.com";
+    options.AzureOpenAIKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY");
+    options.AgentsDirectory = "./agents";
 });
 
-// 후처리: 출력 검증, 포맷팅
-orchestrator.AddPostprocessor(async (output, context) => 
-{
-    // 규정 위반 확인
-    if (ContainsViolation(output))
-        return "요청을 처리할 수 없습니다.";
-    
-    // 포맷 정규화
-    return FormatMarkdown(output);
-});
+var orchestrator = serviceProvider.GetRequiredService<IAgentOrchestrator>();
 ```
 
-### 4. Framework Agnostic
-
-기본적으로 Microsoft Agent Framework를 사용하지만 다른 프레임워크도 지원:
+### 3. 에이전트 사용
 
 ```csharp
-// 기본 (Agent Framework)
-var orchestrator = new AgentOrchestrator("./agents");
+// 에이전트 로드
+await orchestrator.LoadAgentsAsync();
 
-// 커스텀 프레임워크
-var orchestrator = new AgentOrchestrator(
-    "./agents",
-    framework: new LangChainAdapter()
-);
+// 단일 실행
+var response = await orchestrator.ProcessAsync(
+    "Write a C# method to calculate fibonacci numbers",
+    agentName: "coding-agent");
+
+// 파이프라인 실행
+var pipeline = orchestrator.CreatePipeline("analysis-pipeline")
+    .AddAgent("router-agent")
+    .AddAgent("analysis-agent")
+    .AddAgent("summarization-agent")
+    .Build();
+
+var result = await pipeline.ExecuteAsync("Analyze user engagement metrics");
 ```
 
-## What ironbees Does
-
-ironbees는 다음에 집중합니다:
-
-| 기능 | 설명 |
-|------|------|
-| **Agent Loading** | 파일시스템에서 에이전트 구성 로드 |
-| **Agent Selection** | 입력 분석 후 적절한 에이전트 자동 선택 |
-| **Pipeline Management** | 전처리/후처리 훅 제공 |
-| **Framework Integration** | 다양한 LLM 프레임워크와 통합 |
-
-## What ironbees Doesn't Do
-
-다음은 **의도적으로 제공하지 않습니다**:
-
-| 기능 | 이유 | 대안 |
-|------|------|------|
-| LLM API 호출 | 프레임워크의 역할 | Agent Framework 등 사용 |
-| 대화 기록 관리 | 에이전트의 역할 | 에이전트 tools로 구현 |
-| 토큰 관리/요약 | 에이전트의 역할 | 에이전트 tools로 구현 |
-| 복잡한 워크플로우 | 범위 초과 | 상위 애플리케이션에서 구현 |
-
-**설계 철학**: 복잡한 기능은 에이전트 레벨에서 system-prompt와 tools로 구현하도록 위임합니다.
-
-## Advanced Usage
-
-### Custom Pipeline
+### 4. 병렬 협업
 
 ```csharp
-var orchestrator = new AgentOrchestrator("./agents");
-
-// 여러 전처리 단계
-orchestrator
-    .AddPreprocessor(ValidateInput)
-    .AddPreprocessor(InjectUserContext)
-    .AddPreprocessor(LogRequest);
-
-// 여러 후처리 단계
-orchestrator
-    .AddPostprocessor(ValidateCompliance)
-    .AddPostprocessor(FormatOutput)
-    .AddPostprocessor(LogResponse);
-
-var response = await orchestrator.ProcessAsync(userInput);
+var pipeline = orchestrator.CreatePipeline("parallel-review")
+    .AddParallelAgents(
+        new[] { "coding-agent", "review-agent", "analysis-agent" },
+        parallel => parallel
+            .WithBestOfN(result => result.Output.Length)
+            .WithFailurePolicy(ParallelFailurePolicy.RequireMajority))
+    .Build();
 ```
 
-### Agent Configuration
-
-에이전트가 복잡한 기능(세션 관리, 메모리 등)을 처리하는 예시:
+## 프로젝트 구조
 
 ```
-/agents/conversational-agent/
-  system-prompt.md
-    → 세션 유지, 컨텍스트 관리 로직 설명
-  
-  tools.md
-    → conversation_history: 대화 기록 조회
-    → save_context: 중요 정보 저장
-    → summarize: 긴 대화 요약
-  
-  mcp-config.json
-    → 메모리 서버 설정
+ironbees/
+├── src/
+│   ├── Ironbees.Core/           # 핵심 추상화 및 파이프라인
+│   └── Ironbees.AgentFramework/ # Azure OpenAI 통합
+├── agents/                       # 에이전트 정의 (9개)
+├── docs/                         # 상세 문서
+├── samples/                      # 실행 가능한 예제
+└── tests/                        # 단위 테스트
 ```
 
-이 방식으로 ironbees 코어는 얇게 유지하면서, 복잡한 로직은 에이전트가 담당합니다.
+## 문서
 
-### Agent Selection Strategy
+- [시작 가이드](docs/GETTING_STARTED.md) - 상세한 설치 및 구성
+- [에이전트 파이프라인](docs/AGENT_PIPELINE.md) - 파이프라인 패턴
+- [협업 패턴](docs/COLLABORATION_PATTERNS.md) - 다중 에이전트 협업
+- [내장 에이전트](agents/BUILTIN_AGENTS.md) - 5가지 내장 에이전트
+- [아키텍처](docs/ARCHITECTURE.md) - 설계 및 확장성
 
-```csharp
-var orchestrator = new AgentOrchestrator("./agents");
+## 예제
 
-// 커스텀 선택 전략
-orchestrator.SetSelectionStrategy(async (input, agents) => 
-{
-    // 규칙 기반
-    if (input.Contains("코드")) return agents["coding-agent"];
-    if (input.Contains("분석")) return agents["analysis-agent"];
-    
-    // LLM 기반 분류
-    var category = await ClassifyInput(input);
-    return agents[category];
-});
-```
+- [OpenAISample](samples/OpenAISample/) - OpenAI API 사용
+- [WebApiSample](samples/WebApiSample/) - RESTful API 서버
+- [PipelineSample](samples/PipelineSample/) - 파이프라인 시나리오
 
-## CLI Tool
+## 로드맵
 
-패키지 참조 없이 독립 실행 가능한 CLI:
+### 완료 ✅
+- [x] 핵심 추상화 및 파일시스템 로더
+- [x] Azure OpenAI 통합
+- [x] 지능형 에이전트 선택
+- [x] 대화 히스토리 관리
+- [x] 내장 에이전트 (RAG, Function Calling, Router, Memory, Summarization)
+- [x] Agent Pipeline (순차 실행, 조건부 실행, 에러 처리)
+- [x] 협업 패턴 (병렬 실행, 4가지 집계 전략)
+
+### 계획 중 📋
+- [ ] NuGet 패키지 배포
+- [ ] 성능 최적화 및 벤치마크
+- [ ] Embedding 기반 Selector
+- [ ] 벡터 데이터베이스 통합
+- [ ] CLI 도구
+
+## 설계 원칙
+
+**Convention over Configuration**: 파일 구조와 명명 규칙을 따르면 최소 코드로 동작
+**Thin Abstraction**: LLM 프레임워크의 기능을 숨기지 않고 오케스트레이션에만 집중
+**Extensibility First**: 모든 핵심 컴포넌트 교체 가능
+**Type Safety**: C# 타입 시스템을 활용한 컴파일 타임 안전성
+
+## 테스트
 
 ```bash
-# 설치
-dotnet tool install -g ironbees-cli
-
-# 대화형 모드
-ironbees chat --agent coding-agent --agent-path ./agents
-
-# 단일 실행
-ironbees process "코드를 작성해줘" --agent-path ./agents
-
-# 에이전트 관리
-ironbees agent list --agent-path ./agents
-ironbees agent validate coding-agent --agent-path ./agents
-ironbees agent create new-agent --agent-path ./agents
+dotnet test  # 67개 테스트 통과
 ```
 
-## Design Principles
+## 라이선스
 
-### 1. Convention over Configuration
-파일 구조가 설정입니다. 규칙을 따르면 코드 없이 동작합니다.
+MIT License - [LICENSE](LICENSE) 참조
 
-### 2. Thin Layer
-최소한의 추상화로 기존 프레임워크의 유연성을 보존합니다.
+## 기여
 
-### 3. Delegate Complexity
-복잡한 로직은 에이전트(system-prompt + tools)에 위임합니다.
+이슈와 PR을 환영합니다. [CONTRIBUTING.md](CONTRIBUTING.md) 참조.
 
-### 4. File-based Visibility
-모든 설정은 버전 관리 가능한 파일로 관리됩니다.
+---
 
-## When to Use ironbees
-
-### ✅ 적합한 경우
-
-- 여러 전문화된 에이전트가 필요할 때
-- 에이전트 구성을 파일로 관리하고 싶을 때
-- 팀원이 쉽게 에이전트를 추가/수정해야 할 때
-- 입력/출력 전후처리가 필요할 때
-- 기존 프레임워크 위에 더 높은 추상화가 필요할 때
-
-### ❌ 부적합한 경우
-
-- 단일 에이전트만 필요한 간단한 앱
-- 복잡한 상태 머신이나 워크플로우 엔진이 필요한 경우
-- LLM 프레임워크를 직접 제어하고 싶을 때
-
-## Philosophy: ironbees
-
-**iron** (철, AI) + **bees** (벌, agents)
-
-작지만 협력적인 에이전트들이 실용적인 목표를 향해 움직이는 것. 각 에이전트는 전문화되어 있고, orchestrator는 적절한 에이전트를 선택하여 임무를 수행합니다.
-
-## Roadmap
-
-- [x] 파일시스템 기반 에이전트 로딩
-- [x] 자동 에이전트 선택
-- [x] Pipeline 전/후처리
-- [x] MCP 지원
-- [ ] C# NuGet 패키지 v1.0
-- [ ] CLI 도구
-- [ ] Agent 템플릿 갤러리
-- [ ] Python 구현
-- [ ] 다양한 프레임워크 어댑터 (LangChain, LlamaIndex)
-
-## Examples
-
-더 많은 예제는 [examples](./examples) 디렉토리를 참조하세요:
-
-- [Basic Agent](./examples/basic-agent) - 간단한 에이전트 구성
-- [Multi-Agent System](./examples/multi-agent) - 여러 에이전트 협업
-- [Custom Pipeline](./examples/custom-pipeline) - 커스텀 전후처리
-- [MCP Integration](./examples/mcp-integration) - MCP 서버 통합
-
-## Documentation
-
-- 📖 [Agent Structure Guide](docs/agent-structure.md)
-- 🔧 [Pipeline Customization](docs/pipeline.md)
-- 🎯 [Agent Selection Strategies](docs/agent-selection.md)
-- 🔌 [Framework Integration](docs/framework-integration.md)
-- 🛠️ [CLI Usage](docs/cli.md)
-
-## Contributing
-
-ironbees는 규칙 기반 접근을 지향합니다. 
-
-새로운 기능보다는 **더 나은 규칙(convention)**을 제안해주세요. 파일 구조, 네이밍 규칙, 설정 형식 등에 대한 개선 아이디어를 환영합니다.
+**Ironbees** - Convention-based multi-agent orchestration for .NET 🐝

@@ -1,0 +1,21 @@
+name: analysis-agent
+description: Data analysis and business intelligence expert for insights and reporting
+version: 1.0.0
+model:
+  provider: azure-openai
+  deployment: gpt-4o
+  temperature: 0.5
+  maxTokens: 4000
+capabilities:
+  - data-analysis
+  - reporting
+  - visualization-guidance
+  - insights-extraction
+tags:
+  - analysis
+  - data
+  - business-intelligence
+  - reporting
+metadata:
+  author: ironbees
+  category: analytics

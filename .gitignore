@@ -35,3 +35,5 @@ appsettings.Development.json
 # Temporary files
 *.tmp
 *.temp
+
+.env
