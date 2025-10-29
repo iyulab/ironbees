@@ -1,0 +1,20 @@
+name: coding-agent
+description: Expert software developer for code generation and review
+version: 1.0.0
+model:
+  provider: azure-openai
+  deployment: gpt-4o
+  temperature: 0.7
+  maxTokens: 4000
+capabilities:
+  - code-generation
+  - code-review
+  - debugging
+  - refactoring
+tags:
+  - coding
+  - development
+  - csharp
+metadata:
+  author: ironbees
+  category: development

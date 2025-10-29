@@ -1,0 +1,37 @@
+# Claude Code documentation
+claudedocs/
+
+# .NET Build Artifacts
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.log
+
+# Visual Studio
+.vs/
+*.vsidx
+*.vssscc
+
+# Rider
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+
+# User-specific files
+appsettings.Development.json
+*.DotSettings.user
+
+# Temporary files
+*.tmp
+*.temp
