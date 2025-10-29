@@ -1,6 +1,6 @@
 using DotNetEnv;
 using Ironbees.Core;
-using Ironbees.WebApi;
+using Ironbees.Samples.Shared;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 

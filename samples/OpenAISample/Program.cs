@@ -1,8 +1,8 @@
 using DotNetEnv;
 using Ironbees.Core;
+using Ironbees.Samples.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OpenAISample;
 
 Console.WriteLine("🐝 Ironbees + OpenAI API Sample\n");
 

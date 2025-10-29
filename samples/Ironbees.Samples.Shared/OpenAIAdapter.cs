@@ -2,10 +2,11 @@ using Ironbees.Core;
 using OpenAI.Chat;
 using System.Runtime.CompilerServices;
 
-namespace OpenAISample;
+namespace Ironbees.Samples.Shared;
 
 /// <summary>
 /// LLM Framework Adapter for OpenAI API (non-Azure)
+/// Shared implementation used across all sample projects.
 /// </summary>
 public class OpenAIAdapter : ILLMFrameworkAdapter
 {

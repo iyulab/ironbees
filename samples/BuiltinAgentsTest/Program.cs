@@ -1,6 +1,6 @@
 using DotNetEnv;
 using Ironbees.Core;
-using BuiltinAgentsTest;
+using Ironbees.Samples.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
 // Load .env file

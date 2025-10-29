@@ -44,10 +44,10 @@ public class AgentOrchestrator : IAgentOrchestrator
                 var agent = await _frameworkAdapter.CreateAgentAsync(config, cancellationToken);
                 _registry.Register(config.Name, agent);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Log warning but continue loading other agents
-                Console.WriteLine($"Warning: Failed to create agent '{config.Name}': {ex.Message}");
+                // Silently continue loading other agents
+                // Callers can check if expected agents are loaded
             }
         }
 

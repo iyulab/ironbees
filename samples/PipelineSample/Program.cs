@@ -1,7 +1,7 @@
 using DotNetEnv;
 using Ironbees.Core;
 using Ironbees.Core.Pipeline;
-using PipelineSample;
+using Ironbees.Samples.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
 Console.WriteLine("🔄 Ironbees Agent Pipeline Demo");

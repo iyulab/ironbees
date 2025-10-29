@@ -100,11 +100,10 @@ public class FileSystemAgentLoader : IAgentLoader
                 var config = await LoadConfigAsync(agentDir, cancellationToken);
                 configs.Add(config);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Log warning but continue loading other agents
-                // In production, this should use ILogger
-                Console.WriteLine($"Warning: Failed to load agent from '{agentDir}': {ex.Message}");
+                // Silently continue loading other agents
+                // Callers can check if expected agents are loaded
             }
         }
 
