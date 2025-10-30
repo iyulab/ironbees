@@ -48,7 +48,16 @@ public static class ServiceCollectionExtensions
         // Register core services
         services.AddSingleton<IAgentLoader, FileSystemAgentLoader>();
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
-        services.AddSingleton<ILLMFrameworkAdapter, AgentFrameworkAdapter>();
+
+        // Register LLM framework adapter based on configuration
+        if (options.UseMicrosoftAgentFramework)
+        {
+            services.AddSingleton<ILLMFrameworkAdapter, MicrosoftAgentFrameworkAdapter>();
+        }
+        else
+        {
+            services.AddSingleton<ILLMFrameworkAdapter, AgentFrameworkAdapter>();
+        }
 
         // Register agent selector
         services.AddSingleton<IAgentSelector>(sp =>
@@ -102,4 +111,9 @@ public class IronbeesOptions
     /// Minimum confidence threshold for agent selection (0.0 to 1.0, default: 0.3)
     /// </summary>
     public double? MinimumConfidenceThreshold { get; set; }
+
+    /// <summary>
+    /// Use Microsoft Agent Framework for agent execution (default: false, uses Azure.AI.OpenAI ChatClient)
+    /// </summary>
+    public bool UseMicrosoftAgentFramework { get; set; } = false;
 }

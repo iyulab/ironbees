@@ -43,6 +43,7 @@ You are an expert software developer...
 
 ### 2. 서비스 구성
 
+**기본 구성 (Azure.AI.OpenAI ChatClient)**:
 ```csharp
 services.AddIronbees(options =>
 {
@@ -53,6 +54,19 @@ services.AddIronbees(options =>
 
 var orchestrator = serviceProvider.GetRequiredService<IAgentOrchestrator>();
 ```
+
+**Microsoft Agent Framework 사용**:
+```csharp
+services.AddIronbees(options =>
+{
+    options.AzureOpenAIEndpoint = "https://your-resource.openai.azure.com";
+    options.AzureOpenAIKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY");
+    options.AgentsDirectory = "./agents";
+    options.UseMicrosoftAgentFramework = true; // Microsoft Agent Framework 활성화
+});
+```
+
+> **참고**: Microsoft Agent Framework는 Semantic Kernel과 AutoGen을 통합한 Microsoft의 공식 에이전트 프레임워크입니다. [자세히 보기](https://aka.ms/agent-framework)
 
 ### 3. 에이전트 사용
 

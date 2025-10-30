@@ -7,13 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Microsoft Agent Framework Integration** (v1.1.0)
+  - `MicrosoftAgentFrameworkAdapter` for Microsoft Agent Framework execution
+  - `MicrosoftAgentWrapper` for AIAgent integration
+  - `UseMicrosoftAgentFramework` configuration option
+  - Full streaming support via `RunStreamingAsync`
+  - Comprehensive documentation at `docs/MICROSOFT_AGENT_FRAMEWORK.md`
+
+### Changed
+- `ServiceCollectionExtensions` now supports adapter selection via `UseMicrosoftAgentFramework` option
+- Default behavior unchanged (uses Azure.AI.OpenAI ChatClient)
+
+### Dependencies
+- Added `Microsoft.Agents.AI.OpenAI` (1.0.0-preview.251028.1)
+- Added `Azure.Identity` (1.17.0)
+- Added `Microsoft.Extensions.AI.OpenAI` (9.10.1-preview.1.25521.4)
+
 ### Planned
 - NuGet package publication
 - Embedding-based agent selector
 - CLI tools for agent management
 - Pipeline preprocessors and postprocessors
 - Conversation history management
-- Additional LLM framework adapters (Semantic Kernel, LangChain)
+- MCP native tool integration
+- Workflow support with Microsoft Agent Framework
 
 ## [1.0.0] - 2025-01-29
 
