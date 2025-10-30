@@ -2,7 +2,7 @@
 
   <PropertyGroup Label="Package Information">
     <!-- Version -->
-    <Version>1.1.0</Version>
+    <Version>0.1.0</Version>
 
     <!-- Authors and Company -->
     <Authors>iyulab</Authors>
@@ -11,8 +11,8 @@
     <Copyright>Copyright (c) 2025 iyulab</Copyright>
 
     <!-- Repository and Project URLs -->
-    <PackageProjectUrl>https://github.com/iyulab-rnd/ironbees</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/iyulab-rnd/ironbees</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/iyulab/ironbees</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/iyulab/ironbees</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 
     <!-- License -->
