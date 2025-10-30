@@ -193,21 +193,10 @@ options.UseMicrosoftAgentFramework = true; // or false
 - 모든 핵심 컴포넌트 교체 가능
 - `IAgentLoader`, `IAgentSelector`, `ILLMFrameworkAdapter`
 
-## 🧪 실험적 기능
-
-다음 기능은 **실험적**이며 향후 제거되거나 크게 변경될 수 있습니다:
-
-- ⚠️ **Agent Pipeline**: 순차/병렬 실행 워크플로우
-- ⚠️ **Collaboration Patterns**: Voting, BestOfN, Ensemble 전략
-- ⚠️ **Conversation Manager**: 대화 히스토리 관리
-
-→ 프로덕션에서는 Microsoft Agent Framework, Semantic Kernel의 네이티브 기능 사용을 권장합니다.
-
 ## 📖 예제
 
 - [OpenAISample](samples/OpenAISample/) - 기본 사용법
 - [WebApiSample](samples/WebApiSample/) - RESTful API 서버
-- [PipelineSample](samples/PipelineSample/) - 파이프라인 (실험적)
 
 ## 🗺️ 로드맵
 
@@ -221,8 +210,8 @@ options.UseMicrosoftAgentFramework = true; // or false
 ### v0.2.0 - 계획
 - [ ] Semantic Kernel 어댑터
 - [ ] 임베딩 기반 라우팅
-- [ ] Pipeline 단순화 또는 제거
 - [ ] 성능 최적화
+- [ ] 추가 예제 및 문서
 
 ### v0.3.0 - 계획
 - [ ] LangChain 어댑터

@@ -98,13 +98,14 @@ curl -X POST http://localhost:5001/api/agents/chat \
 - 사용자 프로파일링
 - 컨텍스트 유지
 
+**참고**: 대화 관리 기능은 Microsoft Agent Framework, Semantic Kernel의 네이티브 기능을 사용하는 것을 권장합니다.
+
 ```bash
-# 사용 예시
-curl -X POST http://localhost:5001/api/agents/conversation/chat \
+# 사용 예시 (단순 메시지 처리)
+curl -X POST http://localhost:5001/api/agents/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "sessionId": "user-123",
-    "message": "What did we discuss last time?",
+    "message": "Remember my preference for Python",
     "agentName": "memory-agent"
   }'
 ```
@@ -236,26 +237,7 @@ POST /api/agents/chat
 }
 ```
 
-### 2. 대화 컨텍스트 활용
-
-```bash
-# 세션 시작
-POST /api/agents/conversation/chat
-{
-  "message": "I prefer Python",
-  "agentName": "memory-agent"
-}
-
-# 컨텍스트 활용
-POST /api/agents/conversation/chat
-{
-  "sessionId": "[from previous response]",
-  "message": "Recommend a web framework for me"
-}
-# → Memory Agent가 Python 선호도를 기억하여 추천
-```
-
-### 3. RAG + Summarization 조합
+### 2. RAG + Summarization 조합
 
 ```bash
 # RAG로 관련 문서 검색
@@ -320,9 +302,9 @@ dotnet test
 - 복잡한 작업 → 여러 에이전트 조합
 
 ### 2. 컨텍스트 관리
-- 대화형 앱 → Memory Agent + Conversation API
+- 대화형 앱 → Microsoft Agent Framework 또는 Semantic Kernel의 대화 관리 기능 사용
 - 단발성 질의 → 개별 Chat API
-- 장기 세션 → 주기적 세션 정리
+- 장기 세션 → 기본 프레임워크의 세션 관리 기능 활용
 
 ### 3. 에러 처리
 - 항상 confidence score 확인

@@ -355,21 +355,7 @@ public async IAsyncEnumerable<string> StreamChat([FromBody] ChatRequest request)
 }
 ```
 
-### 3. 대화 히스토리 관리
-
-```csharp
-public class ConversationService
-{
-    private Dictionary<string, List<Message>> _conversations = new();
-
-    public async Task<string> ContinueConversation(string sessionId, string message)
-    {
-        // 히스토리 조회 및 컨텍스트 전달
-    }
-}
-```
-
-### 4. 웹소켓 지원
+### 3. 웹소켓 지원
 
 ```csharp
 app.MapHub<ChatHub>("/chat");

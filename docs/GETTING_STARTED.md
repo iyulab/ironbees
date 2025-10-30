@@ -205,40 +205,6 @@ foreach (var score in selection.AllScores)
 }
 ```
 
-## 대화 히스토리
-
-### 세션 생성 및 사용
-
-```csharp
-var conversationManager = serviceProvider.GetRequiredService<IConversationManager>();
-
-// 새 세션 생성
-var session = await conversationManager.CreateSessionAsync();
-
-// 메시지 추가
-await conversationManager.AddMessageAsync(session.SessionId, new ConversationMessage
-{
-    Role = "user",
-    Content = "What is machine learning?"
-});
-
-// 대화 컨텍스트 가져오기
-var messages = await conversationManager.GetMessagesAsync(
-    session.SessionId,
-    maxMessages: 10);
-
-// 컨텍스트 포함하여 에이전트 실행
-var contextInput = BuildContextFromMessages(messages);
-var response = await orchestrator.ProcessAsync(contextInput);
-
-// 응답 저장
-await conversationManager.AddMessageAsync(session.SessionId, new ConversationMessage
-{
-    Role = "assistant",
-    Content = response
-});
-```
-
 ## 에이전트 선택 알고리즘
 
 `KeywordAgentSelector`는 다중 요소 점수 계산을 사용:
@@ -342,7 +308,6 @@ foreach (var score in result.AllScores)
 
 ## 다음 단계
 
-- [에이전트 파이프라인](AGENT_PIPELINE.md) - 복잡한 워크플로우 구성
-- [협업 패턴](COLLABORATION_PATTERNS.md) - 다중 에이전트 협업
 - [내장 에이전트](../agents/BUILTIN_AGENTS.md) - 즉시 사용 가능한 에이전트
 - [아키텍처](ARCHITECTURE.md) - 프레임워크 설계 이해
+- [Microsoft Agent Framework 통합](MICROSOFT_AGENT_FRAMEWORK.md) - 고급 기능 활용

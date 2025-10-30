@@ -80,15 +80,15 @@ var orchestrator = app.Services.GetRequiredService<IAgentOrchestrator>();
   - Microsoft Agent Framework 어댑터
   - 의존성 주입 확장 (`AddIronbees`)
 
-### ⚠️ 실험적 기능 (향후 변경 가능)
+### ✂️ 제거된 기능 (Thin Wrapper 철학 준수)
 
-다음 기능은 현재 포함되어 있지만 **실험적**이며, 향후 버전에서 제거되거나 크게 변경될 수 있습니다:
+초기 개발 중 포함되었으나 **"thin wrapper" 철학**을 위배하여 제거된 기능들:
 
-- **Agent Pipeline**: 순차/병렬 실행 워크플로우
-- **Collaboration Patterns**: Voting, BestOfN, Ensemble, FirstSuccess 전략
-- **Conversation Manager**: 대화 히스토리 및 세션 관리
+- **Agent Pipeline** (제거됨): 순차/병렬 실행 워크플로우 → Microsoft Agent Framework 사용 권장
+- **Collaboration Patterns** (제거됨): Voting, BestOfN, Ensemble, FirstSuccess 전략 → 기본 프레임워크 기능 사용
+- **Conversation Manager** (제거됨): 대화 히스토리 및 세션 관리 → 기본 프레임워크 기능 사용
 
-→ **권장사항**: 프로덕션 환경에서는 이러한 기능 대신 Microsoft Agent Framework, Semantic Kernel의 네이티브 워크플로우 기능을 사용하세요.
+→ **권장사항**: 복잡한 오케스트레이션, 대화 관리, 협업 패턴은 Microsoft Agent Framework, Semantic Kernel의 네이티브 기능을 사용하세요.
 
 ### 📚 내장 에이전트 예제
 
@@ -127,8 +127,8 @@ var orchestrator = app.Services.GetRequiredService<IAgentOrchestrator>();
 #### v0.2.0 (계획)
 - Semantic Kernel 어댑터 추가
 - 임베딩 기반 라우팅
-- Pipeline 단순화 또는 제거 검토
 - 성능 최적화
+- 추가 예제 및 문서 확장
 
 #### v0.3.0 (계획)
 - LangChain 어댑터 추가
