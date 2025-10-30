@@ -183,11 +183,213 @@
 
 ---
 
-## Phase 7: 개발자 경험 (v0.3.0) 🛠️
+## Phase 7: Guardrails & Audit (v0.2.3 - v0.2.4) 🛡️
+
+**목표**: 입출력 감사 및 보안 가드레일 (프로덕션 필수)
+
+### 7.1 Content Guardrails 인터페이스 (2주)
+**우선순위**: 높음
+
+- [ ] **IContentGuardrail 인터페이스**
+  ```csharp
+  public interface IContentGuardrail
+  {
+      Task<GuardrailResult> ValidateInputAsync(string input, CancellationToken ct);
+      Task<GuardrailResult> ValidateOutputAsync(string output, CancellationToken ct);
+  }
+
+  public class GuardrailResult
+  {
+      public bool IsAllowed { get; set; }
+      public string Reason { get; set; }
+      public GuardrailViolation[] Violations { get; set; }
+      public Dictionary<string, object> Metadata { get; set; }
+  }
+  ```
+
+- [ ] **GuardrailPipeline 통합**
+  ```csharp
+  public class AgentOrchestrator : IAgentOrchestrator
+  {
+      private readonly IContentGuardrail[] _inputGuardrails;
+      private readonly IContentGuardrail[] _outputGuardrails;
+
+      public async Task<string> ProcessAsync(string input, ...)
+      {
+          // 1. Input guardrails
+          foreach (var guardrail in _inputGuardrails)
+          {
+              var result = await guardrail.ValidateInputAsync(input, ct);
+              if (!result.IsAllowed)
+                  throw new GuardrailViolationException(result);
+          }
+
+          // 2. Agent processing
+          var response = await _frameworkAdapter.RunAsync(agent, input, ct);
+
+          // 3. Output guardrails
+          foreach (var guardrail in _outputGuardrails)
+          {
+              var result = await guardrail.ValidateOutputAsync(response, ct);
+              if (!result.IsAllowed)
+                  throw new GuardrailViolationException(result);
+          }
+
+          return response;
+      }
+  }
+  ```
+
+- [ ] **의존성 주입 확장**
+  ```csharp
+  services.AddIronbees(options => {
+      options.AddInputGuardrail<ProfanityGuardrail>();
+      options.AddInputGuardrail<PIIDetectionGuardrail>();
+      options.AddOutputGuardrail<PolicyComplianceGuardrail>();
+  });
+  ```
+
+**완료 조건**:
+- [ ] IContentGuardrail 인터페이스 정의
+- [ ] AgentOrchestrator 통합
+- [ ] DI 확장 메서드
+- [ ] 단위 테스트 15개
+
+### 7.2 기본 Guardrail 구현체 (1주)
+**우선순위**: 높음
+
+- [ ] **RegexGuardrail (패턴 매칭)**
+  ```csharp
+  public class RegexGuardrail : IContentGuardrail
+  {
+      private readonly Regex[] _blockedPatterns;
+
+      // 금지어 패턴 매칭
+      // 이메일, 전화번호, 신용카드 등
+  }
+  ```
+
+- [ ] **KeywordGuardrail (키워드 필터)**
+  ```csharp
+  public class KeywordGuardrail : IContentGuardrail
+  {
+      private readonly HashSet<string> _blockedKeywords;
+
+      // 금지어 목록 체크
+      // 욕설, 혐오 표현 등
+  }
+  ```
+
+- [ ] **LengthGuardrail (길이 제한)**
+  ```csharp
+  public class LengthGuardrail : IContentGuardrail
+  {
+      private readonly int _maxLength;
+
+      // DoS 방지, 비용 제어
+  }
+  ```
+
+**완료 조건**:
+- [ ] 3가지 기본 구현체
+- [ ] 설정 가능한 옵션
+- [ ] 테스트 케이스 20개
+
+### 7.3 외부 서비스 어댑터 (2주)
+**우선순위**: 중간
+
+- [ ] **Azure AI Content Safety Adapter**
+  ```csharp
+  public class AzureContentSafetyGuardrail : IContentGuardrail
+  {
+      private readonly ContentSafetyClient _client;
+
+      // Azure AI Content Safety API 연동
+      // Hate, Violence, Sexual, Self-harm 카테고리
+  }
+  ```
+
+- [ ] **OpenAI Moderation Adapter**
+  ```csharp
+  public class OpenAIModerationGuardrail : IContentGuardrail
+  {
+      private readonly OpenAIClient _client;
+
+      // OpenAI Moderation API 연동
+  }
+  ```
+
+- [ ] **Custom Service Adapter Template**
+  ```csharp
+  // 사용자 정의 감사 서비스 연동 예제
+  public class CustomAuditServiceGuardrail : IContentGuardrail
+  {
+      // 기업 내부 감사 API 연동 템플릿
+  }
+  ```
+
+**완료 조건**:
+- [ ] Azure Content Safety 통합
+- [ ] OpenAI Moderation 통합
+- [ ] 커스텀 어댑터 예제
+- [ ] 샘플 프로젝트 (GuardrailsSample)
+
+### 7.4 감사 로깅 및 모니터링 (1주)
+**우선순위**: 중간
+
+- [ ] **IAuditLogger 인터페이스**
+  ```csharp
+  public interface IAuditLogger
+  {
+      Task LogInputAsync(string input, GuardrailResult result);
+      Task LogOutputAsync(string output, GuardrailResult result);
+      Task LogViolationAsync(GuardrailViolation violation);
+  }
+  ```
+
+- [ ] **구조화된 로깅**
+  ```csharp
+  public class StructuredAuditLogger : IAuditLogger
+  {
+      private readonly ILogger _logger;
+
+      public Task LogViolationAsync(GuardrailViolation violation)
+      {
+          _logger.LogWarning(
+              "Guardrail violation detected. Type: {Type}, Severity: {Severity}, Agent: {Agent}",
+              violation.Type,
+              violation.Severity,
+              violation.AgentName
+          );
+      }
+  }
+  ```
+
+- [ ] **메트릭 수집**
+  - 위반 횟수 (by type, by agent)
+  - 차단률 (blocked/total)
+  - 평균 검증 시간
+
+**완료 조건**:
+- [ ] IAuditLogger 구현
+- [ ] 구조화된 로깅
+- [ ] 메트릭 수집 (선택적)
+- [ ] 문서: docs/GUARDRAILS.md
+
+**Phase 7 전체 완료 조건**:
+- [ ] Guardrail 파이프라인 동작
+- [ ] 3개 기본 구현체 + 2개 외부 어댑터
+- [ ] 샘플 프로젝트 동작
+- [ ] 문서 및 튜토리얼 완성
+- [ ] 테스트 50개 이상
+
+---
+
+## Phase 8: 개발자 경험 (v0.3.0) 🛠️
 
 **목표**: CLI 도구 및 템플릿으로 생산성 향상
 
-### 7.1 CLI 도구 (3주)
+### 8.1 CLI 도구 (3주)
 **우선순위**: 중간
 
 - [ ] **ironbees-cli 패키지**
@@ -225,7 +427,7 @@
 - [ ] 3개 dotnet new 템플릿
 - [ ] CLI 문서 및 튜토리얼
 
-### 7.2 개발자 도구 (1주)
+### 8.2 개발자 도구 (1주)
 **우선순위**: 낮음
 
 - [ ] **Visual Studio 확장** (선택적)
@@ -241,11 +443,11 @@
 
 ---
 
-## Phase 8: LangChain 통합 (v0.3.1) 🔗
+## Phase 9: LangChain 통합 (v0.3.1) 🔗
 
 **목표**: LangChain.NET 프레임워크 지원
 
-### 8.1 LangChain Adapter (2주)
+### 9.1 LangChain Adapter (2주)
 **우선순위**: 중간
 
 - [ ] **어댑터 구현**
@@ -263,21 +465,21 @@
 
 ---
 
-## Phase 9: 선택적 기능 (v0.4.0+) 🌟
+## Phase 10: 선택적 기능 (v0.4.0+) 🌟
 
 **우선순위**: 낮음 | **필요 시 추가**
 
-### 9.1 벡터 DB 통합 (선택적)
+### 10.1 벡터 DB 통합 (선택적)
 - Qdrant, Milvus, Chroma 어댑터
 - 에이전트 임베딩 저장소
 - **주의**: Thin wrapper 철학 유지 (기본 프레임워크 기능 우선)
 
-### 9.2 성능 최적화
+### 10.2 성능 최적화
 - 에이전트 병렬 로딩
 - 선택 알고리즘 최적화
 - 메모리 프로파일링
 
-### 9.3 모니터링 및 관찰성
+### 10.3 모니터링 및 관찰성
 - OpenTelemetry 통합
 - 구조화된 로깅
 - 메트릭 수집 (선택 정확도, 레이턴시)
@@ -295,8 +497,10 @@
 | v0.2.0 | 확장 | Semantic Kernel 통합 | 2025-04-15 |
 | v0.2.1 | 라우팅 | 임베딩 기반 Selector | 2025-05-15 |
 | v0.2.2 | 라우팅 | 하이브리드 Selector | 2025-06-01 |
-| v0.3.0 | DX | CLI 도구 및 템플릿 | 2025-07-15 |
-| v0.3.1 | 확장 | LangChain 통합 | 2025-08-15 |
+| v0.2.3 | 보안 | Guardrails 인터페이스 | 2025-06-22 |
+| v0.2.4 | 보안 | Guardrails 구현체 및 어댑터 | 2025-07-13 |
+| v0.3.0 | DX | CLI 도구 및 템플릿 | 2025-08-15 |
+| v0.3.1 | 확장 | LangChain 통합 | 2025-09-15 |
 | v0.4.0 | 선택적 | 고급 기능 (필요 시) | TBD |
 
 ---
@@ -304,20 +508,22 @@
 ## 우선순위 매트릭스
 
 ### 높은 우선순위 (당장 시작)
-1. KeywordAgentSelector 개선 (v0.1.1)
-2. Semantic Kernel Adapter (v0.2.0)
-3. 임베딩 기반 Selector (v0.2.1)
+1. ⭐ KeywordAgentSelector 개선 (v0.1.1) - Phase 4.1
+2. ⭐ Semantic Kernel Adapter (v0.2.0) - Phase 5.1
+3. ⭐ 임베딩 기반 Selector (v0.2.1) - Phase 6.1
+4. ⭐ Guardrails 인터페이스 (v0.2.3) - Phase 7.1
 
 ### 중간 우선순위 (순차 진행)
-4. FileSystemAgentLoader 강화 (v0.1.2)
-5. 문서 및 예제 확장 (v0.1.3)
-6. 하이브리드 Selector (v0.2.2)
-7. CLI 도구 (v0.3.0)
+5. FileSystemAgentLoader 강화 (v0.1.2) - Phase 4.2
+6. 문서 및 예제 확장 (v0.1.3) - Phase 4.3
+7. 하이브리드 Selector (v0.2.2) - Phase 6.2
+8. Guardrails 구현체 (v0.2.4) - Phase 7.2-7.3
+9. CLI 도구 (v0.3.0) - Phase 8.1
 
 ### 낮은 우선순위 (선택적)
-8. LangChain Adapter (v0.3.1)
-9. 벡터 DB 통합 (v0.4.0+)
-10. IDE 확장 (v0.3.0+)
+10. LangChain Adapter (v0.3.1) - Phase 9.1
+11. 벡터 DB 통합 (v0.4.0+) - Phase 10.1
+12. IDE 확장 (v0.3.0+) - Phase 8.2
 
 ---
 
@@ -371,8 +577,19 @@
 - ❌ RAG 엔진 구현 (벡터 검색, 청킹)
 - ❌ 프롬프트 엔지니어링 라이브러리
 - ❌ LLM 응답 캐싱 시스템
+- ❌ AI 기반 감사 엔진 자체 구현 (Azure AI Content Safety, OpenAI Moderation 사용)
+- ❌ PII 감지 엔진 구현 (Microsoft Presidio, Azure Text Analytics 사용)
+- ❌ 프롬프트 인젝션 탐지 AI 모델 (외부 서비스 사용)
 
 → 이러한 기능은 Microsoft Agent Framework, Semantic Kernel, LangChain 등의 기본 프레임워크를 사용하세요.
+
+**Guardrails 예외 (Ironbees가 제공하는 것)**:
+- ✅ `IContentGuardrail` 인터페이스 및 파이프라인 통합
+- ✅ 간단한 패턴 매칭 기반 구현체 (Regex, Keyword, Length)
+- ✅ 외부 감사 서비스 어댑터 (Azure Content Safety, OpenAI Moderation)
+- ✅ 감사 로깅 및 모니터링 인터페이스
+
+→ 복잡한 AI 기반 감사는 외부 서비스에 위임
 
 ---
 
