@@ -1,0 +1,148 @@
+name: Publish to NuGet
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Directory.Build.props'
+
+  workflow_dispatch:
+    inputs:
+      force_publish:
+        description: 'Force NuGet publish (bypass version check)'
+        required: false
+        type: boolean
+        default: false
+      publish_core:
+        description: 'Publish Ironbees.Core'
+        required: false
+        type: boolean
+        default: true
+      publish_agent_framework:
+        description: 'Publish Ironbees.AgentFramework'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: nuget-production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for version detection
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+    - name: Extract version from Directory.Build.props
+      id: extract_version
+      run: |
+        VERSION=$(grep -oP '<Version>\K[^<]+' Directory.Build.props)
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
+
+    - name: Check if version exists on NuGet.org
+      id: check_version
+      if: ${{ !inputs.force_publish }}
+      run: |
+        VERSION="${{ steps.extract_version.outputs.version }}"
+
+        # Check Ironbees.Core
+        CORE_EXISTS=$(dotnet nuget search Ironbees.Core --exact-match --take 1 --source https://api.nuget.org/v3/index.json | grep -c "Ironbees.Core | $VERSION" || true)
+
+        # Check Ironbees.AgentFramework
+        AF_EXISTS=$(dotnet nuget search Ironbees.AgentFramework --exact-match --take 1 --source https://api.nuget.org/v3/index.json | grep -c "Ironbees.AgentFramework | $VERSION-preview" || true)
+
+        echo "core_exists=$CORE_EXISTS" >> $GITHUB_OUTPUT
+        echo "agent_framework_exists=$AF_EXISTS" >> $GITHUB_OUTPUT
+
+        if [ "$CORE_EXISTS" -eq "1" ] && [ "$AF_EXISTS" -eq "1" ]; then
+          echo "⚠️ Both packages version $VERSION already exist on NuGet.org"
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+        else
+          echo "✅ Version $VERSION is new, proceeding with publish"
+          echo "should_publish=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Pack Ironbees.Core
+      if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && (inputs.publish_core == true || github.event_name == 'push') }}
+      run: |
+        dotnet pack src/Ironbees.Core/Ironbees.Core.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+    - name: Pack Ironbees.AgentFramework
+      if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && (inputs.publish_agent_framework == true || github.event_name == 'push') }}
+      run: |
+        dotnet pack src/Ironbees.AgentFramework/Ironbees.AgentFramework.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+    - name: Publish to NuGet.org
+      if: ${{ steps.check_version.outputs.should_publish == 'true' || inputs.force_publish }}
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        if [ -d "./packages" ]; then
+          dotnet nuget push "./packages/*.nupkg" \
+            --api-key $NUGET_API_KEY \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+          echo "✅ Successfully published packages to NuGet.org"
+        else
+          echo "⚠️ No packages to publish"
+        fi
+
+    - name: Create GitHub Release
+      if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && github.event_name == 'push' }}
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.extract_version.outputs.version }}
+        name: Release v${{ steps.extract_version.outputs.version }}
+        body: |
+          ## Ironbees v${{ steps.extract_version.outputs.version }}
+
+          See [RELEASE_NOTES.md](https://github.com/${{ github.repository }}/blob/main/RELEASE_NOTES.md) for details.
+
+          ### Packages
+          - [Ironbees.Core ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Core/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}-preview](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }}-preview)
+        draft: false
+        prerelease: ${{ contains(steps.extract_version.outputs.version, 'preview') || contains(steps.extract_version.outputs.version, 'beta') || contains(steps.extract_version.outputs.version, 'alpha') }}
+        files: ./packages/*.nupkg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Summary
+      if: always()
+      run: |
+        echo "## Publish Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ steps.extract_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Force Publish**: ${{ inputs.force_publish || 'false' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ steps.check_version.outputs.should_publish }}" == "true" ] || [ "${{ inputs.force_publish }}" == "true" ]; then
+          echo "- **Status**: ✅ Published" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- **Status**: ⏭️ Skipped (version already exists)" >> $GITHUB_STEP_SUMMARY
+        fi

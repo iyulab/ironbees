@@ -1,5 +1,10 @@
 # 🐝 Ironbees
 
+[![CI](https://github.com/iyulab/ironbees/actions/workflows/ci.yml/badge.svg)](https://github.com/iyulab/ironbees/actions/workflows/ci.yml)
+[![NuGet - Core](https://img.shields.io/nuget/v/Ironbees.Core?label=Ironbees.Core)](https://www.nuget.org/packages/Ironbees.Core)
+[![NuGet - AgentFramework](https://img.shields.io/nuget/v/Ironbees.AgentFramework?label=Ironbees.AgentFramework)](https://www.nuget.org/packages/Ironbees.AgentFramework)
+[![License](https://img.shields.io/github/license/iyulab/ironbees)](LICENSE)
+
 > 파일시스템 컨벤션 기반 LLM 에이전트 관리 래퍼
 
 Ironbees는 .NET 환경에서 LLM 에이전트의 **반복되는 패턴을 간소화**하는 경량 래퍼입니다. Microsoft Agent Framework, Semantic Kernel, LangChain, ironhive 등의 프레임워크를 대체하는 것이 아니라, **그 위에서 작동하며** 파일시스템 컨벤션으로 에이전트 관리를 단순화합니다.
