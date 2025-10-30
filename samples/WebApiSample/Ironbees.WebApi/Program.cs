@@ -77,7 +77,6 @@ builder.Services.AddSingleton<IAgentOrchestrator>(sp =>
         sp.GetRequiredService<ILLMFrameworkAdapter>(),
         sp.GetRequiredService<IAgentSelector>(),
         agentsPath));
-builder.Services.AddSingleton<IConversationManager, ConversationManager>();
 
 var app = builder.Build();
 
