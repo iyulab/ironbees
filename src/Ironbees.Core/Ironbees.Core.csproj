@@ -5,29 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <!-- NuGet Package Metadata -->
-    <Version>1.1.0</Version>
-    <Authors>iyulab</Authors>
-    <Company>iyulab</Company>
-    <Product>Ironbees</Product>
+    <!-- Package-specific Metadata -->
     <Description>Convention-based multi-agent orchestration framework for .NET. Provides core abstractions for agent loading, selection, orchestration, and pipeline management.</Description>
-    <PackageTags>ai;agents;multi-agent;orchestration;llm;azure-openai;agent-framework;convention-based</PackageTags>
-    <PackageProjectUrl>https://github.com/iyulab-rnd/ironbees</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/iyulab-rnd/ironbees</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Copyright>Copyright (c) 2025 iyulab</Copyright>
-    <PackageReleaseNotes>See CHANGELOG.md for release notes</PackageReleaseNotes>
-
-    <!-- Documentation -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <PackageTags>$(PackageTagsBase);llm;azure-openai;agent-framework;convention-based</PackageTags>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="YamlDotNet" Version="16.3.0" />

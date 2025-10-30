@@ -17,28 +17,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <!-- NuGet Package Metadata -->
+    <!-- Override version for preview -->
     <Version>1.1.0-preview</Version>
-    <Authors>iyulab</Authors>
-    <Company>iyulab</Company>
-    <Product>Ironbees</Product>
+
+    <!-- Package-specific Metadata -->
     <Description>Azure OpenAI and Microsoft Agent Framework integration for Ironbees. Provides agent execution adapters, dependency injection extensions, and ASP.NET Core integration.</Description>
-    <PackageTags>ai;agents;multi-agent;orchestration;azure-openai;microsoft-agent-framework;dependency-injection</PackageTags>
-    <PackageProjectUrl>https://github.com/iyulab-rnd/ironbees</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/iyulab-rnd/ironbees</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Copyright>Copyright (c) 2025 iyulab</Copyright>
-    <PackageReleaseNotes>See CHANGELOG.md for release notes</PackageReleaseNotes>
-
-    <!-- Documentation -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <PackageTags>$(PackageTagsBase);azure-openai;microsoft-agent-framework;dependency-injection</PackageTags>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-  </ItemGroup>
 
 </Project>
