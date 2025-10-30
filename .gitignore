@@ -36,4 +36,6 @@ appsettings.Development.json
 *.tmp
 *.temp
 
+.envpackages/
+*.env
 .env
