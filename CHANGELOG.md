@@ -8,10 +8,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for v0.2.0
-- Semantic Kernel integration
 - Embedding-based agent selector
 - CLI tools for agent management
-- Additional samples and documentation
+
+## [0.1.3] - 2025-11-11
+
+### Added - Documentation and Samples
+- **Comprehensive Documentation**
+  - `QUICK_START.md` - 5-minute quick start tutorial
+    - Step-by-step project creation and setup
+    - Agent directory structure creation
+    - Complete code examples for immediate use
+    - Troubleshooting section with common issues
+    - Tips for hot reload, validation, and performance
+    - Multi-agent and auto-routing examples
+
+  - `CUSTOM_ADAPTER.md` - Custom framework adapter development guide
+    - Complete guide for implementing `ILLMFrameworkAdapter`
+    - Full Semantic Kernel adapter implementation example
+    - Dependency injection integration patterns
+    - Testing best practices for custom adapters
+    - NuGet packaging instructions
+    - Advanced patterns: agent wrappers, plugin integration, memory management
+    - Additional framework examples (Ollama, LangChain)
+
+  - `PRODUCTION_DEPLOYMENT.md` - Production deployment guide
+    - Security best practices (Azure Key Vault, environment variables, API key management)
+    - Comprehensive logging and monitoring setup (Serilog, Application Insights)
+    - Performance optimization strategies (caching, connection pooling, parallel processing)
+    - Error handling and resilience patterns (Polly, Circuit Breaker, retry policies)
+    - Docker containerization with multi-stage builds
+    - Azure deployment (Container Apps, App Service, Key Vault integration)
+    - Health checks and monitoring
+    - Load testing with k6
+    - Scaling and load balancing strategies
+
+- **ConsoleChatSample**
+  - Interactive console chat application
+  - Real-time streaming of agent responses
+  - Built-in commands: `/agents`, `/agent`, `/auto`, `/clear`, `/help`, `/exit`
+  - Color-coded output (cyan for user, green for agent)
+  - Auto-selection and manual agent selection modes
+  - Graceful error handling with helpful messages
+  - Smart agent directory detection (multiple fallback paths)
+  - Complete README with usage examples and troubleshooting
+
+### Documentation Structure
+- `docs/QUICK_START.md` - New users start here (5 minutes)
+- `docs/GETTING_STARTED.md` - Comprehensive guide
+- `docs/ARCHITECTURE.md` - System design and components
+- `docs/USAGE.md` - Advanced usage patterns
+- `docs/MICROSOFT_AGENT_FRAMEWORK.md` - MAF integration
+- `docs/CUSTOM_ADAPTER.md` - Custom adapter development
+- `docs/PRODUCTION_DEPLOYMENT.md` - Production best practices
+- `samples/ConsoleChatSample/` - Interactive CLI demo
+
+### Technical Details
+- No breaking changes - fully backward compatible
+- All 136 tests continue with same results (128 passed, 8 known failures from v0.1.1)
+- ConsoleChatSample demonstrates all core features
+- Documentation covers beginner to production deployment scenarios
 
 ## [0.1.2] - 2025-11-10
 
