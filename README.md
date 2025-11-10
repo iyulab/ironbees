@@ -202,10 +202,52 @@ options.UseMicrosoftAgentFramework = true; // or false
 
 - [OpenAISample](samples/OpenAISample/) - 기본 사용법
 - [WebApiSample](samples/WebApiSample/) - RESTful API 서버
+- [EmbeddingSample](samples/EmbeddingSample/) - 로컬 ONNX 임베딩 및 시맨틱 라우팅 🆕
 
-## ✨ 최신 기능 (v0.1.1)
+## ✨ 최신 기능
 
-### 향상된 KeywordAgentSelector
+### v0.1.5 - Local ONNX Embeddings 🆕
+로컬 ONNX 모델로 완전 무료 임베딩 지원! API 키 불필요, 완전히 오프라인 동작.
+
+**주요 기능:**
+- **자동 모델 다운로드**: 첫 실행 시 Hugging Face에서 자동 다운로드 (~23-45MB)
+- **2가지 모델 지원**:
+  - `all-MiniLM-L6-v2`: 빠른 속도 (기본값, ~14K sent/sec, 84-85% 정확도)
+  - `all-MiniLM-L12-v2`: 높은 정확도 (~4K sent/sec, 87-88% 정확도)
+- **크로스 플랫폼**: Windows, Linux, macOS 지원
+- **시맨틱 에이전트 선택**: EmbeddingAgentSelector로 의미 기반 라우팅
+- **하이브리드 선택**: 키워드(40%) + 임베딩(60%) 결합
+
+```csharp
+// 로컬 ONNX 임베딩 프로바이더 생성 (첫 실행 시 자동 다운로드)
+var provider = await OnnxEmbeddingProvider.CreateAsync(
+    OnnxEmbeddingProvider.ModelType.MiniLML6V2);
+
+// 텍스트를 384차원 벡터로 변환
+var embedding = await provider.GenerateEmbeddingAsync("Write Python code");
+
+// 임베딩 기반 에이전트 선택
+var selector = new EmbeddingAgentSelector(provider);
+var result = await selector.SelectAgentAsync("secure my web app", agents);
+// → Security Specialist 선택 (키워드 없이도 시맨틱 매칭)
+
+// 하이브리드 선택 (키워드 + 임베딩)
+var hybridSelector = new HybridAgentSelector(
+    new KeywordAgentSelector(),
+    new EmbeddingAgentSelector(provider));
+var result = await hybridSelector.SelectAgentAsync("python security", agents);
+// → 키워드와 의미를 모두 고려한 최적 선택
+```
+
+**모델 비교:**
+| 모델 | 크기 | 속도 | 정확도 | 용도 |
+|------|------|------|--------|------|
+| L6-v2 (기본값) | ~23MB | ~14K sent/sec | 84-85% | 실시간 앱, 리소스 제한 환경 |
+| L12-v2 | ~45MB | ~4K sent/sec | 87-88% | 법률 문서, 학술 논문, 고품질 요구 |
+
+샘플 코드: [EmbeddingSample](samples/EmbeddingSample/)
+
+### v0.1.1 - 향상된 KeywordAgentSelector
 - **TF-IDF 가중치**: 용어 관련성 기반 스코어링으로 정확도 향상
 - **스마트 정규화**: 50+ 동의어 그룹, 100+ 어간 추출 규칙 (code↔programming, db↔database)
 - **성능 캐싱**: 반복 쿼리 ~50% 속도 향상
@@ -222,7 +264,20 @@ var result = await orchestrator.ProcessAsync("Write C# code", "coding-agent");
 
 ## 🗺️ 로드맵
 
-### v0.1.1 - 현재 ✅
+### v0.1.5 - 현재 ✅
+- [x] 로컬 ONNX 임베딩 프로바이더 (all-MiniLM-L6-v2, L12-v2)
+- [x] 자동 모델 다운로드 및 캐싱
+- [x] EmbeddingAgentSelector (시맨틱 에이전트 선택)
+- [x] HybridAgentSelector (키워드 + 임베딩)
+- [x] 완전 무료, API 키 불필요
+
+### v0.1.4 - 임베딩 기반 라우팅 ✅
+- [x] IEmbeddingProvider 인터페이스
+- [x] VectorSimilarity 유틸리티
+- [x] 코사인 유사도 계산
+- [x] 임베딩 캐싱 최적화
+
+### v0.1.1 - TF-IDF 키워드 선택 ✅
 - [x] TF-IDF 가중치 알고리즘
 - [x] 키워드 정규화 (동의어, 어간 추출)
 - [x] 성능 캐싱
@@ -238,7 +293,7 @@ var result = await orchestrator.ProcessAsync("Write C# code", "coding-agent");
 
 ### v0.2.0 - 계획
 - [ ] Semantic Kernel 어댑터
-- [ ] 임베딩 기반 라우팅
+- [ ] OpenAI/Azure OpenAI 임베딩 프로바이더
 - [ ] 성능 최적화
 - [ ] 추가 예제 및 문서
 

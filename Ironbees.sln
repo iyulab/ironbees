@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ironbees.WebApi", "samples\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ironbees.Samples.Shared", "samples\Ironbees.Samples.Shared\Ironbees.Samples.Shared.csproj", "{DB332B3D-7121-4DA1-A35C-513BF40C1D56}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmbeddingSample", "samples\EmbeddingSample\EmbeddingSample.csproj", "{13E081AF-4878-4F43-B06A-1298891668E3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -119,6 +121,18 @@ Global
 		{DB332B3D-7121-4DA1-A35C-513BF40C1D56}.Release|x64.Build.0 = Release|Any CPU
 		{DB332B3D-7121-4DA1-A35C-513BF40C1D56}.Release|x86.ActiveCfg = Release|Any CPU
 		{DB332B3D-7121-4DA1-A35C-513BF40C1D56}.Release|x86.Build.0 = Release|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Debug|x64.Build.0 = Debug|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Debug|x86.Build.0 = Debug|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Release|x64.ActiveCfg = Release|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Release|x64.Build.0 = Release|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Release|x86.ActiveCfg = Release|Any CPU
+		{13E081AF-4878-4F43-B06A-1298891668E3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -132,5 +146,6 @@ Global
 		{2608AEDA-BC39-3AAB-B7F0-FBE870F91AA8} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{6BECE5FA-7159-474B-9C29-43124D671B37} = {2608AEDA-BC39-3AAB-B7F0-FBE870F91AA8}
 		{DB332B3D-7121-4DA1-A35C-513BF40C1D56} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
+		{13E081AF-4878-4F43-B06A-1298891668E3} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal
