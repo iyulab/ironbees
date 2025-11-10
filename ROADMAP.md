@@ -106,55 +106,19 @@
 
 ---
 
-## Phase 5: Semantic Kernel 통합 (v0.2.0) 🚀 Next
+## Phase 5: ~~Semantic Kernel 통합~~ (취소됨) ❌
 
-**목표**: Semantic Kernel 프레임워크 지원 추가
-
-### 5.1 Semantic Kernel Adapter (2주)
-**우선순위**: 높음
-
-- [ ] **어댑터 구현**
-  - `ILLMFrameworkAdapter` 구현 (SemanticKernelAdapter)
-  - Kernel, Plugin 통합
-  - Function calling 지원
-
-- [ ] **의존성 주입 확장**
-  - `AddIronbees()` 확장 (Semantic Kernel 옵션)
-  - 프레임워크 전환 플래그 (Azure/MAF/SK)
-
-- [ ] **통합 테스트**
-  - 단위 테스트 20개
-  - 통합 테스트 5개
-  - 샘플 프로젝트 (SemanticKernelSample)
-
-**완료 조건**:
-- [ ] 3개 프레임워크 동일 API로 사용 가능
-- [ ] 테스트 커버리지 > 85%
-- [ ] 문서 업데이트
-
-### 5.2 프레임워크 비교 문서 (3일)
-**우선순위**: 중간
-
-- [ ] **프레임워크 선택 가이드**
-  - Azure OpenAI vs MAF vs Semantic Kernel
-  - 각 프레임워크 장단점
-  - 사용 사례별 추천
-
-- [ ] **마이그레이션 가이드**
-  - 프레임워크 간 전환 방법
-  - Breaking changes 및 주의사항
-
-**완료 조건**:
-- [ ] docs/FRAMEWORK_COMPARISON.md
-- [ ] docs/MIGRATION_GUIDE.md
+**결정**: Semantic Kernel 통합 제외
+**이유**: Microsoft Agent Framework로 충분한 기능 제공
+**대안**: Phase 6 (임베딩 기반 라우팅)으로 우선순위 변경
 
 ---
 
-## Phase 6: 임베딩 기반 라우팅 (v0.2.1 - v0.2.2) 🎯
+## Phase 5 (재조정): 임베딩 기반 라우팅 (v0.2.0) 🚀 Next
 
 **목표**: 키워드 → 임베딩 → 하이브리드 라우팅 진화
 
-### 6.1 임베딩 기반 Selector (2주)
+### 5.1 임베딩 기반 Selector (2주)
 **우선순위**: 높음
 
 - [ ] **IAgentSelector 구현**
@@ -176,7 +140,7 @@
 - [ ] 평균 선택 시간 < 200ms (캐시 히트)
 - [ ] 비용 분석 문서
 
-### 6.2 하이브리드 Selector (1주)
+### 5.2 하이브리드 Selector (1주)
 **우선순위**: 중간
 
 - [ ] **HybridAgentSelector 구현**
@@ -195,11 +159,11 @@
 
 ---
 
-## Phase 7: Guardrails & Audit (v0.2.3 - v0.2.4) 🛡️
+## Phase 6: Guardrails & Audit (v0.2.1 - v0.2.2) 🛡️
 
 **목표**: 입출력 감사 및 보안 가드레일 (프로덕션 필수)
 
-### 7.1 Content Guardrails 인터페이스 (2주)
+### 6.1 Content Guardrails 인터페이스 (2주)
 **우선순위**: 높음
 
 - [ ] **IContentGuardrail 인터페이스**
@@ -267,7 +231,7 @@
 - [ ] DI 확장 메서드
 - [ ] 단위 테스트 15개
 
-### 7.2 기본 Guardrail 구현체 (1주)
+### 6.2 기본 Guardrail 구현체 (1주)
 **우선순위**: 높음
 
 - [ ] **RegexGuardrail (패턴 매칭)**
