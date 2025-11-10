@@ -8,8 +8,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for v0.2.0
-- Embedding-based agent selector
+- OpenAI and Anthropic embedding providers
 - CLI tools for agent management
+
+## [0.1.4] - 2025-11-11
+
+### Added - Embedding-based Agent Selection
+- **Core Embedding Infrastructure**
+  - `IEmbeddingProvider` abstraction for multi-provider embedding support
+  - `VectorSimilarity` utility class for cosine similarity calculations
+  - Support for semantic similarity-based agent selection
+  - Extensible architecture for adding new embedding providers
+
+- **EmbeddingAgentSelector**
+  - Semantic similarity matching using embedding vectors
+  - Thread-safe embedding caching with `ConcurrentDictionary`
+  - Batch embedding generation for efficiency
+  - Combined agent text from description, capabilities, and tags
+  - Automatic cache warming via `WarmupCacheAsync`
+  - `ClearCache()` method for cache management
+  - Cosine similarity scoring normalized to [0.0, 1.0] range
+
+- **HybridAgentSelector**
+  - Combines keyword-based (lexical) and embedding-based (semantic) scoring
+  - Default weighting: 40% keyword + 60% embedding (semantic prioritized)
+  - Parallel execution of both selectors for efficiency
+  - Weighted score calculation per agent
+  - Detailed selection reasoning showing both selector results
+  - Runner-up agent display for transparency
+  - Pre-configured profiles:
+    - `HybridSelectorConfig.Balanced` (50/50 split)
+    - `HybridSelectorConfig.KeywordFocused` (70/30 split)
+    - `HybridSelectorConfig.EmbeddingFocused` (30/70 split)
+
+- **Vector Similarity Mathematics**
+  - Cosine similarity computation with unit vector normalization
+  - Euclidean distance calculation for alternative metrics
+  - Dot product utility for normalized vectors
+  - Vector normalization to unit length
+  - Comprehensive error handling (dimension mismatch, empty vectors)
+
+- **Test Coverage**
+  - `VectorSimilarityTests` - 17 comprehensive mathematical tests
+    - Cosine similarity (identical, orthogonal, opposite vectors)
+    - Vector normalization (regular, zero, already normalized)
+    - Euclidean distance calculations
+    - Dot product computations
+    - Edge cases (empty vectors, different dimensions)
+  - All tests passing with full mathematical correctness validation
+
+### Changed
+- **IAgentSelector Interface**
+  - Standardized signature: `SelectAgentAsync(string input, IReadOnlyCollection<IAgent> availableAgents, ...)`
+  - All selectors (Keyword, Embedding, Hybrid) now use consistent interface
+  - `ScoreAgentsAsync` method implemented across all selectors
+
+### Technical Details
+- No breaking changes - fully backward compatible
+- All 151 tests continue with same results (143 passed, 8 known failures from v0.1.1)
+- Embedding providers (OpenAI, Anthropic) to be implemented in Ironbees.AgentFramework layer
+- Architecture designed for extensibility with multiple embedding providers
+- Thread-safe concurrent operations throughout
+
+### Performance Characteristics
+- Embedding caching reduces API calls for repeated agent evaluations
+- Parallel selector execution in HybridAgentSelector
+- Batch embedding generation for multiple agents
+- Efficient cosine similarity with pre-normalized vectors
+
+### Design Decisions
+1. **Abstraction Layer**: `IEmbeddingProvider` enables multiple embedding backends
+2. **Hybrid Approach**: Combines lexical (keyword) and semantic (embedding) strengths
+3. **Semantic Priority**: Default 60% embedding weight for better semantic understanding
+4. **Caching Strategy**: Thread-safe in-memory cache for embedding vectors
+5. **Batch Processing**: Single API call for multiple agent embeddings
 
 ## [0.1.3] - 2025-11-11
 
