@@ -8,8 +8,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned for v0.2.0
-- OpenAI and Anthropic embedding providers
+- OpenAI embedding provider (API-based)
 - CLI tools for agent management
+
+## [0.1.5] - 2025-11-11
+
+### Added - Local ONNX Embedding Provider
+- **OnnxEmbeddingProvider with Automatic Model Download**
+  - Local embedding generation using ONNX Runtime
+  - Automatic model download from Hugging Face on first use
+  - Support for all-MiniLM-L6-v2 (default, fast, 384 dimensions)
+  - Support for all-MiniLM-L12-v2 (optional, accurate, 384 dimensions)
+  - No API keys required - completely free and offline-capable
+  - Model caching at `~/.ironbees/models/` (cross-platform)
+
+- **ModelDownloader**
+  - Automatic downloading from Hugging Face
+  - Progress tracking during download
+  - Local model caching and version management
+  - Cache management methods (ClearCache, ClearAllCache)
+  - Cross-platform cache directory support
+
+- **BertTokenizer**
+  - BERT WordPiece tokenization
+  - Support for [CLS] and [SEP] special tokens
+  - Automatic padding and truncation (max 256 tokens)
+  - Batch encoding support
+
+- **Model Comparison**
+  - all-MiniLM-L6-v2: 6 layers, ~23MB, ~14K sentences/sec, 84-85% accuracy
+  - all-MiniLM-L12-v2: 12 layers, ~45MB, ~4K sentences/sec, 87-88% accuracy
+  - Both models: 384 dimensions, suitable for semantic search and clustering
+
+### Dependencies
+- Added Microsoft.ML.OnnxRuntime (1.20.1) to Ironbees.Core
+
+### Test Coverage
+- ModelDownloaderTests - 3 tests for download and cache management
+- BertTokenizerTests - 2 placeholder tests (requires model download)
+- Total: 156 tests (148 passed, 8 known failures from v0.1.1)
+
+### Usage Example
+```csharp
+// First run: downloads model automatically (~23MB for L6-v2)
+var provider = await OnnxEmbeddingProvider.CreateAsync(
+    ModelType.MiniLML6V2);  // or MiniLML12V2 for higher accuracy
+
+var embedding = await provider.GenerateEmbeddingAsync("Hello world");
+// Returns 384-dimensional normalized vector
+
+// Subsequent runs: uses cached model (no download)
+```
+
+### Technical Details
+- No breaking changes - fully backward compatible
+- ONNX models provide local, offline embedding generation
+- First-run download takes 1-2 minutes depending on connection
+- Subsequent usage is instant (model cached locally)
+- Thread-safe model loading and inference
+- Automatic vector normalization to unit length
+
+### Design Decisions
+1. **Local-First**: Prioritize offline capability and zero API costs
+2. **Auto-Download**: Seamless first-run experience, no manual setup
+3. **Dual Model Support**: Fast (L6) vs. Accurate (L12) options
+4. **Cross-Platform Cache**: User profile directory for all platforms
+5. **ONNX Runtime**: Industry-standard inference engine from Microsoft
 
 ## [0.1.4] - 2025-11-11
 
