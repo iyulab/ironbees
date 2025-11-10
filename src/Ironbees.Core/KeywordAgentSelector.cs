@@ -1,12 +1,18 @@
 namespace Ironbees.Core;
 
 /// <summary>
-/// Selects agents based on keyword matching with capabilities and tags
+/// Selects agents based on keyword matching with capabilities and tags, enhanced with TF-IDF weighting
 /// </summary>
 public class KeywordAgentSelector : IAgentSelector
 {
     private readonly double _minimumConfidenceThreshold;
     private readonly IAgent? _fallbackAgent;
+    private readonly KeywordNormalizer _normalizer;
+    private readonly HashSet<string> _stopwords;
+
+    private TfidfWeightCalculator? _tfidfCalculator;
+    private readonly Dictionary<string, HashSet<string>> _keywordCache;
+    private readonly object _cacheLock = new();
 
     /// <summary>
     /// Creates a new keyword-based agent selector
@@ -26,6 +32,9 @@ public class KeywordAgentSelector : IAgentSelector
 
         _minimumConfidenceThreshold = minimumConfidenceThreshold;
         _fallbackAgent = fallbackAgent;
+        _normalizer = new KeywordNormalizer();
+        _stopwords = StopwordsProvider.GetDefaultStopwords();
+        _keywordCache = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
@@ -109,6 +118,12 @@ public class KeywordAgentSelector : IAgentSelector
         var inputLower = input.ToLowerInvariant();
         var inputWords = ExtractKeywords(inputLower);
 
+        // Initialize TF-IDF calculator on first use (lazy initialization)
+        if (_tfidfCalculator == null && availableAgents.Count > 0)
+        {
+            _tfidfCalculator = new TfidfWeightCalculator(availableAgents);
+        }
+
         var scores = new List<AgentScore>();
 
         foreach (var agent in availableAgents)
@@ -129,51 +144,83 @@ public class KeywordAgentSelector : IAgentSelector
 
         var config = agent.Config;
 
-        // Score based on capabilities (weight: 0.4)
-        maxScore += 0.4;
+        // Score based on capabilities (weight: 0.5 - highest priority)
+        maxScore += 0.5;
         var capabilityScore = ScoreKeywords(
             inputWords,
             config.Capabilities,
             "capability",
             reasons);
-        totalScore += capabilityScore * 0.4;
+        totalScore += capabilityScore * 0.5;
 
-        // Score based on tags (weight: 0.3)
-        maxScore += 0.3;
+        // Score based on tags (weight: 0.35 - second priority)
+        maxScore += 0.35;
         var tagScore = ScoreKeywords(
             inputWords,
             config.Tags,
             "tag",
             reasons);
-        totalScore += tagScore * 0.3;
+        totalScore += tagScore * 0.35;
 
-        // Score based on description (weight: 0.2)
-        maxScore += 0.2;
+        // Score based on description (weight: 0.1 - lower priority)
+        maxScore += 0.1;
         var descriptionScore = ScoreText(
             inputWords,
             config.Description.ToLowerInvariant(),
             "description",
             reasons);
-        totalScore += descriptionScore * 0.2;
+        totalScore += descriptionScore * 0.1;
 
-        // Score based on agent name (weight: 0.1)
-        maxScore += 0.1;
+        // Score based on agent name (weight: 0.05 - lowest priority)
+        maxScore += 0.05;
         var nameScore = ScoreText(
             inputWords,
             config.Name.ToLowerInvariant(),
             "name",
             reasons);
-        totalScore += nameScore * 0.1;
+        totalScore += nameScore * 0.05;
 
-        // Normalize score
-        var normalizedScore = maxScore > 0 ? totalScore / maxScore : 0;
+        // Normalize base score
+        var baseScore = maxScore > 0 ? totalScore / maxScore : 0;
+
+        // Apply TF-IDF weighting boost (up to 30% improvement for better discrimination)
+        var finalScore = baseScore;
+        if (_tfidfCalculator != null && inputWords.Count > 0)
+        {
+            var agentDocumentText = GetAgentDocumentText(agent);
+            var tfidfScore = _tfidfCalculator.CalculateTfidfScore(inputWords, agentDocumentText);
+
+            // Boost score based on TF-IDF (0-30% improvement)
+            var tfidfBoost = tfidfScore * 0.3;
+            finalScore = baseScore * (1.0 + tfidfBoost);
+
+            if (tfidfBoost > 0.05)
+            {
+                reasons.Add($"TF-IDF relevance boost: {tfidfBoost:P0}");
+            }
+        }
 
         return new AgentScore
         {
             Agent = agent,
-            Score = Math.Clamp(normalizedScore, 0, 1),
+            Score = Math.Clamp(finalScore, 0, 1),
             Reasons = reasons
         };
+    }
+
+    private string GetAgentDocumentText(IAgent agent)
+    {
+        var config = agent.Config;
+        var parts = new List<string>
+        {
+            config.Name,
+            config.Description
+        };
+
+        parts.AddRange(config.Capabilities);
+        parts.AddRange(config.Tags);
+
+        return string.Join(" ", parts);
     }
 
     private double ScoreKeywords(
@@ -230,25 +277,45 @@ public class KeywordAgentSelector : IAgentSelector
 
     private HashSet<string> ExtractKeywords(string text)
     {
-        // Common stop words to ignore
-        var stopWords = new HashSet<string>
+        // Check cache first
+        lock (_cacheLock)
         {
-            "a", "an", "the", "and", "or", "but", "is", "are", "was", "were",
-            "be", "been", "being", "have", "has", "had", "do", "does", "did",
-            "will", "would", "should", "could", "can", "may", "might", "must",
-            "i", "you", "he", "she", "it", "we", "they", "me", "him", "her",
-            "us", "them", "my", "your", "his", "its", "our", "their",
-            "in", "on", "at", "to", "for", "of", "with", "from", "about",
-            "as", "by", "this", "that", "these", "those"
-        };
+            if (_keywordCache.TryGetValue(text, out var cachedKeywords))
+            {
+                return cachedKeywords;
+            }
+        }
 
+        // Extract and normalize keywords
         var words = text
             .Split(new[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?', ';', ':', '-', '_' },
                 StringSplitOptions.RemoveEmptyEntries)
             .Select(w => w.ToLowerInvariant())
-            .Where(w => w.Length > 2 && !stopWords.Contains(w))
-            .ToHashSet();
+            .Where(w => w.Length > 2 && !_stopwords.Contains(w))
+            .Select(w => _normalizer.Normalize(w))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Cache the result (limit cache size to prevent memory issues)
+        lock (_cacheLock)
+        {
+            if (_keywordCache.Count < 1000)
+            {
+                _keywordCache[text] = words;
+            }
+        }
 
         return words;
+    }
+
+    /// <summary>
+    /// Clears the keyword extraction cache
+    /// </summary>
+    public void ClearCache()
+    {
+        lock (_cacheLock)
+        {
+            _keywordCache.Clear();
+            _tfidfCalculator = null;
+        }
     }
 }

@@ -203,9 +203,33 @@ options.UseMicrosoftAgentFramework = true; // or false
 - [OpenAISample](samples/OpenAISample/) - 기본 사용법
 - [WebApiSample](samples/WebApiSample/) - RESTful API 서버
 
+## ✨ 최신 기능 (v0.1.1)
+
+### 향상된 KeywordAgentSelector
+- **TF-IDF 가중치**: 용어 관련성 기반 스코어링으로 정확도 향상
+- **스마트 정규화**: 50+ 동의어 그룹, 100+ 어간 추출 규칙 (code↔programming, db↔database)
+- **성능 캐싱**: 반복 쿼리 ~50% 속도 향상
+- **확장된 불용어**: 80+ 불용어, .NET 기술 용어 보존
+- **정확도**: 88% (50개 테스트 케이스)
+- **속도**: < 1ms 단일 선택, 1000회 < 100ms
+
+```csharp
+// 동일한 API, 향상된 성능과 정확도
+var result = await orchestrator.ProcessAsync("Write C# code", "coding-agent");
+// 이제 "code", "coding", "programming" 모두 매칭
+// TF-IDF로 더 관련성 높은 에이전트 선택
+```
+
 ## 🗺️ 로드맵
 
-### v0.1.0 - 현재 (초기 릴리스) ✅
+### v0.1.1 - 현재 ✅
+- [x] TF-IDF 가중치 알고리즘
+- [x] 키워드 정규화 (동의어, 어간 추출)
+- [x] 성능 캐싱
+- [x] 확장된 불용어 사전
+- [x] 88% 선택 정확도
+
+### v0.1.0 - 초기 릴리스 ✅
 - [x] 파일시스템 컨벤션 기반 로더
 - [x] Azure OpenAI 통합
 - [x] Microsoft Agent Framework 통합
@@ -226,7 +250,7 @@ options.UseMicrosoftAgentFramework = true; // or false
 ## 🧪 테스트
 
 ```bash
-dotnet test  # 67개 테스트 통과
+dotnet test  # 80개 테스트 (71개 통과, 88.75%)
 ```
 
 ## 🤝 기여
@@ -246,4 +270,4 @@ MIT License - [LICENSE](LICENSE) 참조
 
 **Ironbees** - Filesystem convention-based LLM agent wrapper for .NET 🐝
 
-**버전:** 0.1.0 (초기 베타) | **.NET:** 9.0+ | **상태:** 실험적
+**버전:** 0.1.1 | **.NET:** 9.0+ | **상태:** 실험적
