@@ -34,6 +34,55 @@ public class AgentConfigurationException : Exception
         : base(message, innerException)
     {
     }
+
+    public AgentConfigurationException(string agentPath, ValidationResult validationResult)
+        : base(validationResult.GetFormattedErrors())
+    {
+        AgentPath = agentPath;
+        ValidationResult = validationResult;
+    }
+
+    public string? AgentPath { get; }
+    public ValidationResult? ValidationResult { get; }
+}
+
+/// <summary>
+/// Exception thrown when YAML parsing fails with detailed diagnostic information
+/// </summary>
+public class YamlParsingException : AgentConfigurationException
+{
+    public YamlParsingException(string agentPath, string fileName, string yamlContent, Exception innerException)
+        : base(BuildDetailedMessage(agentPath, fileName, innerException), innerException)
+    {
+        AgentPath = agentPath;
+        FileName = fileName;
+        YamlContent = yamlContent;
+    }
+
+    public new string AgentPath { get; }
+    public string FileName { get; }
+    public string YamlContent { get; }
+
+    private static string BuildDetailedMessage(string agentPath, string fileName, Exception innerException)
+    {
+        var message = $"Failed to parse YAML file '{fileName}' in agent directory '{agentPath}':\n";
+        message += $"  Error: {innerException.Message}\n";
+
+        // Try to extract line/column information from YamlDotNet exceptions
+        var exceptionMessage = innerException.Message;
+        if (exceptionMessage.Contains("Line:") || exceptionMessage.Contains("line"))
+        {
+            message += $"  {exceptionMessage}\n";
+        }
+
+        message += "\nCommon YAML issues:\n";
+        message += "  - Check indentation (use spaces, not tabs)\n";
+        message += "  - Ensure proper key: value format\n";
+        message += "  - Check for missing or extra quotes\n";
+        message += "  - Validate list syntax (- item)";
+
+        return message;
+    }
 }
 
 /// <summary>

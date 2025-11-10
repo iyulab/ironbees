@@ -13,6 +13,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI tools for agent management
 - Additional samples and documentation
 
+## [0.1.2] - 2025-11-10
+
+### Added - FileSystemAgentLoader Enhancements
+- **AgentConfigValidator**
+  - Comprehensive validation for agent configurations
+  - Required field validation (name, description, version, system prompt)
+  - Format validation (semantic version, agent name format)
+  - Model configuration validation (temperature, maxTokens, topP ranges)
+  - Duplicate agent name detection
+  - `ValidationResult` with detailed errors and warnings
+
+- **Enhanced Error Messages**
+  - `YamlParsingException` with detailed diagnostic information
+  - YAML error messages include line numbers and common issue hints
+  - File path and expected location information in error messages
+  - Helpful guidance for fixing common configuration errors
+
+- **Caching Strategy**
+  - Optional in-memory caching with file modification detection
+  - Thread-safe `ConcurrentDictionary` implementation
+  - Automatic cache invalidation on file changes
+  - `ClearCache()` method for manual cache management
+  - Performance improvement for repeated loads
+
+- **Hot Reload Support**
+  - `FileSystemWatcher` integration for development mode
+  - Automatic config reload on file changes (agent.yaml, system-prompt.md)
+  - `AgentReloaded` event for notification subscribers
+  - 100ms debounce delay for file write completion
+  - `IDisposable` implementation for proper cleanup
+
+- **FileSystemAgentLoaderOptions**
+  - `EnableCaching` (default: true) - Performance optimization
+  - `EnableValidation` (default: true) - Configuration validation
+  - `StopOnFirstError` (default: false) - Error handling strategy
+  - `StrictValidation` (default: false) - Treat warnings as errors
+  - `LogWarnings` (default: true) - Console warning output
+  - `EnableHotReload` (default: false) - Development mode feature
+
+- **Test Coverage**
+  - `FileSystemAgentLoaderEnhancedTests` - 13 comprehensive tests
+  - `AgentConfigValidatorTests` - 20 validation tests
+  - Total: 136 tests (105 original + 20 validator + 13 loader + 11 integration = 149 total available)
+
+### Changed
+- **FileSystemAgentLoader**
+  - Now implements `IDisposable` for `FileSystemWatcher` cleanup
+  - Improved `LoadAllConfigsAsync` with error aggregation
+  - Duplicate agent name detection across all loaded agents
+  - Better error messages with file paths and helpful hints
+  - Optional strict validation mode for production environments
+
+- **Exception Classes**
+  - `AgentConfigurationException` now includes `ValidationResult` property
+  - New `YamlParsingException` with detailed parsing diagnostics
+  - `InvalidAgentDirectoryException` includes expected file paths
+
+### Performance Improvements
+- Configuration caching reduces repeated file I/O
+- File modification timestamp checking for cache invalidation
+- Thread-safe cache operations with minimal lock contention
+
+### Developer Experience
+- Hot reload enables rapid agent iteration without restart
+- Detailed validation errors guide correct configuration
+- YAML parsing errors include line numbers and fix suggestions
+- Console warnings for non-critical issues
+
+### Technical Details
+- No breaking changes - fully backward compatible
+- All original tests continue to pass
+- Clean separation: validation, caching, hot reload as separate concerns
+- Comprehensive XML documentation on all new classes
+
 ## [0.1.1] - 2025-11-10
 
 ### Added - KeywordAgentSelector Enhancements

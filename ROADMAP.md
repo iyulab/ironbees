@@ -52,28 +52,34 @@
 - 총 80개 테스트 (71개 통과, 88.75% 통과율)
 - 문서: claudedocs/KEYWORDSELECTOR_IMPROVEMENTS_v0.1.1.md
 
-### 4.2 FileSystemAgentLoader 강화 (v0.1.2)
-**우선순위**: 중간 | **예상 기간**: 3일
+### 4.2 FileSystemAgentLoader 강화 (v0.1.2) ✅
+**우선순위**: 중간 | **완료 날짜**: 2025-11-10
 
-- [ ] **에러 처리 개선**
-  - YAML 파싱 오류 상세 메시지
-  - 파일 누락 시 명확한 안내
-  - 부분 로드 지원 (일부 에이전트 실패 시 계속)
+- [x] **에러 처리 개선**
+  - YAML 파싱 오류 상세 메시지 (YamlParsingException with diagnostics)
+  - 파일 누락 시 명확한 안내 (expected file paths)
+  - 부분 로드 지원 (StopOnFirstError 옵션)
 
-- [ ] **캐싱 전략**
-  - 파일 변경 감지 (FileSystemWatcher)
-  - 메모리 캐싱 옵션
-  - Hot reload 지원 (개발 모드)
+- [x] **캐싱 전략**
+  - 파일 변경 감지 (FileSystemWatcher with 100ms debounce)
+  - 메모리 캐싱 옵션 (ConcurrentDictionary, modification timestamp)
+  - Hot reload 지원 (AgentReloaded event, EnableHotReload option)
 
-- [ ] **검증 강화**
-  - agent.yaml 스키마 검증
-  - system-prompt.md 필수 필드 체크
-  - 중복 에이전트 이름 감지
+- [x] **검증 강화**
+  - agent.yaml 스키마 검증 (AgentConfigValidator with comprehensive rules)
+  - system-prompt.md 필수 필드 체크 (length, content validation)
+  - 중복 에이전트 이름 감지 (case-insensitive duplicate detection)
 
 **완료 조건**:
-- [ ] 에러 메시지 개선 (파일명, 라인 번호 포함)
-- [ ] Hot reload 동작 확인
-- [ ] 검증 테스트 5개 추가
+- [x] 에러 메시지 개선 (파일명, YAML 라인 번호, 수정 가이드 포함)
+- [x] Hot reload 동작 확인 (FileSystemWatcher with event notifications)
+- [x] 검증 테스트 33개 추가 (20 validator + 13 loader tests)
+
+**결과**:
+- 3개 새 클래스: AgentConfigValidator, YamlParsingException, FileSystemAgentLoaderOptions
+- 2개 새 테스트 파일: AgentConfigValidatorTests (20), FileSystemAgentLoaderEnhancedTests (13)
+- 총 136개 테스트 (127개 통과, 93.4% 통과율)
+- 문서: CHANGELOG.md 업데이트 완료
 
 ### 4.3 문서 및 예제 확장 (v0.1.3)
 **우선순위**: 중간 | **예상 기간**: 1주
