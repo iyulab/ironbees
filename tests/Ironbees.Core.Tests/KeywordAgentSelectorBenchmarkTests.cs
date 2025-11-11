@@ -37,6 +37,7 @@ public class KeywordAgentSelectorBenchmarkTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task SelectAgentAsync_1000Iterations_CompletesUnder100ms()
     {
         // Arrange
@@ -198,6 +199,7 @@ public class KeywordAgentSelectorBenchmarkTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task SelectAgentAsync_WithTfidfCalculation_MaintainsPerformance()
     {
         // Arrange

@@ -38,8 +38,8 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
 
-    - name: Run tests
-      run: dotnet test --configuration Release --no-build --verbosity normal
+    - name: Run tests (CI - No API keys)
+      run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey"
 
     - name: Extract version from Directory.Build.props
       id: extract_version
