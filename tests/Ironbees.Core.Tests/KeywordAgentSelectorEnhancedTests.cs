@@ -3,6 +3,7 @@ using Moq;
 
 namespace Ironbees.Core.Tests;
 
+[Trait("Category", "Integration")]
 public class KeywordAgentSelectorEnhancedTests
 {
     private IAgent CreateTestAgent(

@@ -7,6 +7,7 @@ namespace Ironbees.Core.Tests;
 /// Accuracy validation test suite with 50+ test cases
 /// Goal: 90% accuracy in agent selection
 /// </summary>
+[Trait("Category", "Integration")]
 public class KeywordAgentSelectorAccuracyTests
 {
     private readonly List<IAgent> _testAgents;

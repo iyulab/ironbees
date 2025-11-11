@@ -6,6 +6,7 @@ namespace Ironbees.Core.Tests;
 /// <summary>
 /// Integration tests using real sample agents from /agents directory
 /// </summary>
+[Trait("Category", "Integration")]
 public class IntegrationTests
 {
     [Fact]

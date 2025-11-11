@@ -356,8 +356,77 @@ var result = await orchestrator.ProcessAsync("Write C# code", "coding-agent");
 
 ## 🧪 테스트
 
+### 테스트 카테고리
+
+Ironbees는 테스트를 카테고리로 구분하여 효율적인 테스트 실행을 지원합니다:
+
+| 카테고리 | 설명 | CI 실행 | 로컬 실행 |
+|---------|------|--------|----------|
+| **Unit** | 빠른 단위 테스트 (mock 사용) | ✅ 항상 | ✅ 권장 |
+| **Performance** | 메모리/성능 테스트 (GC, 동시성) | ❌ 제외 | ✅ 권장 |
+| **Integration** | 외부 서비스 테스트 (API 키 필요) | ⏸️ 선택적 | ⚠️ 환경 필요 |
+
+### 빠른 실행
+
 ```bash
-dotnet test  # 80개 테스트 (71개 통과, 88.75%)
+# 모든 테스트 (로컬 권장)
+dotnet test
+
+# CI 테스트만 (Performance 제외)
+dotnet test --filter "Category!=Performance"
+
+# Unit 테스트만
+dotnet test --filter "Category!=Performance&Category!=Integration"
+```
+
+### 테스트 스크립트 사용
+
+**Windows (PowerShell)**:
+```powershell
+# 전체 테스트 (Performance 포함)
+.\run-tests.ps1 -Category all
+
+# CI 테스트 (Performance 제외)
+.\run-tests.ps1 -Category ci
+
+# Unit 테스트만
+.\run-tests.ps1 -Category unit
+
+# Performance 테스트만
+.\run-tests.ps1 -Category performance
+
+# 커버리지 포함
+.\run-tests.ps1 -Category all -Coverage
+```
+
+**Linux/macOS (Bash)**:
+```bash
+# 스크립트 실행 권한 부여
+chmod +x run-tests.sh
+
+# 전체 테스트
+./run-tests.sh --category all
+
+# CI 테스트
+./run-tests.sh --category ci
+
+# Unit 테스트만
+./run-tests.sh --category unit
+
+# 커버리지 포함
+./run-tests.sh --category all --coverage
+```
+
+### 테스트 통계 (v0.1.6)
+
+```
+Total: 169 tests
+├─ Unit: 166 tests ✅
+├─ Performance: 3 tests ✅ (로컬 전용)
+└─ Integration: 3 tests ⏸️ (환경 필요)
+
+CI Status: 166/166 passed (100%)
+Local Status: 169/169 passed (100%)
 ```
 
 ## 🤝 기여

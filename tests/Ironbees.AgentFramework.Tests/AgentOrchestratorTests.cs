@@ -640,6 +640,7 @@ public class AgentOrchestratorTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task StreamAsync_AutoSelect_LargeStream_NoMemoryLeak()
     {
         // Arrange
@@ -700,6 +701,7 @@ public class AgentOrchestratorTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task StreamAsync_AutoSelect_CancellationToken_ProperCleanup()
     {
         // Arrange
@@ -770,6 +772,7 @@ public class AgentOrchestratorTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task StreamAsync_AutoSelect_MultipleConcurrentStreams_NoResourceLeak()
     {
         // Arrange
