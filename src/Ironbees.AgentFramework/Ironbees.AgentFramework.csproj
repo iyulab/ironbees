@@ -16,10 +16,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
-    <!-- Override version for preview -->
-    <Version>0.1.0-preview</Version>
-
+    
     <!-- Package-specific Metadata -->
     <Description>Thin adapter layer integrating Ironbees with Azure OpenAI and Microsoft Agent Framework. Provides execution adapters, dependency injection extensions, and ASP.NET Core setup - delegates actual agent execution to underlying frameworks.</Description>
     <PackageTags>$(PackageTagsBase);azure-openai;microsoft-agent-framework;dependency-injection</PackageTags>
