@@ -1,10 +1,21 @@
 using Ironbees.Core;
 using Moq;
+using System.Runtime.CompilerServices;
 
 namespace Ironbees.AgentFramework.Tests;
 
 public class AgentOrchestratorTests
 {
+    // Helper method to create IAsyncEnumerable from array
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(params T[] items)
+    {
+        foreach (var item in items)
+        {
+            await Task.Yield(); // Simulate async behavior
+            yield return item;
+        }
+    }
+
     [Fact]
     public async Task LoadAgentsAsync_WithValidConfigs_RegistersAgents()
     {
@@ -482,5 +493,352 @@ public class AgentOrchestratorTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(
             () => new AgentOrchestrator(mockLoader.Object, mockRegistry.Object, mockAdapter.Object, null!));
+    }
+
+    [Fact]
+    public async Task StreamAsync_AutoSelect_ReturnsChunks()
+    {
+        // Arrange
+        var mockLoader = new Mock<IAgentLoader>();
+        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+
+        var mockAgent = new Mock<IAgent>();
+        mockAgent.Setup(a => a.Name).Returns("test-agent");
+
+        mockRegistry.Setup(r => r.ListAgents())
+            .Returns(new List<string> { "test-agent" });
+
+        mockRegistry.Setup(r => r.Get("test-agent"))
+            .Returns(mockAgent.Object);
+
+        // Mock streaming response
+        mockAdapter.Setup(a => a.StreamAsync(It.IsAny<IAgent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(ToAsyncEnumerable("Hello", " ", "World"));
+
+        var mockSelector = new Mock<IAgentSelector>();
+        mockSelector.Setup(s => s.SelectAgentAsync(
+            It.IsAny<string>(),
+            It.IsAny<IReadOnlyCollection<IAgent>>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AgentSelectionResult
+            {
+                SelectedAgent = mockAgent.Object,
+                ConfidenceScore = 0.9,
+                SelectionReason = "Test selection",
+                AllScores = new List<AgentScore>()
+            });
+
+        var orchestrator = new AgentOrchestrator(
+            mockLoader.Object,
+            mockRegistry.Object,
+            mockAdapter.Object,
+            mockSelector.Object);
+
+        // Act
+        var result = new List<string>();
+        await foreach (var chunk in orchestrator.StreamAsync("test input"))
+        {
+            result.Add(chunk);
+        }
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Hello", result[0]);
+        Assert.Equal(" ", result[1]);
+        Assert.Equal("World", result[2]);
+        mockSelector.Verify(s => s.SelectAgentAsync(
+            It.IsAny<string>(),
+            It.IsAny<IReadOnlyCollection<IAgent>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+        mockAdapter.Verify(a => a.StreamAsync(
+            mockAgent.Object,
+            "test input",
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamAsync_AutoSelectNoAgent_ReturnsWarningMessage()
+    {
+        // Arrange
+        var mockLoader = new Mock<IAgentLoader>();
+        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+
+        mockRegistry.Setup(r => r.ListAgents())
+            .Returns(new List<string> { "some-agent" });
+
+        var mockAgent = new Mock<IAgent>();
+        mockAgent.Setup(a => a.Name).Returns("some-agent");
+
+        mockRegistry.Setup(r => r.Get("some-agent"))
+            .Returns(mockAgent.Object);
+
+        var mockSelector = new Mock<IAgentSelector>();
+        mockSelector.Setup(s => s.SelectAgentAsync(
+            It.IsAny<string>(),
+            It.IsAny<IReadOnlyCollection<IAgent>>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AgentSelectionResult
+            {
+                SelectedAgent = null,
+                ConfidenceScore = 0.0,
+                SelectionReason = "No suitable agent found",
+                AllScores = new List<AgentScore>()
+            });
+
+        var orchestrator = new AgentOrchestrator(
+            mockLoader.Object,
+            mockRegistry.Object,
+            mockAdapter.Object,
+            mockSelector.Object);
+
+        // Act
+        var result = new List<string>();
+        await foreach (var chunk in orchestrator.StreamAsync("test input"))
+        {
+            result.Add(chunk);
+        }
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains("No suitable agent found", result[0]);
+        Assert.Contains("⚠️", result[0]);
+        mockSelector.Verify(s => s.SelectAgentAsync(
+            It.IsAny<string>(),
+            It.IsAny<IReadOnlyCollection<IAgent>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+        mockAdapter.Verify(a => a.StreamAsync(
+            It.IsAny<IAgent>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task StreamAsync_AutoSelectEmptyInput_ThrowsArgumentException()
+    {
+        // Arrange
+        var mockLoader = new Mock<IAgentLoader>();
+        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockSelector = new Mock<IAgentSelector>();
+
+        var orchestrator = new AgentOrchestrator(
+            mockLoader.Object,
+            mockRegistry.Object,
+            mockAdapter.Object,
+            mockSelector.Object);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await foreach (var _ in orchestrator.StreamAsync(""))
+            {
+                // Should not reach here
+            }
+        });
+    }
+
+    [Fact]
+    public async Task StreamAsync_AutoSelect_LargeStream_NoMemoryLeak()
+    {
+        // Arrange
+        var mockLoader = new Mock<IAgentLoader>();
+        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockSelector = new Mock<IAgentSelector>();
+
+        var mockAgent = new Mock<IAgent>();
+        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        mockAgent.Setup(a => a.Description).Returns("Test agent");
+
+        mockSelector.Setup(s => s.SelectAgentAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyCollection<IAgent>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AgentSelectionResult
+            {
+                SelectedAgent = mockAgent.Object,
+                ConfidenceScore = 0.9,
+                SelectionReason = "Test selection",
+                AllScores = Array.Empty<AgentScore>()
+            });
+
+        // Generate large stream (1000 chunks)
+        var largeStream = Enumerable.Range(0, 1000)
+            .Select(i => $"chunk_{i}");
+
+        mockAdapter.Setup(a => a.StreamAsync(
+                It.IsAny<IAgent>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(ToAsyncEnumerable(largeStream.ToArray()));
+
+        var orchestrator = new AgentOrchestrator(
+            mockLoader.Object,
+            mockRegistry.Object,
+            mockAdapter.Object,
+            mockSelector.Object);
+
+        // Act - consume entire stream
+        var collectedChunks = new List<string>();
+        var initialMemory = GC.GetTotalMemory(forceFullCollection: true);
+
+        await foreach (var chunk in orchestrator.StreamAsync("Large stream test"))
+        {
+            collectedChunks.Add(chunk);
+        }
+
+        var finalMemory = GC.GetTotalMemory(forceFullCollection: true);
+        var memoryGrowth = finalMemory - initialMemory;
+
+        // Assert
+        Assert.Equal(1000, collectedChunks.Count);
+        // Memory growth should be reasonable (< 10MB for 1000 small strings)
+        Assert.True(memoryGrowth < 10 * 1024 * 1024,
+            $"Memory grew by {memoryGrowth / 1024 / 1024}MB, expected < 10MB");
+    }
+
+    [Fact]
+    public async Task StreamAsync_AutoSelect_CancellationToken_ProperCleanup()
+    {
+        // Arrange
+        var mockLoader = new Mock<IAgentLoader>();
+        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockSelector = new Mock<IAgentSelector>();
+
+        var mockAgent = new Mock<IAgent>();
+        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        mockAgent.Setup(a => a.Description).Returns("Test agent");
+
+        mockSelector.Setup(s => s.SelectAgentAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyCollection<IAgent>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AgentSelectionResult
+            {
+                SelectedAgent = mockAgent.Object,
+                ConfidenceScore = 0.9,
+                SelectionReason = "Test selection",
+                AllScores = Array.Empty<AgentScore>()
+            });
+
+        var cts = new CancellationTokenSource();
+
+        // Create a stream that respects cancellation
+        async IAsyncEnumerable<string> CancellableStream([EnumeratorCancellation] CancellationToken ct)
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                await Task.Delay(1, ct);
+                yield return $"chunk_{i}";
+            }
+        }
+
+        mockAdapter.Setup(a => a.StreamAsync(
+                It.IsAny<IAgent>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((IAgent a, string i, CancellationToken ct) => CancellableStream(ct));
+
+        var orchestrator = new AgentOrchestrator(
+            mockLoader.Object,
+            mockRegistry.Object,
+            mockAdapter.Object,
+            mockSelector.Object);
+
+        // Act - cancel after 10 chunks
+        var collectedChunks = new List<string>();
+        await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var chunk in orchestrator.StreamAsync("Test", cts.Token))
+            {
+                collectedChunks.Add(chunk);
+                if (collectedChunks.Count >= 10)
+                {
+                    cts.Cancel();
+                }
+            }
+        });
+
+        // Assert
+        Assert.True(collectedChunks.Count >= 10, "Should have collected at least 10 chunks before cancellation");
+        Assert.True(collectedChunks.Count < 1000, "Should not have collected all chunks");
+        // Successful cancellation means OperationCanceledException was thrown
+    }
+
+    [Fact]
+    public async Task StreamAsync_AutoSelect_MultipleConcurrentStreams_NoResourceLeak()
+    {
+        // Arrange
+        var mockLoader = new Mock<IAgentLoader>();
+        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockSelector = new Mock<IAgentSelector>();
+
+        var mockAgent = new Mock<IAgent>();
+        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        mockAgent.Setup(a => a.Description).Returns("Test agent");
+
+        mockSelector.Setup(s => s.SelectAgentAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyCollection<IAgent>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AgentSelectionResult
+            {
+                SelectedAgent = mockAgent.Object,
+                ConfidenceScore = 0.9,
+                SelectionReason = "Test selection",
+                AllScores = Array.Empty<AgentScore>()
+            });
+
+        // Each stream returns 100 chunks
+        mockAdapter.Setup(a => a.StreamAsync(
+                It.IsAny<IAgent>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((IAgent a, string input, CancellationToken ct) =>
+                ToAsyncEnumerable(Enumerable.Range(0, 100)
+                    .Select(i => $"{input}_chunk_{i}")
+                    .ToArray()));
+
+        var orchestrator = new AgentOrchestrator(
+            mockLoader.Object,
+            mockRegistry.Object,
+            mockAdapter.Object,
+            mockSelector.Object);
+
+        // Act - run 10 concurrent streams
+        var initialMemory = GC.GetTotalMemory(forceFullCollection: true);
+
+        var tasks = Enumerable.Range(0, 10).Select(async streamId =>
+        {
+            var chunks = new List<string>();
+            await foreach (var chunk in orchestrator.StreamAsync($"stream_{streamId}"))
+            {
+                chunks.Add(chunk);
+            }
+            return chunks;
+        });
+
+        var results = await Task.WhenAll(tasks);
+
+        var finalMemory = GC.GetTotalMemory(forceFullCollection: true);
+        var memoryGrowth = finalMemory - initialMemory;
+
+        // Assert
+        Assert.Equal(10, results.Length);
+        Assert.All(results, r => Assert.Equal(100, r.Count));
+        // Memory growth should be reasonable for 10 concurrent streams
+        Assert.True(memoryGrowth < 20 * 1024 * 1024,
+            $"Memory grew by {memoryGrowth / 1024 / 1024}MB, expected < 20MB");
+
+        // Verify each stream got its own data
+        for (int i = 0; i < 10; i++)
+        {
+            Assert.All(results[i], chunk => Assert.StartsWith($"stream_{i}_", chunk));
+        }
     }
 }

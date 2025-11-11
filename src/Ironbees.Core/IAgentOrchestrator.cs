@@ -46,6 +46,16 @@ public interface IAgentOrchestrator
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Stream response from automatically selected agent
+    /// </summary>
+    /// <param name="input">User input</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async stream of response chunks</returns>
+    IAsyncEnumerable<string> StreamAsync(
+        string input,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Select the best agent for the given input
     /// </summary>
     /// <param name="input">User input</param>

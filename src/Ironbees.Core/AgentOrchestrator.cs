@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Ironbees.Core;
 
 /// <summary>
@@ -137,6 +139,32 @@ public class AgentOrchestrator : IAgentOrchestrator
             ?? throw new AgentNotFoundException(agentName);
 
         return _frameworkAdapter.StreamAsync(agent, input, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<string> StreamAsync(
+        string input,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(input);
+
+        // Use intelligent agent selection
+        var selectionResult = await SelectAgentAsync(input, cancellationToken);
+
+        if (selectionResult.SelectedAgent == null)
+        {
+            yield return $"⚠️ No suitable agent found for this request. {selectionResult.SelectionReason}";
+            yield break;
+        }
+
+        // Stream using selected agent
+        await foreach (var chunk in _frameworkAdapter.StreamAsync(
+            selectionResult.SelectedAgent,
+            input,
+            cancellationToken))
+        {
+            yield return chunk;
+        }
     }
 
     /// <inheritdoc />

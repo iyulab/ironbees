@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Ironbees.Core\Ironbees.Core.csproj" />
+    <ProjectReference Include="..\..\samples\Ironbees.Samples.Shared\Ironbees.Samples.Shared.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - GPU-Stack Support
+- **GpuStackAdapter** in Ironbees.Samples.Shared
+  - OpenAI-compatible API integration for GPU-Stack
+  - Local GPU-powered LLM inference support
+  - Support for /v1-openai endpoint
+  - Custom endpoint configuration
+  - Full streaming response support
+- **GpuStackSample** project
+  - Complete sample demonstrating GPU-Stack integration
+  - Environment variable configuration (.env support)
+  - Example agent orchestration with local models
+  - Comprehensive README with troubleshooting guide
+- **Unit Tests**
+  - GpuStackAdapterTests with 11 test cases
+  - Constructor validation tests
+  - Agent creation and execution flow tests
+  - Error handling verification
+
 ### Planned for v0.2.0
+- Anthropic Claude API support
 - OpenAI embedding provider (API-based)
 - CLI tools for agent management
 

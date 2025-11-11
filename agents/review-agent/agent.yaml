@@ -3,7 +3,7 @@ description: Comprehensive reviewer for code, documents, and processes
 version: 1.0.0
 model:
   provider: azure-openai
-  deployment: gpt-4o
+  deployment: kanana-1.5
   temperature: 0.6
   maxTokens: 3500
 capabilities:

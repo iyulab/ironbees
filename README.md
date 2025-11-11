@@ -112,14 +112,29 @@ var orchestrator = serviceProvider.GetRequiredService<IAgentOrchestrator>();
 // 에이전트 로드 (파일시스템에서 자동)
 await orchestrator.LoadAgentsAsync();
 
-// 명시적 에이전트 선택
+// 방법 1: 명시적 에이전트 선택
 var response = await orchestrator.ProcessAsync(
     "Write a C# method to calculate fibonacci numbers",
     agentName: "coding-agent");
 
-// 자동 라우팅 (키워드 기반)
+// 방법 2: 자동 라우팅 (키워드 기반)
 var response = await orchestrator.ProcessAsync(
     "fibonacci numbers in C#"); // "coding" 키워드로 자동 라우팅
+
+// 방법 3: 스트리밍 응답 (명시적 에이전트) 🆕
+await foreach (var chunk in orchestrator.StreamAsync(
+    "Write a blog post about AI",
+    agentName: "writing-agent"))
+{
+    Console.Write(chunk); // 실시간 스트리밍
+}
+
+// 방법 4: 스트리밍 + 자동 라우팅 (v0.1.6+) 🆕
+await foreach (var chunk in orchestrator.StreamAsync(
+    "fibonacci in Python")) // 자동으로 coding-agent 선택
+{
+    Console.Write(chunk); // 실시간 스트리밍
+}
 ```
 
 ## 🏗️ 아키텍처
@@ -164,6 +179,9 @@ Ironbees는 `ILLMFrameworkAdapter` 인터페이스를 통해 다양한 LLM 프�
 |-----------|------|--------|
 | Azure.AI.OpenAI ChatClient | ✅ 지원 | Ironbees.AgentFramework |
 | Microsoft Agent Framework | ✅ 지원 | Ironbees.AgentFramework |
+| OpenAI API | ✅ 지원 | Ironbees.Samples.Shared |
+| GPU-Stack (OpenAI Compatible) | ✅ 지원 | Ironbees.Samples.Shared |
+| Anthropic Claude | 🔄 계획됨 | - |
 | Semantic Kernel | 🔄 계획됨 | - |
 | LangChain | 🔄 계획됨 | - |
 
@@ -200,13 +218,42 @@ options.UseMicrosoftAgentFramework = true; // or false
 
 ## 📖 예제
 
-- [OpenAISample](samples/OpenAISample/) - 기본 사용법
+- [OpenAISample](samples/OpenAISample/) - 기본 사용법 (OpenAI API)
+- [GpuStackSample](samples/GpuStackSample/) - 로컬 GPU 인프라 (GPU-Stack) 🆕
 - [WebApiSample](samples/WebApiSample/) - RESTful API 서버
-- [EmbeddingSample](samples/EmbeddingSample/) - 로컬 ONNX 임베딩 및 시맨틱 라우팅 🆕
+- [EmbeddingSample](samples/EmbeddingSample/) - 로컬 ONNX 임베딩 및 시맨틱 라우팅
 
 ## ✨ 최신 기능
 
-### v0.1.5 - Local ONNX Embeddings 🆕
+### v0.1.6 - StreamAsync 자동 라우팅 🆕
+실시간 스트리밍과 자동 에이전트 선택을 결합! API 일관성 개선.
+
+**주요 기능:**
+- **스트리밍 + 자동 선택**: `ProcessAsync`와 동일한 패턴으로 `StreamAsync` 자동 라우팅 지원
+- **API 일관성**: 모든 주요 메서드에서 명시적/자동 선택 오버로드 제공
+- **간소화된 코드**: 2단계 호출(선택 → 스트리밍)을 1단계로 통합
+
+```csharp
+// 이전: 수동 선택 필요
+var selection = await orchestrator.SelectAgentAsync(input);
+await foreach (var chunk in orchestrator.StreamAsync(input, selection.SelectedAgent.Name))
+{
+    Console.Write(chunk);
+}
+
+// 이제: 자동 선택 통합 (v0.1.6+)
+await foreach (var chunk in orchestrator.StreamAsync(input))
+{
+    Console.Write(chunk); // 자동으로 최적 에이전트 선택 후 스트리밍
+}
+```
+
+**기술 상세:**
+- 내부적으로 `SelectAgentAsync` 재사용으로 일관된 선택 로직
+- 에이전트를 찾지 못한 경우 명확한 에러 메시지 스트리밍
+- `[EnumeratorCancellation]` 속성으로 적절한 취소 처리
+
+### v0.1.5 - Local ONNX Embeddings
 로컬 ONNX 모델로 완전 무료 임베딩 지원! API 키 불필요, 완전히 오프라인 동작.
 
 **주요 기능:**
@@ -264,7 +311,12 @@ var result = await orchestrator.ProcessAsync("Write C# code", "coding-agent");
 
 ## 🗺️ 로드맵
 
-### v0.1.5 - 현재 ✅
+### v0.1.6 - 현재 ✅
+- [x] StreamAsync 자동 라우팅
+- [x] API 일관성 개선
+- [x] GpuStackAdapter 완성
+
+### v0.1.5 - ONNX Embeddings ✅
 - [x] 로컬 ONNX 임베딩 프로바이더 (all-MiniLM-L6-v2, L12-v2)
 - [x] 자동 모델 다운로드 및 캐싱
 - [x] EmbeddingAgentSelector (시맨틱 에이전트 선택)
@@ -325,4 +377,4 @@ MIT License - [LICENSE](LICENSE) 참조
 
 **Ironbees** - Filesystem convention-based LLM agent wrapper for .NET 🐝
 
-**버전:** 0.1.1 | **.NET:** 9.0+ | **상태:** 실험적
+**버전:** 0.1.6 | **.NET:** 9.0+ | **상태:** 실험적

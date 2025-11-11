@@ -39,3 +39,6 @@ appsettings.Development.json
 .envpackages/
 *.env
 .env
+
+# Local
+.serena/

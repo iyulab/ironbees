@@ -68,7 +68,7 @@ tags:
   - dispatcher
 
 model:
-  deployment: gpt-4o
+  deployment: kanana-1.5
   temperature: 0.2
   max_tokens: 2000
 
