@@ -41,7 +41,7 @@ jobs:
       run: dotnet test tests/Ironbees.Core.Tests/Ironbees.Core.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey" --logger "trx;LogFileName=core-test-results.trx"
 
     - name: Test Agent Framework (CI - No API keys)
-      run: dotnet test tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=framework-test-results.trx"
+      run: dotnet test tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey" --logger "trx;LogFileName=framework-test-results.trx"
 
     - name: Test Agent Mode (CI - No API keys)
       run: dotnet test tests/Ironbees.AgentMode.Tests/Ironbees.AgentMode.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=agentmode-test-results.trx"
