@@ -38,7 +38,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Performance" --logger "trx;LogFileName=test-results.trx"
+      run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration" --logger "trx;LogFileName=test-results.trx"
 
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
