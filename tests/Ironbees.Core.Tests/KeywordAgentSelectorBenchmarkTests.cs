@@ -172,6 +172,7 @@ public class KeywordAgentSelectorBenchmarkTests
     }
 
     [Fact]
+    [Trait("Category", "Performance")]
     public async Task ScoreAgentsAsync_MultipleAgents_CompletesQuickly()
     {
         // Arrange
