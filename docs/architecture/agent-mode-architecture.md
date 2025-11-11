@@ -438,9 +438,236 @@ public class PlannerAgent : ICodingAgent
 }
 ```
 
-### 3.4 MCP Protocol Layer
+### 3.4 ConversationalAgent (Request-Response Pattern)
 
-#### 3.4.1 MCP Server 아키텍처
+#### 3.4.1 개요 (Overview)
+
+ConversationalAgent는 ICodingAgent와 **독립적인** 간단한 요청-응답 패턴입니다. Generate-Validate-Refine 루프가 없으며, 상태 관리도 없습니다. Q&A 에이전트, 챗봇, 도메인 전문가용으로 설계되었습니다.
+
+**ICodingAgent vs ConversationalAgent 비교**:
+
+| 특성 | ICodingAgent | ConversationalAgent |
+|------|--------------|---------------------|
+| **용도** | 코드 생성 및 수정 | Q&A, 챗봇, 도메인 전문가 |
+| **워크플로우** | Generate-Validate-Refine 루프 | 단순 요청-응답 |
+| **상태** | StatefulGraphOrchestrator | Stateless (기본값) |
+| **도구 사용** | RoslynTool, MSBuildTool 등 | 없음 (LLM만 사용) |
+| **복잡도** | 높음 (멀티 단계) | 낮음 (단일 턴) |
+| **예시** | PlannerAgent, CoderAgent | CustomerSupportAgent, DataAnalystAgent |
+
+#### 3.4.2 인터페이스 설계
+
+```csharp
+namespace Ironbees.AgentMode.Agents;
+
+/// <summary>
+/// Base class for conversational agents that provide request-response interactions.
+/// Designed for simple Q and A agents, chatbots, domain experts, and assistants
+/// with multi-provider LLM support.
+/// </summary>
+public abstract class ConversationalAgent
+{
+    /// <summary>
+    /// The chat client for LLM interactions (OpenAI, Azure, Anthropic, OpenAI-compatible).
+    /// </summary>
+    protected readonly IChatClient ChatClient;
+
+    /// <summary>
+    /// The system prompt that defines the agent's role and behavior.
+    /// </summary>
+    protected readonly string SystemPrompt;
+
+    /// <summary>
+    /// Initializes a new instance of the ConversationalAgent.
+    /// </summary>
+    /// <param name="chatClient">The chat client for LLM interactions.</param>
+    /// <param name="systemPrompt">The system prompt defining the agent's role.</param>
+    protected ConversationalAgent(IChatClient chatClient, string systemPrompt)
+    {
+        ChatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
+        SystemPrompt = systemPrompt ?? throw new ArgumentNullException(nameof(systemPrompt));
+    }
+
+    /// <summary>
+    /// Generates a response to a user message.
+    /// </summary>
+    /// <param name="userMessage">The user's message.</param>
+    /// <param name="options">Optional chat options (temperature, max tokens, etc.).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The agent's response text.</returns>
+    public virtual async Task<string> RespondAsync(
+        string userMessage,
+        ChatOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userMessage))
+            throw new ArgumentException("User message cannot be null or empty.", nameof(userMessage));
+
+        var messages = new List<ChatMessage>
+        {
+            new(ChatRole.System, SystemPrompt),
+            new(ChatRole.User, userMessage)
+        };
+
+        var response = await ChatClient.GetResponseAsync(messages, options, cancellationToken);
+        return response.ToString() ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Generates a streaming response to a user message.
+    /// Useful for real-time feedback in UI applications.
+    /// </summary>
+    /// <param name="userMessage">The user's message.</param>
+    /// <param name="options">Optional chat options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of text chunks.</returns>
+    public virtual async IAsyncEnumerable<string> StreamResponseAsync(
+        string userMessage,
+        ChatOptions? options = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(userMessage))
+            throw new ArgumentException("User message cannot be null or empty.", nameof(userMessage));
+
+        var messages = new List<ChatMessage>
+        {
+            new(ChatRole.System, SystemPrompt),
+            new(ChatRole.User, userMessage)
+        };
+
+        await foreach (var update in ChatClient.GetStreamingResponseAsync(messages, options, cancellationToken))
+        {
+            if (update.Text is not null)
+            {
+                yield return update.Text;
+            }
+        }
+    }
+}
+```
+
+#### 3.4.3 구현 예시: CustomerSupportAgent
+
+```csharp
+using Microsoft.Extensions.AI;
+
+namespace Ironbees.AgentMode.Agents.Samples;
+
+/// <summary>
+/// Customer support conversational agent with empathetic responses.
+/// </summary>
+public class CustomerSupportAgent : ConversationalAgent
+{
+    private const string DefaultSystemPrompt = @"You are a helpful and empathetic customer support agent.
+
+Your role is to:
+- Provide clear, accurate answers to customer questions
+- Be patient and understanding, even with frustrated customers
+- Offer step-by-step guidance when needed
+- Escalate complex issues when appropriate
+- Maintain a professional yet friendly tone
+
+Guidelines:
+- Always acknowledge the customer's concern first
+- Provide solutions in clear, numbered steps when applicable
+- If you don't know something, admit it and offer to escalate
+- End responses with an offer to help further
+
+Keep responses concise but thorough.";
+
+    public CustomerSupportAgent(IChatClient chatClient)
+        : base(chatClient, DefaultSystemPrompt)
+    {
+    }
+
+    public CustomerSupportAgent(IChatClient chatClient, string customSystemPrompt)
+        : base(chatClient, customSystemPrompt)
+    {
+    }
+}
+```
+
+#### 3.4.4 사용 예시
+
+```csharp
+// Multi-provider configuration via factory pattern
+var llmConfig = new LLMConfiguration
+{
+    Provider = LLMProvider.OpenAI,
+    ApiKey = apiKey,
+    Model = "gpt-4o-mini"
+};
+
+var factory = new OpenAIProviderFactory();
+var chatClient = factory.CreateChatClient(llmConfig);
+
+// Use sample agent
+var supportAgent = new CustomerSupportAgent(chatClient);
+var response = await supportAgent.RespondAsync("How do I reset my password?");
+Console.WriteLine(response);
+
+// Streaming response
+await foreach (var chunk in supportAgent.StreamResponseAsync("Explain multi-provider support"))
+{
+    Console.Write(chunk); // Real-time output
+}
+
+// Create custom agent
+public class MyDomainExpert : ConversationalAgent
+{
+    public MyDomainExpert(IChatClient chatClient)
+        : base(chatClient, "You are an expert in {domain}. Provide detailed, accurate answers...")
+    {
+    }
+}
+```
+
+#### 3.4.5 설계 고려사항
+
+**장점**:
+- 간단한 API (2개 메서드만)
+- Stateless 기본값 (대화 관리 불필요)
+- Multi-provider 지원 (OpenAI, Azure, Anthropic, OpenAI-compatible)
+- 확장 용이 (시스템 프롬프트로 역할 정의)
+
+**제한사항**:
+- 도구 사용 없음 (순수 LLM만)
+- 대화 이력 관리 없음 (필요시 오버라이드)
+- 워크플로우 오케스트레이션 없음
+
+**확장 방법**:
+```csharp
+// 대화 이력 관리가 필요한 경우
+public class StatefulChatAgent : ConversationalAgent
+{
+    private readonly List<ChatMessage> _conversationHistory = new();
+
+    public override async Task<string> RespondAsync(
+        string userMessage,
+        ChatOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Add system prompt once
+        if (_conversationHistory.Count == 0)
+            _conversationHistory.Add(new ChatMessage(ChatRole.System, SystemPrompt));
+
+        // Add user message
+        _conversationHistory.Add(new ChatMessage(ChatRole.User, userMessage));
+
+        // Get response
+        var response = await ChatClient.GetResponseAsync(_conversationHistory, options, cancellationToken);
+
+        // Store assistant response
+        _conversationHistory.Add(new ChatMessage(ChatRole.Assistant, response.ToString()));
+
+        return response.ToString() ?? string.Empty;
+    }
+}
+```
+
+### 3.5 MCP Protocol Layer
+
+#### 3.5.1 MCP Server 아키텍처
 
 ```csharp
 namespace Ironbees.AgentMode.MCP;
@@ -486,7 +713,7 @@ public record ToolResult(
 );
 ```
 
-#### 3.4.2 MCP 통신 프로토콜
+#### 3.5.2 MCP 통신 프로토콜
 
 ```json
 {
@@ -519,9 +746,9 @@ public record ToolResult(
 }
 ```
 
-### 3.5 Tool Layer
+### 3.6 Tool Layer
 
-#### 3.5.1 RoslynTool (코드 분석)
+#### 3.6.1 RoslynTool (코드 분석)
 
 ```csharp
 namespace Ironbees.AgentMode.Tools;
@@ -643,7 +870,7 @@ public class RoslynTool : IMcpServer
 }
 ```
 
-#### 3.5.2 MSBuildTool (빌드)
+#### 3.6.2 MSBuildTool (빌드)
 
 ```csharp
 public class MSBuildTool : IMcpServer
@@ -725,7 +952,7 @@ public class MSBuildTool : IMcpServer
 }
 ```
 
-#### 3.5.3 DotNetTestTool (테스트)
+#### 3.6.3 DotNetTestTool (테스트)
 
 ```csharp
 public class DotNetTestTool : IMcpServer

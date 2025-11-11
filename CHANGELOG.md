@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - ConversationalAgent Base Class
+- **ConversationalAgent** abstract base class in Ironbees.AgentMode.Agents
+  - Simple request-response pattern for Q&A agents, chatbots, and domain experts
+  - Independent of ICodingAgent workflow (no Generate-Validate-Refine loop)
+  - Multi-provider LLM support through Microsoft.Extensions.AI IChatClient
+  - Two core methods:
+    - `RespondAsync`: Single-turn response generation
+    - `StreamResponseAsync`: Streaming response for real-time feedback
+  - Stateless by default (override for conversation history management)
+
+- **Sample Implementations**
+  - **CustomerSupportAgent**: Empathetic customer support with step-by-step guidance
+  - **DataAnalystAgent**: Data science expertise (SQL, Python/R, ML, statistics)
+
+- **ConversationalAgentSample** console application
+  - Demonstrates CustomerSupportAgent and DataAnalystAgent usage
+  - Shows both single-turn and streaming response patterns
+  - Multi-provider LLM configuration via OpenAIProviderFactory
+
+### Technical Details
+- **Namespace**: `Ironbees.AgentMode.Agents`
+- **Dependencies**: Microsoft.Extensions.AI
+- **Design**:
+  - Abstract base class pattern for easy specialization
+  - System prompt injection for role definition
+  - Virtual methods allow conversation history override
+  - Sample agents demonstrate domain-specific prompt engineering
+
+### Usage Example
+```csharp
+var factory = new OpenAIProviderFactory();
+var chatClient = factory.CreateChatClient(config);
+
+// Use sample agent
+var agent = new CustomerSupportAgent(chatClient);
+var response = await agent.RespondAsync("How do I reset my password?");
+
+// Or create custom agent
+public class MyAgent : ConversationalAgent
+{
+    public MyAgent(IChatClient chatClient)
+        : base(chatClient, "Your system prompt here") { }
+}
+```
+
 ### Added - GPU-Stack Support
 - **GpuStackAdapter** in Ironbees.Samples.Shared
   - OpenAI-compatible API integration for GPU-Stack
