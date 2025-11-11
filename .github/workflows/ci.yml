@@ -37,8 +37,14 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore
 
-    - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration" --logger "trx;LogFileName=test-results.trx"
+    - name: Test Core (CI - No API keys)
+      run: dotnet test tests/Ironbees.Core.Tests/Ironbees.Core.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey" --logger "trx;LogFileName=core-test-results.trx"
+
+    - name: Test Agent Framework (CI - No API keys)
+      run: dotnet test tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=framework-test-results.trx"
+
+    - name: Test Agent Mode (CI - No API keys)
+      run: dotnet test tests/Ironbees.AgentMode.Tests/Ironbees.AgentMode.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=agentmode-test-results.trx"
 
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -46,6 +52,14 @@ jobs:
       with:
         files: '**/test-results.trx'
         check_name: 'Test Results'
+
+    - name: Build Agent Mode projects
+      run: |
+        dotnet build src/Ironbees.AgentMode.Core/Ironbees.AgentMode.Core.csproj --configuration Release --no-restore
+        dotnet build src/Ironbees.AgentMode.Agents/Ironbees.AgentMode.Agents.csproj --configuration Release --no-restore
+        dotnet build src/Ironbees.AgentMode.MCP/Ironbees.AgentMode.MCP.csproj --configuration Release --no-restore
+        dotnet build src/Ironbees.AgentMode.Providers/Ironbees.AgentMode.Providers.csproj --configuration Release --no-restore
+        dotnet build src/Ironbees.AgentMode.Tools/Ironbees.AgentMode.Tools.csproj --configuration Release --no-restore
 
     - name: Build samples
       run: |

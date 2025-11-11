@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'Directory.Build.props'
+      - 'src/Directory.Build.props'
 
   workflow_dispatch:
     inputs:
@@ -13,16 +13,6 @@ on:
         required: false
         type: boolean
         default: false
-      publish_core:
-        description: 'Publish Ironbees.Core'
-        required: false
-        type: boolean
-        default: true
-      publish_agent_framework:
-        description: 'Publish Ironbees.AgentFramework'
-        required: false
-        type: boolean
-        default: true
 
 jobs:
   publish:
@@ -54,48 +44,97 @@ jobs:
     - name: Extract version from Directory.Build.props
       id: extract_version
       run: |
-        VERSION=$(grep -oP '<Version>\K[^<]+' Directory.Build.props)
+        VERSION=$(grep -oP '<Version>\K[^<]+' src/Directory.Build.props)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Extracted version: $VERSION"
+        echo "📦 Extracted version: $VERSION"
 
-    - name: Check if version exists on NuGet.org
+    - name: Check if any package needs publishing
       id: check_version
       if: ${{ !inputs.force_publish }}
       run: |
         VERSION="${{ steps.extract_version.outputs.version }}"
+        echo "🔍 Checking version $VERSION on NuGet.org..."
 
-        # Check Ironbees.Core
-        CORE_EXISTS=$(dotnet nuget search Ironbees.Core --exact-match --take 1 --source https://api.nuget.org/v3/index.json | grep -c "Ironbees.Core | $VERSION" || true)
+        # List of packages to check
+        PACKAGES=(
+          "Ironbees.Core"
+          "Ironbees.AgentFramework"
+          "Ironbees.AgentMode.Core"
+          "Ironbees.AgentMode.Agents"
+          "Ironbees.AgentMode.MCP"
+          "Ironbees.AgentMode.Providers"
+          "Ironbees.AgentMode.Tools"
+        )
 
-        # Check Ironbees.AgentFramework
-        AF_EXISTS=$(dotnet nuget search Ironbees.AgentFramework --exact-match --take 1 --source https://api.nuget.org/v3/index.json | grep -c "Ironbees.AgentFramework | $VERSION-preview" || true)
+        NEEDS_PUBLISH=false
+        for PACKAGE in "${PACKAGES[@]}"; do
+          EXISTS=$(dotnet nuget search "$PACKAGE" --exact-match --take 1 --source https://api.nuget.org/v3/index.json | grep -c "$PACKAGE | $VERSION" || true)
+          if [ "$EXISTS" -eq "0" ]; then
+            echo "✅ $PACKAGE version $VERSION not found - needs publishing"
+            NEEDS_PUBLISH=true
+          else
+            echo "⏭️ $PACKAGE version $VERSION already exists"
+          fi
+        done
 
-        echo "core_exists=$CORE_EXISTS" >> $GITHUB_OUTPUT
-        echo "agent_framework_exists=$AF_EXISTS" >> $GITHUB_OUTPUT
-
-        if [ "$CORE_EXISTS" -eq "1" ] && [ "$AF_EXISTS" -eq "1" ]; then
-          echo "⚠️ Both packages version $VERSION already exist on NuGet.org"
-          echo "should_publish=false" >> $GITHUB_OUTPUT
-        else
-          echo "✅ Version $VERSION is new, proceeding with publish"
+        if [ "$NEEDS_PUBLISH" = true ]; then
           echo "should_publish=true" >> $GITHUB_OUTPUT
+          echo "📤 At least one package needs publishing"
+        else
+          echo "should_publish=false" >> $GITHUB_OUTPUT
+          echo "⚠️ All packages version $VERSION already exist on NuGet.org"
         fi
 
-    - name: Pack Ironbees.Core
-      if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && (inputs.publish_core == true || github.event_name == 'push') }}
+    - name: Pack all NuGet packages
+      if: ${{ steps.check_version.outputs.should_publish == 'true' || inputs.force_publish }}
       run: |
+        echo "📦 Creating packages directory..."
+        mkdir -p ./packages
+
+        echo "🔨 Packing Ironbees.Core..."
         dotnet pack src/Ironbees.Core/Ironbees.Core.csproj \
           --configuration Release \
           --no-build \
           --output ./packages
 
-    - name: Pack Ironbees.AgentFramework
-      if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && (inputs.publish_agent_framework == true || github.event_name == 'push') }}
-      run: |
+        echo "🔨 Packing Ironbees.AgentFramework..."
         dotnet pack src/Ironbees.AgentFramework/Ironbees.AgentFramework.csproj \
           --configuration Release \
           --no-build \
           --output ./packages
+
+        echo "🔨 Packing Ironbees.AgentMode.Core..."
+        dotnet pack src/Ironbees.AgentMode.Core/Ironbees.AgentMode.Core.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+        echo "🔨 Packing Ironbees.AgentMode.Agents..."
+        dotnet pack src/Ironbees.AgentMode.Agents/Ironbees.AgentMode.Agents.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+        echo "🔨 Packing Ironbees.AgentMode.MCP..."
+        dotnet pack src/Ironbees.AgentMode.MCP/Ironbees.AgentMode.MCP.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+        echo "🔨 Packing Ironbees.AgentMode.Providers..."
+        dotnet pack src/Ironbees.AgentMode.Providers/Ironbees.AgentMode.Providers.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+        echo "🔨 Packing Ironbees.AgentMode.Tools..."
+        dotnet pack src/Ironbees.AgentMode.Tools/Ironbees.AgentMode.Tools.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
+        echo "✅ All packages created"
+        ls -lh ./packages/
 
     - name: Publish to NuGet.org
       if: ${{ steps.check_version.outputs.should_publish == 'true' || inputs.force_publish }}
@@ -122,11 +161,20 @@ jobs:
         body: |
           ## Ironbees v${{ steps.extract_version.outputs.version }}
 
-          See [RELEASE_NOTES.md](https://github.com/${{ github.repository }}/blob/main/RELEASE_NOTES.md) for details.
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
 
-          ### Packages
+          ### 📦 Published Packages
+
+          **Core Packages:**
           - [Ironbees.Core ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Core/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}-preview](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }}-preview)
+          - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }})
+
+          **Agent Mode Packages:**
+          - [Ironbees.AgentMode.Core ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Core/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.AgentMode.Agents ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Agents/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.AgentMode.MCP ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.MCP/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.AgentMode.Providers ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Providers/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.AgentMode.Tools ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Tools/${{ steps.extract_version.outputs.version }})
         draft: false
         prerelease: ${{ contains(steps.extract_version.outputs.version, 'preview') || contains(steps.extract_version.outputs.version, 'beta') || contains(steps.extract_version.outputs.version, 'alpha') }}
         files: ./packages/*.nupkg
