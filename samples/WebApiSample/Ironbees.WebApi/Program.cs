@@ -1,7 +1,6 @@
 using DotNetEnv;
 using Ironbees.Core;
 using Ironbees.Samples.Shared;
-using Microsoft.OpenApi.Models;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,29 +25,19 @@ if (string.IsNullOrWhiteSpace(apiKey))
 // Add services to the container
 builder.Services.AddControllers();
 
-// Configure Swagger/OpenAPI
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+// Configure OpenAPI (.NET 10 built-in approach)
+builder.Services.AddOpenApi(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
-        Title = "Ironbees Web API",
-        Version = "v1.0",
-        Description = "Multi-agent orchestration API powered by Ironbees framework and OpenAI",
-        Contact = new OpenApiContact
+        document.Info = new()
         {
-            Name = "Ironbees Project",
-            Url = new Uri("https://github.com/yourusername/ironbees")
-        }
+            Title = "Ironbees Web API",
+            Version = "v1.0",
+            Description = "Multi-agent orchestration API powered by Ironbees framework and OpenAI"
+        };
+        return Task.CompletedTask;
     });
-
-    // Include XML comments for better documentation
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        options.IncludeXmlComments(xmlPath);
-    }
 });
 
 // Configure CORS
@@ -90,11 +79,11 @@ Console.WriteLine($"✅ Loaded {agentCount} agents");
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.MapOpenApi();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Ironbees API v1");
-        options.RoutePrefix = string.Empty; // Swagger at root
+        options.SwaggerEndpoint("/openapi/v1.json", "Ironbees API v1");
+        options.RoutePrefix = string.Empty; // Swagger UI at root
     });
 }
 
