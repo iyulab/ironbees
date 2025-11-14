@@ -339,7 +339,7 @@ public class SemanticKernelAdapterTests
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <PackageId>Ironbees.SemanticKernel</PackageId>
     <Version>1.0.0</Version>
     <Authors>Your Name</Authors>
