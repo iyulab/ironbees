@@ -1,3 +1,4 @@
+using Anthropic.SDK;
 using Ironbees.AgentMode.Configuration;
 using Microsoft.Extensions.AI;
 
@@ -5,14 +6,16 @@ namespace Ironbees.AgentMode.Providers;
 
 /// <summary>
 /// Factory for creating Anthropic Claude chat clients.
+/// Uses the community Anthropic.SDK package (https://www.nuget.org/packages/Anthropic.SDK).
 ///
-/// NOTE: This is a placeholder implementation.
-/// Anthropic does not have an official .NET SDK yet.
+/// Supported models:
+/// - claude-sonnet-4-20250514 (Claude Sonnet 4.5)
+/// - claude-3-5-sonnet-20241022 (Claude 3.5 Sonnet)
+/// - claude-3-opus-20240229 (Claude 3 Opus)
+/// - claude-3-haiku-20240307 (Claude 3 Haiku)
 ///
-/// Implementation options:
-/// 1. Use HttpClient with Anthropic API directly
-/// 2. Wait for Microsoft.Extensions.AI.Anthropic package
-/// 3. Use community SDK (e.g., Anthropic.SDK NuGet package)
+/// Note: This uses the community SDK. When Microsoft releases an official
+/// Microsoft.Extensions.AI.Anthropic package, we will migrate to that.
 /// </summary>
 public class AnthropicProviderFactory : ILLMProviderFactory
 {
@@ -29,14 +32,10 @@ public class AnthropicProviderFactory : ILLMProviderFactory
         if (string.IsNullOrWhiteSpace(config.Model))
             throw new ArgumentException("Model name is required (e.g., claude-sonnet-4-20250514)");
 
-        // TODO: Implement Anthropic client when SDK becomes available
-        // Options:
-        // 1. Microsoft.Extensions.AI.Anthropic (when released)
-        // 2. Anthropic.SDK community package
-        // 3. Custom HttpClient-based implementation
+        // Create Anthropic SDK client
+        var anthropicClient = new AnthropicClient(config.ApiKey);
 
-        throw new NotImplementedException(
-            "Anthropic provider is not yet implemented. " +
-            "Waiting for official Microsoft.Extensions.AI.Anthropic package or will implement HttpClient-based adapter.");
+        // Wrap in adapter that implements IChatClient
+        return new AnthropicChatClientAdapter(anthropicClient, config);
     }
 }

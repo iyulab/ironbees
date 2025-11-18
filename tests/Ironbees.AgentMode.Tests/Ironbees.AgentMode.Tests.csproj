@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\src\Ironbees.AgentMode.Core\Ironbees.AgentMode.Core.csproj" />
     <ProjectReference Include="..\..\src\Ironbees.AgentMode.Agents\Ironbees.AgentMode.Agents.csproj" />
     <ProjectReference Include="..\..\src\Ironbees.AgentMode.MCP\Ironbees.AgentMode.MCP.csproj" />
+    <ProjectReference Include="..\..\src\Ironbees.AgentMode.Providers\Ironbees.AgentMode.Providers.csproj" />
   </ItemGroup>
 
 </Project>
