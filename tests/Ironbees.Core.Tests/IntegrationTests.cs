@@ -31,7 +31,7 @@ public class IntegrationTests
         Assert.Equal("coding-agent", config.Name);
         Assert.Contains("code-generation", config.Capabilities);
         Assert.Contains("code-review", config.Capabilities);
-        Assert.Equal("gpt-4o", config.Model.Deployment);
+        Assert.Equal("kanana-1.5", config.Model.Deployment);
         Assert.NotEmpty(config.SystemPrompt);
     }
 

@@ -25,20 +25,9 @@ if (string.IsNullOrWhiteSpace(apiKey))
 // Add services to the container
 builder.Services.AddControllers();
 
-// Configure OpenAPI (.NET 10 built-in approach)
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        document.Info = new()
-        {
-            Title = "Ironbees Web API",
-            Version = "v1.0",
-            Description = "Multi-agent orchestration API powered by Ironbees framework and OpenAI"
-        };
-        return Task.CompletedTask;
-    });
-});
+// Configure Swagger/OpenAPI (using Swashbuckle due to .NET 10 built-in OpenAPI bugs)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -79,10 +68,10 @@ Console.WriteLine($"✅ Loaded {agentCount} agents");
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "Ironbees API v1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Ironbees API v1");
         options.RoutePrefix = string.Empty; // Swagger UI at root
     });
 }

@@ -653,6 +653,9 @@ public class AgentOrchestratorTests
         mockAgent.Setup(a => a.Name).Returns("test-agent");
         mockAgent.Setup(a => a.Description).Returns("Test agent");
 
+        mockRegistry.Setup(r => r.ListAgents())
+            .Returns(new List<string> { "test-agent" }.AsReadOnly());
+
         mockSelector.Setup(s => s.SelectAgentAsync(
                 It.IsAny<string>(),
                 It.IsAny<IReadOnlyCollection<IAgent>>(),
@@ -713,6 +716,9 @@ public class AgentOrchestratorTests
         var mockAgent = new Mock<IAgent>();
         mockAgent.Setup(a => a.Name).Returns("test-agent");
         mockAgent.Setup(a => a.Description).Returns("Test agent");
+
+        mockRegistry.Setup(r => r.ListAgents())
+            .Returns(new List<string> { "test-agent" }.AsReadOnly());
 
         mockSelector.Setup(s => s.SelectAgentAsync(
                 It.IsAny<string>(),
@@ -784,6 +790,9 @@ public class AgentOrchestratorTests
         var mockAgent = new Mock<IAgent>();
         mockAgent.Setup(a => a.Name).Returns("test-agent");
         mockAgent.Setup(a => a.Description).Returns("Test agent");
+
+        mockRegistry.Setup(r => r.ListAgents())
+            .Returns(new List<string> { "test-agent" }.AsReadOnly());
 
         mockSelector.Setup(s => s.SelectAgentAsync(
                 It.IsAny<string>(),

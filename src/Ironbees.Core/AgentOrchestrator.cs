@@ -104,7 +104,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
 
         var agentNames = _registry.ListAgents();
-        if (!agentNames.Any())
+        if (agentNames == null || !agentNames.Any())
         {
             return new AgentSelectionResult
             {

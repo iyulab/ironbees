@@ -18,15 +18,15 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="2.3.0" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.0.1" />
   </ItemGroup>
   <ItemGroup Label="AI and Agent Framework">
     <!-- Azure AI Services -->
     <PackageVersion Include="Azure.AI.OpenAI" Version="2.5.0-beta.1" />
     <PackageVersion Include="Azure.Identity" Version="1.17.0" />
     <!-- Microsoft Agents -->
-    <PackageVersion Include="Microsoft.Agents.AI" Version="1.0.0-preview.251113.1" />
-    <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251113.1" />
+    <PackageVersion Include="Microsoft.Agents.AI" Version="1.0.0-preview.251114.1" />
+    <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251114.1" />
     <!-- OpenAI SDK -->
     <PackageVersion Include="OpenAI" Version="2.7.0" />
   </ItemGroup>
@@ -38,8 +38,8 @@
     <!-- Utilities -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.20.1" />
-    <PackageVersion Include="System.Collections.Immutable" Version="9.0.10" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
+    <PackageVersion Include="System.Collections.Immutable" Version="10.0.0" />
     <PackageVersion Include="DotNetEnv" Version="3.1.1" />
   </ItemGroup>
   <ItemGroup Label="Web and API">

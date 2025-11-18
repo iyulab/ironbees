@@ -1,13 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Temporarily disabled due to .NET 10 OpenAPI source generator bug (CS0200: IOpenApiMediaType.Example is read-only) -->
+    <!-- Re-enable when https://github.com/dotnet/aspnetcore/issues/xxxxx is resolved -->
+    <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <!-- Disable OpenAPI source generators entirely to avoid .NET 10 bugs -->
+    <EmitCompilerGeneratedFiles>false</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <!-- Explicitly disable the XML comment OpenAPI source generator -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="OpenApiGenerateDocuments" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
+    <OpenApiGenerateDocumentsOnBuild>false</OpenApiGenerateDocumentsOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="DotNetEnv" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <!-- Temporarily removed Microsoft.AspNetCore.OpenApi due to .NET 10 source generator bug -->
+    <!-- <PackageReference Include="Microsoft.AspNetCore.OpenApi" /> -->
     <PackageReference Include="Microsoft.OpenApi" />
     <PackageReference Include="OpenAI" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
