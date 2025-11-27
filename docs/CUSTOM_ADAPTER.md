@@ -345,7 +345,7 @@ public class SemanticKernelAdapterTests
     <Authors>Your Name</Authors>
     <Description>Semantic Kernel adapter for Ironbees</Description>
     <PackageTags>ironbees;semantic-kernel;llm;agent</PackageTags>
-    <RepositoryUrl>https://github.com/yourusername/ironbees-semantickernel</RepositoryUrl>
+    <RepositoryUrl>https://github.com/iyulab/ironbees-semantickernel</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

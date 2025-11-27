@@ -615,10 +615,10 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Links
 
-- [GitHub Repository](https://github.com/yourusername/ironbees)
+- [GitHub Repository](https://github.com/iyulab/ironbees)
 - [Documentation](README.md)
 - [Usage Guide](docs/USAGE.md)
-- [Issue Tracker](https://github.com/yourusername/ironbees/issues)
+- [Issue Tracker](https://github.com/iyulab/ironbees/issues)
 
 ---
 

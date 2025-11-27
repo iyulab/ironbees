@@ -21,7 +21,7 @@
 
 **상태 배지**:
 ```markdown
-![CI](https://github.com/YOUR_USERNAME/ironbees/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/iyulab/ironbees/actions/workflows/ci.yml/badge.svg)
 ```
 
 ### 2. Publish to NuGet (`publish.yml`)
@@ -168,7 +168,7 @@ act workflow_dispatch -W .github/workflows/publish.yml --secret NUGET_API_KEY=<y
 README.md에 상태 배지 추가:
 
 ```markdown
-[![CI](https://github.com/YOUR_USERNAME/ironbees/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/ironbees/actions/workflows/ci.yml)
+[![CI](https://github.com/iyulab/ironbees/actions/workflows/ci.yml/badge.svg)](https://github.com/iyulab/ironbees/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Ironbees.Core)](https://www.nuget.org/packages/Ironbees.Core)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/Ironbees.Core)](https://www.nuget.org/packages/Ironbees.Core)
 ```

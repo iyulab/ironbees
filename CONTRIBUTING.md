@@ -31,7 +31,7 @@ Thank you for your interest in contributing to Ironbees! This document provides 
    ```
 3. Add the upstream repository:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL-OWNER/ironbees.git
+   git remote add upstream https://github.com/iyulab/ironbees.git
    ```
 
 ## Development Setup

@@ -17,7 +17,7 @@ dotnet add package Ironbees.AgentFramework
 ### 소스 코드
 
 ```bash
-git clone https://github.com/yourusername/ironbees.git
+git clone https://github.com/iyulab/ironbees.git
 cd ironbees
 dotnet restore
 dotnet build

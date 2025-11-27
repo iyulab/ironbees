@@ -6,9 +6,9 @@
   <ItemGroup Label="Core Framework Dependencies">
     <!-- Microsoft Extensions Core -->
     <PackageVersion Include="Anthropic.SDK" Version="5.8.0" />
-    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.0.0-preview.1.25560.10" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.0.1-preview.1.25571.5" />
     <PackageVersion Include="Microsoft.Extensions.AI.AzureAIInference" Version="10.0.0-preview.1.25559.3" />
     <!-- Microsoft Extensions DI and Logging -->
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
@@ -23,19 +23,20 @@
   </ItemGroup>
   <ItemGroup Label="AI and Agent Framework">
     <!-- Azure AI Services -->
-    <PackageVersion Include="Azure.AI.OpenAI" Version="2.5.0-beta.1" />
-    <PackageVersion Include="Azure.Identity" Version="1.17.0" />
+    <PackageVersion Include="Azure.AI.OpenAI" Version="2.7.0-beta.1" />
+    <PackageVersion Include="Azure.Identity" Version="1.17.1" />
     <!-- Microsoft Agents -->
-    <PackageVersion Include="Microsoft.Agents.AI" Version="1.0.0-preview.251114.1" />
-    <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251114.1" />
+    <PackageVersion Include="Microsoft.Agents.AI" Version="1.0.0-preview.251125.1" />
+    <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.251125.1" />
     <!-- OpenAI SDK -->
     <PackageVersion Include="OpenAI" Version="2.7.0" />
   </ItemGroup>
   <ItemGroup Label="Development Tools">
     <!-- Roslyn and Code Analysis -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.Build.Locator" Version="1.10.12" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.Build.Locator" Version="1.11.2" />
+    <PackageVersion Include="Microsoft.Build.Framework" Version="17.14.28" />
     <!-- Utilities -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />

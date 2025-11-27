@@ -37,29 +37,27 @@ public class ConversationalAgentTests
             new TestConversationalAgent(mockChatClient.Object, null!));
     }
 
-    [Fact(Skip = "TODO: Fix Microsoft.Extensions.AI type compatibility issues")]
+    [Fact]
     public async Task RespondAsync_WithValidInput_ReturnsResponse()
     {
         // Arrange
         var mockChatClient = new Mock<IChatClient>();
-        // var expectedResponse = "This is a test response.";
+        var expectedResponse = "This is a test response.";
 
-        // TODO: ChatCompletion type not found - requires proper Microsoft.Extensions.AI setup
-        // mockChatClient
-        //     .Setup(c => c.GetResponseAsync(
-        //         It.IsAny<IList<ChatMessage>>(),
-        //         It.IsAny<ChatOptions>(),
-        //         It.IsAny<CancellationToken>()))
-        //     .ReturnsAsync(new ChatCompletion(new ChatMessage(ChatRole.Assistant, expectedResponse)));
+        mockChatClient
+            .Setup(c => c.GetResponseAsync(
+                It.IsAny<IList<ChatMessage>>(),
+                It.IsAny<ChatOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChatResponse(new ChatMessage(ChatRole.Assistant, expectedResponse)));
 
         var agent = new TestConversationalAgent(mockChatClient.Object, "Test system prompt");
 
         // Act
-        // var response = await agent.RespondAsync("Hello, agent!");
+        var response = await agent.RespondAsync("Hello, agent!");
 
         // Assert
-        // Assert.Equal(expectedResponse, response);
-        await Task.CompletedTask; // Suppress async warning
+        Assert.Contains(expectedResponse, response);
     }
 
     [Fact]
@@ -86,7 +84,7 @@ public class ConversationalAgentTests
             await agent.RespondAsync("   "));
     }
 
-    [Fact(Skip = "TODO: Fix Microsoft.Extensions.AI type compatibility issues")]
+    [Fact]
     public async Task RespondAsync_WithCustomOptions_PassesOptionsToClient()
     {
         // Arrange
@@ -97,21 +95,24 @@ public class ConversationalAgentTests
             MaxOutputTokens = 500
         };
 
-        // TODO: ChatCompletion type not found - requires proper Microsoft.Extensions.AI setup
-        // mockChatClient
-        //     .Setup(c => c.CompleteAsync(
-        //         It.IsAny<IList<ChatMessage>>(),
-        //         It.IsAny<ChatOptions>(),
-        //         It.IsAny<CancellationToken>()))
-        //     .ReturnsAsync(new ChatCompletion(new ChatMessage(ChatRole.Assistant, "Response")));
+        mockChatClient
+            .Setup(c => c.GetResponseAsync(
+                It.IsAny<IList<ChatMessage>>(),
+                It.IsAny<ChatOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChatResponse(new ChatMessage(ChatRole.Assistant, "Response")));
 
         var agent = new TestConversationalAgent(mockChatClient.Object, "Test system prompt");
 
         // Act
-        // await agent.RespondAsync("Test message", customOptions);
+        var response = await agent.RespondAsync("Test message", customOptions);
 
         // Assert
-        await Task.CompletedTask; // Suppress async warning
+        Assert.NotNull(response);
+        mockChatClient.Verify(c => c.GetResponseAsync(
+            It.IsAny<IList<ChatMessage>>(),
+            It.Is<ChatOptions?>(opts => opts != null && opts.Temperature == 0.8f && opts.MaxOutputTokens == 500),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // TODO: Add streaming tests after confirming correct Microsoft.Extensions.AI streaming types
@@ -148,28 +149,27 @@ public class ConversationalAgentTests
         Assert.NotNull(agent);
     }
 
-    [Fact(Skip = "TODO: Fix Microsoft.Extensions.AI type compatibility issues")]
+    [Fact]
     public async Task CustomerSupportAgent_RespondAsync_WorksCorrectly()
     {
         // Arrange
         var mockChatClient = new Mock<IChatClient>();
-        // var expectedResponse = "To reset your password, please follow these steps...";
+        var expectedResponse = "To reset your password, please follow these steps...";
 
-        // TODO: ChatCompletion type not found - requires proper Microsoft.Extensions.AI setup
-        // mockChatClient
-        //     .Setup(c => c.GetResponseAsync(
-        //         It.IsAny<IList<ChatMessage>>(),
-        //         It.IsAny<ChatOptions>(),
-        //         It.IsAny<CancellationToken>()))
-        //     .ReturnsAsync(new ChatCompletion(new ChatMessage(ChatRole.Assistant, expectedResponse)));
+        mockChatClient
+            .Setup(c => c.GetResponseAsync(
+                It.IsAny<IList<ChatMessage>>(),
+                It.IsAny<ChatOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChatResponse(new ChatMessage(ChatRole.Assistant, expectedResponse)));
 
         var agent = new CustomerSupportAgent(mockChatClient.Object);
 
         // Act
-        // var response = await agent.RespondAsync("How do I reset my password?");
+        var response = await agent.RespondAsync("How do I reset my password?");
 
         // Assert
-        await Task.CompletedTask; // Suppress async warning
+        Assert.Contains(expectedResponse, response);
     }
 
     [Fact]
@@ -199,28 +199,27 @@ public class ConversationalAgentTests
         Assert.NotNull(agent);
     }
 
-    [Fact(Skip = "TODO: Fix Microsoft.Extensions.AI type compatibility issues")]
+    [Fact]
     public async Task DataAnalystAgent_RespondAsync_WorksCorrectly()
     {
         // Arrange
         var mockChatClient = new Mock<IChatClient>();
-        // var expectedResponse = "SELECT correlation(activity, revenue) FROM user_data...";
+        var expectedResponse = "SELECT correlation(activity, revenue) FROM user_data...";
 
-        // TODO: ChatCompletion type not found - requires proper Microsoft.Extensions.AI setup
-        // mockChatClient
-        //     .Setup(c => c.GetResponseAsync(
-        //         It.IsAny<IList<ChatMessage>>(),
-        //         It.IsAny<ChatOptions>(),
-        //         It.IsAny<CancellationToken>()))
-        //     .ReturnsAsync(new ChatCompletion(new ChatMessage(ChatRole.Assistant, expectedResponse)));
+        mockChatClient
+            .Setup(c => c.GetResponseAsync(
+                It.IsAny<IList<ChatMessage>>(),
+                It.IsAny<ChatOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ChatResponse(new ChatMessage(ChatRole.Assistant, expectedResponse)));
 
         var agent = new DataAnalystAgent(mockChatClient.Object);
 
         // Act
-        // var response = await agent.RespondAsync("How do I calculate correlation?");
+        var response = await agent.RespondAsync("How do I calculate correlation?");
 
         // Assert
-        await Task.CompletedTask; // Suppress async warning
+        Assert.Contains(expectedResponse, response);
     }
 
 }
