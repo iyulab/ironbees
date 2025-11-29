@@ -1,0 +1,73 @@
+# Coding Workflow - Example YAML-driven workflow definition
+# This workflow orchestrates a coding task through planning, coding, and validation phases.
+
+name: CodingWorkflow
+version: "1.0"
+description: "Multi-agent coding workflow with human-in-the-loop approval"
+
+# Agent references - resolved from filesystem convention
+agents:
+  - ref: agents/planner
+    alias: planner
+  - ref: agents/coder
+    alias: coder
+  - ref: agents/validator
+    alias: validator
+
+# Workflow states
+states:
+  # Entry point
+  - id: INIT
+    type: start
+    next: PLAN
+
+  # Planning phase - planner agent creates execution plan
+  - id: PLAN
+    type: agent
+    executor: planner
+    trigger:
+      type: file_exists
+      path: requirements.md
+    next: WAIT_APPROVAL
+
+  # Human-in-the-loop approval gate
+  - id: WAIT_APPROVAL
+    type: human_gate
+    human_gate:
+      approval_mode: always_require
+      timeout: "24h"
+      on_approve: CODE
+      on_reject: PLAN
+
+  # Coding phase - coder agent implements the plan
+  - id: CODE
+    type: agent
+    executor: coder
+    max_iterations: 5
+    next: VALIDATE
+
+  # Validation phase - validator checks build and tests
+  - id: VALIDATE
+    type: agent
+    executor: validator
+    conditions:
+      - if: "build.success"
+        then: END
+      - if: "iteration_count >= 5"
+        then: ERROR
+    next: CODE  # Default: loop back to coding
+
+  # Error escalation
+  - id: ERROR
+    type: escalation
+
+  # Success terminal
+  - id: END
+    type: terminal
+
+# Global settings
+settings:
+  default_timeout: "30m"
+  default_max_iterations: 5
+  enable_checkpointing: true
+  checkpoint_directory: ".ironbees/checkpoints"

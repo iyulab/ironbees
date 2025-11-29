@@ -26,7 +26,7 @@ Thank you for your interest in contributing to Ironbees! This document provides 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/ironbees.git
+   git clone https://github.com/iyulab/ironbees.git
    cd ironbees
    ```
 3. Add the upstream repository:

@@ -43,6 +43,10 @@
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
     <PackageVersion Include="System.Collections.Immutable" Version="10.0.0" />
     <PackageVersion Include="DotNetEnv" Version="3.1.1" />
+    <!-- Resilience and Caching -->
+    <PackageVersion Include="Polly" Version="8.6.1" />
+    <PackageVersion Include="Polly.Extensions" Version="8.6.1" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup Label="Web and API">
     <!-- ASP.NET Core -->

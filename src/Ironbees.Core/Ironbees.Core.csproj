@@ -9,6 +9,12 @@
   <ItemGroup>
     <PackageReference Include="YamlDotNet" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />
+    <!-- Middleware Pipeline -->
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
 </Project>
