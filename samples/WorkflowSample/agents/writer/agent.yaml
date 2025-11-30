@@ -1,0 +1,17 @@
+name: writer
+description: Creative writer agent for generating content
+version: 1.0.0
+model:
+  provider: openai
+  deployment: gpt-4o-mini
+  temperature: 0.8
+  maxTokens: 1000
+capabilities:
+  - content-generation
+  - creative-writing
+tags:
+  - writing
+  - content
+metadata:
+  author: ironbees
+  category: content

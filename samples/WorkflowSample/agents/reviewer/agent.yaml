@@ -1,0 +1,18 @@
+name: reviewer
+description: Content reviewer agent for quality assessment
+version: 1.0.0
+model:
+  provider: openai
+  deployment: gpt-4o-mini
+  temperature: 0.5
+  maxTokens: 800
+capabilities:
+  - content-review
+  - quality-assessment
+  - feedback
+tags:
+  - review
+  - quality
+metadata:
+  author: ironbees
+  category: quality

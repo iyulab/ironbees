@@ -1,0 +1,34 @@
+# Simple Sequential Workflow - For E2E Testing
+# Tests basic agent chaining: Writer -> Reviewer
+
+name: SimpleReviewWorkflow
+version: "1.0"
+description: "Simple two-agent workflow for testing: write then review"
+
+agents:
+  - ref: agents/writer
+    alias: writer
+  - ref: agents/reviewer
+    alias: reviewer
+
+states:
+  - id: INIT
+    type: start
+    next: WRITE
+
+  - id: WRITE
+    type: agent
+    executor: writer
+    next: REVIEW
+
+  - id: REVIEW
+    type: agent
+    executor: reviewer
+    next: END
+
+  - id: END
+    type: terminal
+
+settings:
+  default_timeout: "5m"
+  enable_checkpointing: false
