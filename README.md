@@ -16,6 +16,8 @@ Ironbees는 .NET 환경에서 LLM 에이전트의 **반복되는 패턴을 간�
 - ✅ 간단한 키워드 기반 에이전트 라우팅
 - ✅ 다중 프레임워크 통합 (Microsoft Agent Framework, ironhive 등)
 - ✅ 보일러플레이트 설정 코드 제거
+- ✅ YAML 기반 워크플로우 정의 및 MAF 실행 통합 🆕
+- ✅ 워크플로우 체크포인트 저장/복원 🆕
 
 **Ironbees가 하지 않는 것:**
 - ❌ 복잡한 워크플로우 오케스트레이션 → 기본 프레임워크 기능 사용
@@ -225,7 +227,33 @@ options.UseMicrosoftAgentFramework = true; // or false
 
 ## ✨ 최신 기능
 
-### v0.1.6 - StreamAsync 자동 라우팅 🆕
+### v0.1.7 - MAF 워크플로우 통합 🆕
+
+MAF (Microsoft Agent Framework) 워크플로우 실행 엔진과 완전 통합!
+
+**주요 기능:**
+- **MafWorkflowExecutor**: MAF `InProcessExecution.StreamAsync()` 기반 워크플로우 실행
+- **Checkpoint 시스템**: 워크플로우 상태 저장/복원으로 중단된 작업 재개 가능
+- **실시간 이벤트**: `WorkflowExecutionEvent`로 워크플로우 진행 상황 스트리밍
+- **Thin Wrapper 개선**: `StatefulGraphOrchestrator` 제거, MAF에 실행 위임
+
+```csharp
+// YAML 워크플로우 정의 → MAF 실행
+var orchestrator = new MafDrivenOrchestrator(converter, executor, loader);
+await foreach (var evt in orchestrator.ExecuteWorkflowAsync("my-workflow", input, agentsDir))
+{
+    Console.WriteLine($"[{evt.Type}] {evt.AgentName}: {evt.Content}");
+}
+
+// 체크포인트로 재개
+var checkpoint = await checkpointStore.GetLatestForExecutionAsync(executionId);
+await foreach (var evt in executor.ResumeFromCheckpointAsync(workflow, checkpoint, checkpointStore))
+{
+    // 중단된 지점부터 계속
+}
+```
+
+### v0.1.6 - StreamAsync 자동 라우팅
 실시간 스트리밍과 자동 에이전트 선택을 결합! API 일관성 개선.
 
 **주요 기능:**
@@ -311,7 +339,15 @@ var result = await orchestrator.ProcessAsync("Write C# code", "coding-agent");
 
 ## 🗺️ 로드맵
 
-### v0.1.6 - 현재 ✅
+### v0.1.7 - 현재 ✅ MAF 워크플로우 통합
+- [x] MafWorkflowExecutor - MAF InProcessExecution 통합
+- [x] MafDrivenOrchestrator - YAML → MAF 워크플로우 브릿지
+- [x] Checkpoint 시스템 - 워크플로우 상태 저장/복원
+- [x] ResumeFromCheckpoint - 체크포인트에서 재개
+- [x] StatefulGraphOrchestrator 제거 (Thin Wrapper 철학)
+- [x] 477개 테스트 (470 passed, 7 skipped)
+
+### v0.1.6 - StreamAsync 자동 라우팅 ✅
 - [x] StreamAsync 자동 라우팅
 - [x] API 일관성 개선
 - [x] GpuStackAdapter 완성
@@ -417,16 +453,17 @@ chmod +x run-tests.sh
 ./run-tests.sh --category all --coverage
 ```
 
-### 테스트 통계 (v0.1.6)
+### 테스트 통계 (v0.1.7)
 
 ```
-Total: 169 tests
-├─ Unit: 166 tests ✅
+Total: 477 tests
+├─ Unit: 470 tests ✅
 ├─ Performance: 3 tests ✅ (로컬 전용)
-└─ Integration: 3 tests ⏸️ (환경 필요)
+├─ Skipped: 7 tests ⏸️ (환경/벤치마크)
+└─ MAF Workflow: 78 tests ✅ (신규)
 
-CI Status: 166/166 passed (100%)
-Local Status: 169/169 passed (100%)
+CI Status: 470/477 passed (98.5%)
+Local Status: 470/477 passed (98.5%)
 ```
 
 ## 🤝 기여
@@ -446,4 +483,4 @@ MIT License - [LICENSE](LICENSE) 참조
 
 **Ironbees** - Filesystem convention-based LLM agent wrapper for .NET 🐝
 
-**버전:** 0.1.6 | **.NET:** 9.0+ | **상태:** 실험적
+**버전:** 0.1.7 | **.NET:** 10.0+ | **상태:** 실험적

@@ -7,6 +7,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2025-11-30
+
+### Added - MAF Workflow Execution Layer Integration
+
+- **MafWorkflowExecutor** (`Ironbees.AgentFramework.Workflow`)
+  - Complete MAF `InProcessExecution.StreamAsync()` integration
+  - Real-time workflow event streaming via `WorkflowExecutionEvent`
+  - Support for `AgentStarted`, `AgentMessage`, `AgentCompleted`, `SuperStepCompleted` events
+  - Automatic workflow conversion from Ironbees YAML to MAF format
+
+- **MafDrivenOrchestrator**
+  - Bridge between `YamlDrivenOrchestrator` and `MafWorkflowExecutor`
+  - Unified workflow execution with agent resolution
+  - Human-in-the-loop (HITL) approval support
+  - State management and execution tracking
+
+- **Checkpoint System** (`ICheckpointStore`, `FileSystemCheckpointStore`)
+  - Workflow state persistence for resume capability
+  - File-based checkpoint storage following "File System = Single Source of Truth" philosophy
+  - `ExecuteWithCheckpointingAsync` - Execute workflows with automatic checkpoint saving
+  - `ResumeFromCheckpointAsync` - Resume workflows from saved checkpoints
+  - MAF `CheckpointManager` integration with `InProcessExecution.ResumeStreamAsync()`
+  - Checkpoint cleanup and retention management
+
+- **WorkflowExecutionEvent Types**
+  - `WorkflowStarted` - Workflow execution initiated
+  - `AgentStarted` - Agent processing started
+  - `AgentMessage` - Agent produced output
+  - `AgentCompleted` - Agent finished processing
+  - `SuperStepCompleted` - Checkpoint available for state persistence
+  - `WorkflowCompleted` - Workflow execution finished successfully
+  - `Error` - Error occurred during execution
+
+### Removed - Legacy Orchestrator (Thin Wrapper Philosophy)
+
+- **StatefulGraphOrchestrator** - Removed hardcoded state machine implementation
+  - Violated Thin Wrapper philosophy with embedded state transitions
+  - Replaced by YAML-driven `YamlDrivenOrchestrator` + MAF execution
+
+- **IStatefulOrchestrator** - Deprecated interface removed
+  - Replaced by generic `IWorkflowOrchestrator<TState>` interface
+  - Better separation of concerns with workflow definition vs execution
+
+### Test Coverage
+
+- **New Tests Added**
+  - `MafWorkflowExecutorTests` - 25 tests for execution layer
+  - `MafDrivenOrchestratorTests` - 20 tests for orchestration
+  - `FileSystemCheckpointStoreTests` - 33 tests for checkpoint persistence
+
+- **Test Statistics**
+  - Total: 477 tests (470 passed, 7 skipped)
+  - Coverage: MAF workflow execution, checkpoint persistence, state management
+
+### Technical Details
+
+- **Dependencies**
+  - Uses `Microsoft.Agents.AI.Workflows` for MAF workflow execution
+  - `CheckpointManager.Default` for checkpoint coordination
+  - `System.Text.Json` for checkpoint serialization
+
+- **Design Decisions**
+  1. **MAF Delegation**: Complex workflow execution delegated to MAF framework
+  2. **File-Based Checkpoints**: Checkpoints stored as JSON files for transparency
+  3. **Event Streaming**: Real-time workflow progress via `IAsyncEnumerable<WorkflowExecutionEvent>`
+  4. **Thin Wrapper Compliance**: Removed code that reimplemented MAF functionality
+
+### Migration Guide
+
+If using `StatefulGraphOrchestrator`:
+```csharp
+// Before (removed)
+var orchestrator = new StatefulGraphOrchestrator(agents);
+await foreach (var state in orchestrator.ExecuteAsync(request))
+{
+    // Handle CodingState
+}
+
+// After (recommended)
+var orchestrator = new MafDrivenOrchestrator(converter, executor, loader);
+await foreach (var evt in orchestrator.ExecuteWorkflowAsync(workflowName, input, agentsDir))
+{
+    // Handle WorkflowExecutionEvent
+}
+```
+
 ### Changed - .NET 10.0 Upgrade
 - **Framework Upgrade**
   - Upgraded from .NET 9.0 to .NET 10.0
