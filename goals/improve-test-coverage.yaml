@@ -1,0 +1,86 @@
+# Sample Goal Definition: Improve Test Coverage
+#
+# This goal demonstrates how to define a goal-oriented workflow
+# that iteratively improves test coverage for a target module.
+#
+# Usage:
+#   IGoalExecutionBridge.ExecuteGoalAsync("improve-test-coverage", "Ironbees.Core")
+
+id: improve-test-coverage
+name: Improve Test Coverage
+description: |
+  Iteratively analyze and improve test coverage for a specified module.
+  The goal is considered complete when coverage reaches the target threshold
+  or when no more meaningful tests can be added.
+version: "1.0"
+
+# Workflow template to use - references workflows/templates/goal-loop.yaml
+workflow_template: goal-loop
+
+# Success criteria - defines when the goal is considered complete
+success_criteria:
+  - type: metric
+    name: coverage_percentage
+    operator: ">="
+    value: 80
+    description: "Test coverage must reach 80% or higher"
+  - type: quality
+    name: no_critical_gaps
+    description: "All critical code paths must have test coverage"
+
+# Constraints for execution limits
+constraints:
+  max_iterations: 10
+  max_tokens: 50000
+  timeout: "30m"
+
+# Checkpoint settings for state persistence
+checkpoint:
+  enabled: true
+  after_each_iteration: true
+  checkpoint_directory: "checkpoints/improve-test-coverage"
+
+# Parameters passed to the workflow template
+parameters:
+  # Agent to execute for each iteration
+  executor: code-coverage-analyzer
+  # Agent to evaluate goal completion
+  evaluator: coverage-evaluator
+  # Additional configuration
+  target_module: "{{input}}"
+  include_integration_tests: true
+  generate_missing_tests: true
+
+# Metadata and categorization
+tags:
+  - testing
+  - quality
+  - automation
+category: code-quality
+
+# Input schema definition (for validation)
+input_schema:
+  type: string
+  description: "The target module or namespace to improve coverage for"
+  examples:
+    - "Ironbees.Core"
+    - "Ironbees.AgentFramework"
+
+# Output schema definition
+output_schema:
+  type: object
+  properties:
+    initial_coverage:
+      type: number
+      description: "Coverage percentage before improvements"
+    final_coverage:
+      type: number
+      description: "Coverage percentage after improvements"
+    tests_added:
+      type: integer
+      description: "Number of new tests added"
+    gaps_identified:
+      type: array
+      items:
+        type: string
+      description: "List of coverage gaps identified"
