@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace Ironbees.Core;
 
 /// <summary>
@@ -36,8 +34,12 @@ public interface ILLMFrameworkAdapter
     /// <param name="input">User input</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Async stream of response chunks</returns>
+    /// <remarks>
+    /// Implementations should use [EnumeratorCancellation] attribute on the cancellationToken parameter
+    /// when implementing this method as an async iterator.
+    /// </remarks>
     IAsyncEnumerable<string> StreamAsync(
         IAgent agent,
         string input,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default);
 }

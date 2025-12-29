@@ -282,7 +282,7 @@ public class KeywordAgentSelectorEnhancedTests
     }
 
     [Fact]
-    public void ClearCache_RemovesCachedKeywords()
+    public async Task ClearCache_RemovesCachedKeywords()
     {
         // Arrange
         var selector = new KeywordAgentSelector();
@@ -296,14 +296,14 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { agent };
 
         // Build cache
-        selector.SelectAgentAsync("Query 1", agents).Wait();
-        selector.SelectAgentAsync("Query 2", agents).Wait();
+        await selector.SelectAgentAsync("Query 1", agents);
+        await selector.SelectAgentAsync("Query 2", agents);
 
         // Act
         selector.ClearCache();
 
         // Assert - Should work after clearing cache
-        var result = selector.SelectAgentAsync("Query 3", agents).Result;
+        var result = await selector.SelectAgentAsync("Query 3", agents);
         Assert.NotNull(result);
     }
 

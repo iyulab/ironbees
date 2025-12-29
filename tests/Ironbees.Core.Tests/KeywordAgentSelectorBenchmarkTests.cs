@@ -264,7 +264,7 @@ public class KeywordAgentSelectorBenchmarkTests
     }
 
     [Fact]
-    public void ClearCache_ResetsPerformanceState()
+    public async Task ClearCache_ResetsPerformanceState()
     {
         // Arrange
         var selector = new KeywordAgentSelector();
@@ -281,14 +281,14 @@ public class KeywordAgentSelectorBenchmarkTests
         // Build cache
         for (int i = 0; i < 10; i++)
         {
-            selector.SelectAgentAsync($"Query {i}", agents).Wait();
+            await selector.SelectAgentAsync($"Query {i}", agents);
         }
 
         // Act
         selector.ClearCache();
 
         // Assert - Should not throw and cache should be cleared
-        var result = selector.SelectAgentAsync("New query", agents).Result;
+        var result = await selector.SelectAgentAsync("New query", agents);
         Assert.NotNull(result);
     }
 }
