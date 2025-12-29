@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8] - 2025-12-30
+
+### Changed - Package Updates and API Compatibility
+
+- **Microsoft.Agents.AI Package Upgrade**
+  - Updated from 1.0.0-preview.251125.1 → 1.0.0-preview.251219.1
+  - All Microsoft.Agents.AI.* packages aligned to new version
+  - Updated MicrosoftAgentFrameworkAdapter for new API pattern
+
+- **API Breaking Change Fix**
+  - `CreateAIAgent()` extension method now requires `AsIChatClient()` call
+  - Before: `chatClient.CreateAIAgent(instructions, name)`
+  - After: `chatClient.AsIChatClient().CreateAIAgent(instructions, name)`
+  - Added `using Microsoft.Extensions.AI;` for extension method access
+
+- **Other Package Updates**
+  - Polly: 8.5.2 → 8.6.5
+  - Microsoft.Extensions.AI.*: 10.0.0-preview → 10.1.1
+  - Azure.AI.OpenAI: 2.1.0-beta.2 → 2.8.0-beta.1
+  - OpenAI SDK: 2.1.0-beta.2 → 2.8.0
+
+### Fixed - Technical Debt Cleanup
+
+- **Compiler Warning Resolutions**
+  - Removed unused `[EnumeratorCancellation]` attribute from interface method (CS8424)
+  - Added missing using statement for WorkflowParseException cref (CS1574)
+  - Converted sync test methods to async to avoid blocking operations (xUnit1031)
+  - Warnings reduced from 7 to 1 (remaining NU1510 is informational)
+
+### Test Coverage
+
+- **Test Statistics**
+  - Total: 527 tests (520 passed, 7 skipped)
+  - All tests continue to pass after package upgrades
+
 ## [0.1.7] - 2025-11-30
 
 ### Added - MAF Workflow Execution Layer Integration
