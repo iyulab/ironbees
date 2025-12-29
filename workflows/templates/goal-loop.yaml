@@ -1,0 +1,71 @@
+# Goal Loop Workflow Template
+#
+# A reusable workflow template for goal-oriented agent execution with
+# iterative evaluation until success criteria are met.
+#
+# Parameters:
+# - goal.id: Goal identifier
+# - goal.name: Goal name
+# - goal.constraints.maxIterations: Maximum loop iterations
+# - goal.checkpoint.enabled: Enable state checkpointing
+# - parameters.executor: Agent to execute for each iteration
+# - parameters.evaluator: Agent to evaluate goal completion (optional)
+
+name: "{{goal.id}}-workflow"
+version: "1.0"
+description: "Goal-oriented loop workflow for {{goal.name}}"
+
+settings:
+  defaultMaxIterations: {{goal.constraints.maxIterations}}
+  enableCheckpointing: {{goal.checkpoint.enabled}}
+  checkpointDirectory: "{{goal.checkpoint.directory}}"
+
+states:
+  # Entry point
+  - id: START
+    type: start
+    next: INITIALIZE
+
+  # Initialize goal context
+  - id: INITIALIZE
+    type: agent
+    executor: "{{parameters.executor}}"
+    next: EXECUTE
+
+  # Main execution loop
+  - id: EXECUTE
+    type: agent
+    executor: "{{parameters.executor}}"
+    maxIterations: {{goal.constraints.maxIterations}}
+    next: EVALUATE
+
+  # Evaluate goal progress
+  - id: EVALUATE
+    type: agent
+    executor: "{{parameters.evaluator}}"
+    conditions:
+      - if: "goal.completed"
+        then: SUCCESS
+      - if: "iteration.count >= goal.maxIterations"
+        then: MAX_ITERATIONS_REACHED
+      - if: "goal.blocked"
+        then: ESCALATE
+      - isDefault: true
+        then: EXECUTE
+
+  # Success terminal state
+  - id: SUCCESS
+    type: terminal
+
+  # Max iterations reached - partial success or failure
+  - id: MAX_ITERATIONS_REACHED
+    type: terminal
+
+  # Escalation for blocked goals
+  - id: ESCALATE
+    type: escalation
+    next: END
+
+  # Final terminal state
+  - id: END
+    type: terminal
