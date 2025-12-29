@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Azure.AI.OpenAI;
 using Ironbees.Core;
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 
@@ -38,8 +39,10 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
         {
             // Get ChatClient for the specified deployment and create AIAgent
             // Using method chaining as per Microsoft Agent Framework pattern
+            // Note: AsIChatClient() is required for the CreateAIAgent extension method
             var aiAgent = _client
                 .GetChatClient(config.Model.Deployment)
+                .AsIChatClient()
                 .CreateAIAgent(
                     instructions: config.SystemPrompt,
                     name: config.Name);

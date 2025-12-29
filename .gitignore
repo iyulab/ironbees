@@ -43,4 +43,5 @@ appsettings.Development.json
 # Local
 .serena/
 local-docs/
-CLAUDE.local.md
+CLAUDE.md
+*.local.md
