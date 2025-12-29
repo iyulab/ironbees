@@ -170,7 +170,7 @@ ironbees/
 ├── agents/                       # 에이전트 정의 (9개 예제)
 ├── docs/                         # 상세 문서
 ├── samples/                      # 실행 가능한 예제
-└── tests/                        # 단위 테스트 (67개)
+└── tests/                        # 단위 테스트 (527개)
 ```
 
 ## 🔌 다중 프레임워크 지원
@@ -227,7 +227,25 @@ options.UseMicrosoftAgentFramework = true; // or false
 
 ## ✨ 최신 기능
 
-### v0.1.7 - MAF 워크플로우 통합 🆕
+### v0.1.8 - 패키지 업데이트 및 API 호환성 🆕
+
+Microsoft Agent Framework 최신 버전 업그레이드 및 API 호환성 개선!
+
+**주요 변경:**
+- **Microsoft.Agents.AI 업그레이드**: 1.0.0-preview.251219.1 버전으로 업데이트
+- **API 패턴 변경**: `CreateAIAgent()` 호출 시 `AsIChatClient()` 필요
+- **기타 패키지 업데이트**: Polly 8.6.5, Extensions.AI 10.1.1, Azure.AI.OpenAI 2.8.0-beta.1
+- **컴파일러 경고 해결**: 7개 → 1개로 감소
+
+```csharp
+// 이전 (v0.1.7)
+var agent = chatClient.CreateAIAgent(instructions, name);
+
+// 현재 (v0.1.8+)
+var agent = chatClient.AsIChatClient().CreateAIAgent(instructions, name);
+```
+
+### v0.1.7 - MAF 워크플로우 통합
 
 MAF (Microsoft Agent Framework) 워크플로우 실행 엔진과 완전 통합!
 
