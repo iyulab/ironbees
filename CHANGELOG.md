@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-30
+
+### Added - External Guardrail Adapters (Phase 7.3)
+
+- **Azure AI Content Safety Integration**
+  - `AzureContentSafetyGuardrail` - Thin wrapper for Azure AI Content Safety service
+  - Category-specific severity thresholds (Hate, SelfHarm, Sexual, Violence)
+  - Blocklist support with `BlocklistNames` and `HaltOnBlocklistHit` options
+  - `FailOpen` mode for graceful degradation on service failures
+  - Severity mapping to `ViolationSeverity` (0-1: Low, 2-3: Medium, 4-5: High, 6: Critical)
+
+- **OpenAI Moderation API Integration**
+  - `OpenAIModerationGuardrail` - Thin wrapper for OpenAI Moderation API
+  - Support for all 11 moderation categories (Sexual, SexualMinors, Hate, HateThreatening, Harassment, HarassmentThreatening, SelfHarm, SelfHarmIntent, SelfHarmInstructions, Violence, ViolenceGraphic)
+  - Score-based thresholds (0.0-1.0) with default 0.7
+  - `UseScoreThreshold` toggle between score-based and boolean flagged mode
+  - `EnabledCategories` / `DisabledCategories` for selective category filtering
+  - `BlockOnFlagged` option for overall flagged status handling
+
+- **Audit Logging Infrastructure**
+  - `IAuditLogger` interface for compliance and monitoring integration
+  - `GuardrailAuditEntry` record with comprehensive tracking fields:
+    - `Id`, `Timestamp`, `GuardrailName`, `Direction` (Input/Output)
+    - `Result`, `ContentPreview`, `ContentLength`
+    - `CorrelationId`, `UserId`, `AgentId` for tracing
+    - `Metadata` dictionary and `DurationMs` for performance tracking
+  - `ValidationDirection` enum (Input, Output)
+  - `NullAuditLogger` no-op implementation for testing
+
+- **DI Extension Methods**
+  - `AddAzureContentSafety(endpoint, apiKey)` - String-based configuration
+  - `AddAzureContentSafety(Uri, AzureKeyCredential)` - Credential-based configuration
+  - `AddAzureContentSafety(ContentSafetyClient)` - Pre-configured client injection
+  - `AddOpenAIModeration(apiKey, model)` - API key configuration with model selection
+  - `AddOpenAIModeration(ModerationClient)` - Pre-configured client injection
+  - `AddAuditLogger<T>()` and `AddAuditLogger(instance)` for audit logger registration
+
+### Test Coverage
+
+- **New Test Files**
+  - `AuditLoggerTests` - 7 tests for audit logger interface and NullAuditLogger
+  - `AzureContentSafetyGuardrailTests` - 12 tests for Azure adapter
+  - `OpenAIModerationGuardrailTests` - 12 tests for OpenAI adapter
+  - `GuardrailBuilderTests` - 25 tests for DI extension methods
+
+- **Test Statistics**
+  - Total: 826 tests (819 passed, 7 skipped)
+  - Phase 7.3 contribution: 56 new tests
+  - All tests passing after implementation
+
+### Technical Details
+
+- **Design Philosophy**: Thin Wrapper approach
+  - Ironbees declares integration patterns, external services execute
+  - No AI logic implementation - delegates to Azure AI Content Safety and OpenAI
+  - Consistent interface (`IContentGuardrail`) for all guardrail types
+
+- **Package Dependencies**
+  - Added `Azure.AI.ContentSafety` (1.0.0) for Azure integration
+  - Uses existing `OpenAI` package for Moderation API
+
+- **API Compatibility**
+  - Azure SDK: Uses `AnalyzeTextAsync` with `TextCategory` comparison
+  - OpenAI SDK: Uses flat `ModerationResult` structure with `ModerationCategory` properties
+
 ## [0.2.0] - 2025-12-30
 
 ### Added - Guardrails & Content Validation System (Phase 7)

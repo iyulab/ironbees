@@ -175,6 +175,78 @@ if (!result.IsValid)
 | WFC006 | Invalid state transition |
 | WFC007 | Agent state missing executor |
 
+## Guardrails (v0.3.0)
+
+Content validation for input/output filtering:
+
+```csharp
+using Ironbees.Core.Guardrails;
+
+// Configure guardrails via DI
+services.AddGuardrails()
+    .AddLengthGuardrail(maxInputLength: 10000, maxOutputLength: 50000)
+    .AddKeywordGuardrail("forbidden", "blocked", "banned")
+    .AddRegexGuardrail(
+        new PatternDefinition { Pattern = @"\d{3}-\d{2}-\d{4}", Name = "SSN" },
+        new PatternDefinition { Pattern = @"[\w.-]+@[\w.-]+\.\w+", Name = "Email" })
+    .AddAzureContentSafety(
+        endpoint: "https://your-resource.cognitiveservices.azure.com/",
+        apiKey: "your-api-key")
+    .AddOpenAIModeration(apiKey: "sk-your-openai-key")
+    .AddAuditLogger<CustomAuditLogger>()
+    .Build();
+
+// Use pipeline directly
+var pipeline = serviceProvider.GetRequiredService<GuardrailPipeline>();
+
+var inputResult = await pipeline.ValidateInputAsync(userInput);
+if (!inputResult.IsAllowed)
+{
+    foreach (var violation in inputResult.Violations)
+    {
+        Console.WriteLine($"[{violation.Severity}] {violation.GuardrailName}: {violation.Message}");
+    }
+    return; // Block processing
+}
+
+// Process with LLM...
+var llmResponse = await agent.RunAsync(userInput);
+
+var outputResult = await pipeline.ValidateOutputAsync(llmResponse.Text);
+if (!outputResult.IsAllowed)
+{
+    // Handle output violations
+}
+```
+
+### External Content Safety Services
+
+**Azure AI Content Safety**:
+```csharp
+services.AddGuardrails()
+    .AddAzureContentSafety(
+        endpoint: new Uri("https://..."),
+        credential: new AzureKeyCredential("..."),
+        options => {
+            options.MaxAllowedSeverity = 4; // 0-6 scale
+            options.ValidateInput = true;
+            options.ValidateOutput = true;
+        })
+    .Build();
+```
+
+**OpenAI Moderation API**:
+```csharp
+services.AddGuardrails()
+    .AddOpenAIModeration(
+        apiKey: "sk-...",
+        options => {
+            options.ScoreThreshold = 0.7f; // 0.0-1.0
+            options.ValidateInput = true;
+        })
+    .Build();
+```
+
 ## Samples
 
 See `samples/` directory:

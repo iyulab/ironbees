@@ -1,6 +1,6 @@
 # Ironbees Architecture
 
-**Version**: 0.1.9 | **Target**: .NET 10.0
+**Version**: 0.3.0 | **Target**: .NET 10.0
 
 ## Overview
 
@@ -23,6 +23,12 @@ Ironbees is a **Thin Wrapper** LLM agent framework that simplifies agent loading
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
 │  │ Agent Loader │→ │Agent Selector│→ │  Middleware  │  │
 │  └──────────────┘  └──────────────┘  └──────────────┘  │
+│                                                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              Guardrails Pipeline                  │   │
+│  │  Input → [Regex|Keyword|Length|Azure|OpenAI] → ✓  │   │
+│  │  Output → [Regex|Keyword|Length|Azure|OpenAI] → ✓ │   │
+│  └──────────────────────────────────────────────────┘   │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
@@ -45,7 +51,16 @@ src/
 │   ├── Middleware/                 # IChatClient pipeline
 │   ├── Conversation/               # FileSystemConversationStore
 │   ├── Streaming/                  # StreamChunk types
-│   └── AgentDirectory/             # Filesystem agent loading
+│   ├── AgentDirectory/             # Filesystem agent loading
+│   └── Guardrails/                 # Content validation (v0.3.0)
+│       ├── IContentGuardrail       # Core interface
+│       ├── GuardrailPipeline       # Multi-guardrail orchestrator
+│       ├── RegexGuardrail          # Pattern-based filtering
+│       ├── KeywordGuardrail        # Blocked word detection
+│       ├── LengthGuardrail         # DoS prevention
+│       ├── AzureContentSafetyGuardrail  # Azure AI adapter
+│       ├── OpenAIModerationGuardrail    # OpenAI adapter
+│       └── IAuditLogger            # Compliance logging
 │
 ├── Ironbees.AgentFramework/        # MAF integration
 │   └── Workflow/                   # Workflow converter, executor, checkpoint
@@ -59,11 +74,13 @@ src/
 | Interface | Purpose | Implementation |
 |-----------|---------|----------------|
 | `IAgentLoader` | Load agents from filesystem | `FileSystemAgentLoader` |
-| `IAgentSelector` | Route requests to agents | `KeywordAgentSelector`, `EmbeddingAgentSelector` |
+| `IAgentSelector` | Route requests to agents | `KeywordAgentSelector`, `EmbeddingAgentSelector`, `HybridAgentSelector` |
 | `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `MicrosoftAgentFrameworkAdapter` |
 | `IWorkflowOrchestrator<T>` | Execute YAML workflows | `YamlDrivenOrchestrator` |
 | `IWorkflowConverter` | YAML → MAF conversion | `MafWorkflowConverter` |
 | `ICheckpointStore` | Workflow persistence | `FileSystemCheckpointStore` |
+| `IContentGuardrail` | Content validation | `RegexGuardrail`, `KeywordGuardrail`, `LengthGuardrail`, `AzureContentSafetyGuardrail`, `OpenAIModerationGuardrail` |
+| `IAuditLogger` | Compliance logging | `NullAuditLogger`, custom implementations |
 
 ## Agent Filesystem Convention
 
@@ -113,6 +130,56 @@ YAML Definition → YamlWorkflowLoader → MafWorkflowConverter → MAF Workflow
 - **Parallel**: Multiple agents execute concurrently
 - **Mixed**: Combines sequential and parallel execution
 
+## Guardrails System
+
+Content validation pipeline for input/output filtering:
+
+```
+Input → GuardrailPipeline → [Regex|Keyword|Length|Azure|OpenAI] → ✓ or Violation
+                                       ↓
+                                  IAuditLogger
+```
+
+### Built-in Guardrails
+
+| Guardrail | Purpose | Configuration |
+|-----------|---------|---------------|
+| `RegexGuardrail` | PII detection (email, SSN, credit card) | `PatternDefinition[]` |
+| `KeywordGuardrail` | Blocked word filtering | `blockedKeywords`, `WholeWordOnly` |
+| `LengthGuardrail` | DoS prevention | `maxInputLength`, `maxOutputLength` |
+
+### External Adapters (v0.3.0)
+
+| Adapter | Service | Categories |
+|---------|---------|------------|
+| `AzureContentSafetyGuardrail` | Azure AI Content Safety | Hate, SelfHarm, Sexual, Violence |
+| `OpenAIModerationGuardrail` | OpenAI Moderation API | 11 categories with score thresholds |
+
+### DI Configuration
+
+```csharp
+services.AddGuardrails()
+    .AddLengthGuardrail(maxInputLength: 10000)
+    .AddKeywordGuardrail("forbidden", "blocked")
+    .AddRegexGuardrail(new PatternDefinition { Pattern = @"\d{3}-\d{2}-\d{4}", Name = "SSN" })
+    .AddAzureContentSafety(endpoint: "https://...", apiKey: "...")
+    .AddOpenAIModeration(apiKey: "sk-...")
+    .AddAuditLogger<CustomAuditLogger>()
+    .Build();
+```
+
+### GuardrailResult
+
+```csharp
+if (!result.IsAllowed)
+{
+    foreach (var violation in result.Violations)
+    {
+        Console.WriteLine($"[{violation.Severity}] {violation.GuardrailName}: {violation.Message}");
+    }
+}
+```
+
 ## Scope Boundaries
 
 **Ironbees Handles**:
@@ -123,6 +190,11 @@ YAML Definition → YamlWorkflowLoader → MafWorkflowConverter → MAF Workflow
 - Token tracking / cost monitoring
 - Conversation state management
 - Middleware pipeline
+- **Guardrails & content validation** (v0.3.0)
+- **Audit logging for compliance** (v0.3.0)
+
+**Delegated to External Services**:
+- AI-based content moderation → Azure AI Content Safety, OpenAI Moderation
 
 **Delegated to MAF**:
 - Complex workflow execution
