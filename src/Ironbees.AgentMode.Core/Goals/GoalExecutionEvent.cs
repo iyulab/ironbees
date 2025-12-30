@@ -61,7 +61,41 @@ public enum GoalExecutionEventType
     /// <summary>
     /// The goal execution is resuming from a checkpoint.
     /// </summary>
-    GoalResuming
+    GoalResuming,
+
+    // ========================================
+    // Agentic Pattern Events
+    // ========================================
+
+    /// <summary>
+    /// Human-in-the-Loop intervention is requested.
+    /// </summary>
+    HitlRequested,
+
+    /// <summary>
+    /// Human-in-the-Loop response was received.
+    /// </summary>
+    HitlResponseReceived,
+
+    /// <summary>
+    /// Confidence level was updated during iterative processing.
+    /// </summary>
+    ConfidenceUpdated,
+
+    /// <summary>
+    /// Sampling progress update for progressive data processing.
+    /// </summary>
+    SamplingProgress,
+
+    /// <summary>
+    /// Pattern was discovered during analysis.
+    /// </summary>
+    PatternDiscovered,
+
+    /// <summary>
+    /// Rules stability was achieved (no new patterns for N iterations).
+    /// </summary>
+    RulesStabilized
 }
 
 /// <summary>
@@ -129,6 +163,227 @@ public sealed record GoalExecutionEvent
     /// Gets progress percentage (0-100) if available.
     /// </summary>
     public int? ProgressPercentage { get; init; }
+
+    // ========================================
+    // Agentic Pattern Properties
+    // ========================================
+
+    /// <summary>
+    /// Gets HITL request details when Type is HitlRequested.
+    /// </summary>
+    public HitlRequestDetails? HitlRequest { get; init; }
+
+    /// <summary>
+    /// Gets confidence information when Type is ConfidenceUpdated.
+    /// </summary>
+    public ConfidenceInfo? Confidence { get; init; }
+
+    /// <summary>
+    /// Gets sampling progress when Type is SamplingProgress.
+    /// </summary>
+    public SamplingProgressInfo? Sampling { get; init; }
+}
+
+/// <summary>
+/// Details for a Human-in-the-Loop request.
+/// </summary>
+public sealed record HitlRequestDetails
+{
+    /// <summary>
+    /// Gets the unique request ID for this HITL interaction.
+    /// </summary>
+    public required string RequestId { get; init; }
+
+    /// <summary>
+    /// Gets the type of HITL request.
+    /// </summary>
+    public required HitlRequestType RequestType { get; init; }
+
+    /// <summary>
+    /// Gets the reason for requesting human intervention.
+    /// </summary>
+    public required string Reason { get; init; }
+
+    /// <summary>
+    /// Gets the checkpoint name that triggered this HITL.
+    /// </summary>
+    public string? CheckpointName { get; init; }
+
+    /// <summary>
+    /// Gets contextual information for the human to review.
+    /// </summary>
+    public IReadOnlyDictionary<string, object>? Context { get; init; }
+
+    /// <summary>
+    /// Gets the available options for the human to choose from.
+    /// </summary>
+    public IReadOnlyList<HitlOption>? Options { get; init; }
+
+    /// <summary>
+    /// Gets when the request was made.
+    /// </summary>
+    public DateTimeOffset RequestedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// Gets when the request will timeout.
+    /// </summary>
+    public DateTimeOffset? ExpiresAt { get; init; }
+}
+
+/// <summary>
+/// Type of HITL request.
+/// </summary>
+public enum HitlRequestType
+{
+    /// <summary>
+    /// Request for approval to proceed.
+    /// </summary>
+    Approval,
+
+    /// <summary>
+    /// Request for a decision between options.
+    /// </summary>
+    Decision,
+
+    /// <summary>
+    /// Request for text input or configuration.
+    /// </summary>
+    Input,
+
+    /// <summary>
+    /// Request for review and feedback.
+    /// </summary>
+    Review,
+
+    /// <summary>
+    /// Request due to uncertainty or low confidence.
+    /// </summary>
+    Uncertainty,
+
+    /// <summary>
+    /// Request due to an exception or error.
+    /// </summary>
+    Exception
+}
+
+/// <summary>
+/// An option presented to the human in a HITL request.
+/// </summary>
+public sealed record HitlOption
+{
+    /// <summary>
+    /// Gets the unique identifier for this option.
+    /// </summary>
+    public required string Id { get; init; }
+
+    /// <summary>
+    /// Gets the display label for this option.
+    /// </summary>
+    public required string Label { get; init; }
+
+    /// <summary>
+    /// Gets the description of what this option does.
+    /// </summary>
+    public string? Description { get; init; }
+
+    /// <summary>
+    /// Gets whether this is the recommended/default option.
+    /// </summary>
+    public bool IsDefault { get; init; }
+
+    /// <summary>
+    /// Gets additional data associated with this option.
+    /// </summary>
+    public IReadOnlyDictionary<string, object>? Data { get; init; }
+}
+
+/// <summary>
+/// Information about confidence level during iterative processing.
+/// </summary>
+public sealed record ConfidenceInfo
+{
+    /// <summary>
+    /// Gets the current confidence level (0.0 - 1.0).
+    /// </summary>
+    public required double CurrentConfidence { get; init; }
+
+    /// <summary>
+    /// Gets the target confidence threshold.
+    /// </summary>
+    public double TargetThreshold { get; init; }
+
+    /// <summary>
+    /// Gets the number of samples processed.
+    /// </summary>
+    public int SamplesProcessed { get; init; }
+
+    /// <summary>
+    /// Gets the number of consecutive stable iterations.
+    /// </summary>
+    public int StableIterations { get; init; }
+
+    /// <summary>
+    /// Gets whether the rules are considered stable.
+    /// </summary>
+    public bool IsStable { get; init; }
+
+    /// <summary>
+    /// Gets the change in confidence from the previous iteration.
+    /// </summary>
+    public double? ConfidenceDelta { get; init; }
+
+    /// <summary>
+    /// Gets the number of patterns discovered so far.
+    /// </summary>
+    public int PatternsDiscovered { get; init; }
+}
+
+/// <summary>
+/// Information about sampling progress during progressive processing.
+/// </summary>
+public sealed record SamplingProgressInfo
+{
+    /// <summary>
+    /// Gets the current batch number.
+    /// </summary>
+    public required int CurrentBatch { get; init; }
+
+    /// <summary>
+    /// Gets the number of samples in the current batch.
+    /// </summary>
+    public required int SamplesInBatch { get; init; }
+
+    /// <summary>
+    /// Gets the total samples processed across all batches.
+    /// </summary>
+    public required int TotalProcessed { get; init; }
+
+    /// <summary>
+    /// Gets the total dataset size if known.
+    /// </summary>
+    public int? TotalDatasetSize { get; init; }
+
+    /// <summary>
+    /// Gets the processing percentage if total size is known.
+    /// </summary>
+    public double? ProcessingPercentage => TotalDatasetSize > 0
+        ? (double)TotalProcessed / TotalDatasetSize * 100
+        : null;
+
+    /// <summary>
+    /// Gets the patterns discovered in this batch.
+    /// </summary>
+    public IReadOnlyList<string>? DiscoveredPatterns { get; init; }
+
+    /// <summary>
+    /// Gets the exceptions found in this batch.
+    /// </summary>
+    public int ExceptionsInBatch { get; init; }
+
+    /// <summary>
+    /// Gets the current error rate.
+    /// </summary>
+    public double? ErrorRate { get; init; }
 }
 
 /// <summary>

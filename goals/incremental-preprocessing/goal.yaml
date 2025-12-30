@@ -1,0 +1,98 @@
+# Incremental Preprocessing Goal
+#
+# A sample goal demonstrating agentic patterns for progressive sampling-based
+# data preprocessing with HITL checkpoints and confidence-based termination.
+#
+# Use Case: Large dataset preprocessing where patterns/rules are discovered
+# incrementally and applied after human approval.
+
+id: incremental-preprocessing
+name: "Incremental Data Preprocessing"
+description: |
+  Progressively sample and analyze a large dataset to discover preprocessing
+  rules. Uses confidence-based iteration with HITL checkpoints for human
+  oversight. Once rules stabilize, applies them to the full dataset.
+
+version: "1.0"
+workflowTemplate: agentic-loop
+
+# Agentic pattern configuration
+agentic:
+  sampling:
+    strategy: progressive
+    initialBatchSize: 100
+    growthFactor: 5
+    maxSamples: 5000
+    minSamplesForConfidence: 50
+
+  confidence:
+    threshold: 0.98
+    stabilityWindow: 3
+    minConfidenceForHitl: 0.7
+    trackHistory: true
+
+  hitl:
+    policy: on-uncertainty
+    uncertaintyThreshold: 0.7
+    checkpoints:
+      - after-initial-sample
+      - before-batch-apply
+      - on-exception
+    responseTimeout: PT1H  # ISO 8601: 1 hour
+    timeoutAction: pause
+
+# Workflow parameters - agent assignments
+parameters:
+  samplingAgent: data-sampler
+  analysisAgent: pattern-analyzer
+  processingAgent: batch-processor
+  reportAgent: report-generator
+
+# Execution constraints
+constraints:
+  maxIterations: 20
+  maxTokens: 100000
+  allowedAgents:
+    - data-sampler
+    - pattern-analyzer
+    - batch-processor
+    - report-generator
+  allowedTools:
+    - file-reader
+    - data-transformer
+    - pattern-matcher
+
+# Success criteria
+successCriteria:
+  - id: rules-stable
+    description: "Preprocessing rules have stabilized"
+    type: Condition
+    condition: "confidence >= 0.98 && stabilityWindow >= 3"
+    required: true
+    weight: 0.6
+
+  - id: error-rate-acceptable
+    description: "Error rate is within acceptable bounds"
+    type: Condition
+    condition: "errorRate <= 0.01"
+    required: true
+    weight: 0.4
+
+# Checkpointing
+checkpoint:
+  enabled: true
+  afterEachIteration: true
+  checkpointDirectory: checkpoints
+
+# Metadata
+tags:
+  - data-preprocessing
+  - agentic-pattern
+  - progressive-sampling
+  - hitl
+
+metadata:
+  category: data-processing
+  complexity: high
+  estimatedDuration: PT2H
+  author: ironbees-team

@@ -1,0 +1,293 @@
+# Agentic Loop Workflow Template
+#
+# A workflow template for goal-directed iterative processing with HITL
+# (Human-in-the-Loop) checkpoints, progressive sampling, and confidence-based
+# termination. Designed for agentic patterns like data preprocessing,
+# rule discovery, and pattern analysis.
+#
+# This template DECLARES the workflow structure - actual execution is delegated
+# to MS Agent Framework (MAF). See ROADMAP.md for philosophy details.
+#
+# Parameters:
+# - goal.id: Goal identifier
+# - goal.name: Goal name
+# - goal.constraints.maxIterations: Maximum loop iterations
+# - goal.agentic.sampling.*: Progressive sampling configuration
+# - goal.agentic.confidence.*: Confidence threshold settings
+# - goal.agentic.hitl.*: HITL policy and checkpoints
+# - parameters.samplingAgent: Agent for data sampling
+# - parameters.analysisAgent: Agent for pattern analysis
+# - parameters.processingAgent: Agent for batch processing
+# - parameters.reportAgent: Agent for final report generation
+
+name: "{{goal.id}}-agentic-workflow"
+version: "1.0"
+description: "Agentic loop workflow for {{goal.name}}"
+
+settings:
+  defaultMaxIterations: "{{goal.constraints.maxIterations}}"
+  enableCheckpointing: true
+  checkpointDirectory: "{{goal.checkpoint.directory}}"
+
+  # Agentic pattern settings
+  sampling:
+    strategy: "{{goal.agentic.sampling.strategy}}"
+    initialBatchSize: "{{goal.agentic.sampling.initialBatchSize}}"
+    growthFactor: "{{goal.agentic.sampling.growthFactor}}"
+    maxSamples: "{{goal.agentic.sampling.maxSamples}}"
+
+  confidence:
+    threshold: "{{goal.agentic.confidence.threshold}}"
+    stabilityWindow: "{{goal.agentic.confidence.stabilityWindow}}"
+
+  hitl:
+    policy: "{{goal.agentic.hitl.policy}}"
+    uncertaintyThreshold: "{{goal.agentic.hitl.uncertaintyThreshold}}"
+    responseTimeout: "{{goal.agentic.hitl.responseTimeout}}"
+
+states:
+  # ========================================
+  # Initialization Phase
+  # ========================================
+
+  - id: START
+    type: start
+    next: INITIALIZE
+
+  - id: INITIALIZE
+    type: setup
+    description: "Initialize goal context and sampling state"
+    emitEvent: GoalLoaded
+    actions:
+      - initializeSamplingState
+      - loadPreviousCheckpoint
+    next: SAMPLE
+
+  # ========================================
+  # Sampling Loop
+  # ========================================
+
+  - id: SAMPLE
+    type: action
+    description: "Sample data batch using configured strategy"
+    agent: "{{parameters.samplingAgent}}"
+    emitEvent: SamplingProgress
+    metadata:
+      currentBatch: "{{state.currentBatch}}"
+      batchSize: "{{state.currentBatchSize}}"
+      totalProcessed: "{{state.totalProcessed}}"
+    next: ANALYZE
+
+  - id: ANALYZE
+    type: action
+    description: "Analyze sampled data for patterns and rules"
+    agent: "{{parameters.analysisAgent}}"
+    emitEvent: PatternDiscovered
+    metadata:
+      discoveredPatterns: "{{state.patterns}}"
+      exceptionsCount: "{{state.exceptionsCount}}"
+    next: EVALUATE_CONFIDENCE
+
+  # ========================================
+  # Confidence Evaluation
+  # ========================================
+
+  - id: EVALUATE_CONFIDENCE
+    type: decision
+    description: "Evaluate confidence level and determine next action"
+    emitEvent: ConfidenceUpdated
+    metadata:
+      currentConfidence: "{{state.confidence}}"
+      targetThreshold: "{{goal.agentic.confidence.threshold}}"
+      stableIterations: "{{state.stableIterations}}"
+      isStable: "{{state.isStable}}"
+    conditions:
+      # Confidence threshold met AND rules stable
+      - condition: "state.confidence >= goal.agentic.confidence.threshold && state.isStable"
+        next: HITL_FINAL_APPROVAL
+
+      # Max iterations reached
+      - condition: "state.iteration >= goal.constraints.maxIterations"
+        next: MAX_ITERATIONS_REACHED
+
+      # HITL required based on policy
+      - condition: "shouldTriggerHitl(state, goal.agentic.hitl)"
+        next: HITL_CHECKPOINT
+
+      # Rules just stabilized - emit event
+      - condition: "state.stableIterations >= goal.agentic.confidence.stabilityWindow && !state.previouslyStable"
+        emitEvent: RulesStabilized
+        next: HITL_FINAL_APPROVAL
+
+    default: SAMPLE
+
+  # ========================================
+  # HITL Checkpoints
+  # ========================================
+
+  - id: HITL_CHECKPOINT
+    type: hitl
+    description: "Human-in-the-Loop checkpoint for uncertainty or policy"
+    emitEvent: HitlRequested
+    requestType: Review
+    reason: "{{state.hitlReason}}"
+    context:
+      currentConfidence: "{{state.confidence}}"
+      samplesProcessed: "{{state.totalProcessed}}"
+      discoveredPatterns: "{{state.patterns}}"
+      recentExceptions: "{{state.recentExceptions}}"
+    options:
+      - id: continue
+        label: "Continue Sampling"
+        description: "Continue with more data samples"
+        isDefault: true
+      - id: modify-rules
+        label: "Modify Rules"
+        description: "Adjust discovered patterns before continuing"
+      - id: skip-to-approval
+        label: "Skip to Approval"
+        description: "Proceed to final approval with current rules"
+      - id: cancel
+        label: "Cancel"
+        description: "Cancel goal execution"
+    waitForResponse: true
+    timeout: "{{goal.agentic.hitl.responseTimeout}}"
+    timeoutAction: "{{goal.agentic.hitl.timeoutAction}}"
+    next:
+      continue: SAMPLE
+      modify-rules: MODIFY_RULES
+      skip-to-approval: HITL_FINAL_APPROVAL
+      cancel: CANCELLED
+
+  - id: MODIFY_RULES
+    type: action
+    description: "Allow human modification of discovered rules"
+    emitEvent: HitlResponseReceived
+    agent: "{{parameters.analysisAgent}}"
+    actions:
+      - applyHumanModifications
+      - recalculateConfidence
+    next: EVALUATE_CONFIDENCE
+
+  - id: HITL_FINAL_APPROVAL
+    type: hitl
+    description: "Final human approval before batch processing"
+    emitEvent: HitlRequested
+    requestType: Approval
+    reason: "Rules stabilized. Ready for batch processing."
+    checkpointName: "before-batch-apply"
+    context:
+      finalConfidence: "{{state.confidence}}"
+      totalSamplesProcessed: "{{state.totalProcessed}}"
+      discoveredPatterns: "{{state.patterns}}"
+      estimatedAffectedRecords: "{{state.estimatedAffectedRecords}}"
+    options:
+      - id: apply-all
+        label: "Apply to All"
+        description: "Apply discovered rules to entire dataset"
+        isDefault: true
+      - id: more-sampling
+        label: "More Sampling"
+        description: "Continue sampling for higher confidence"
+      - id: modify-rules
+        label: "Modify Rules"
+        description: "Adjust rules before applying"
+      - id: export-only
+        label: "Export Only"
+        description: "Export rules without applying"
+    waitForResponse: true
+    timeout: "{{goal.agentic.hitl.responseTimeout}}"
+    timeoutAction: Pause
+    next:
+      apply-all: BATCH_PROCESS
+      more-sampling: SAMPLE
+      modify-rules: MODIFY_RULES
+      export-only: EXPORT_RULES
+
+  # ========================================
+  # Batch Processing Phase
+  # ========================================
+
+  - id: BATCH_PROCESS
+    type: action
+    description: "Apply discovered rules to full dataset"
+    agent: "{{parameters.processingAgent}}"
+    emitEvent: WorkflowProgress
+    metadata:
+      phase: "batch-processing"
+      rulesApplied: "{{state.patterns.length}}"
+    checkpoint: true
+    next: REPORT
+
+  - id: EXPORT_RULES
+    type: action
+    description: "Export discovered rules without applying"
+    agent: "{{parameters.reportAgent}}"
+    emitEvent: AgentCompleted
+    metadata:
+      exportOnly: true
+      rulesExported: "{{state.patterns.length}}"
+    next: SUCCESS
+
+  - id: REPORT
+    type: action
+    description: "Generate final processing report"
+    agent: "{{parameters.reportAgent}}"
+    emitEvent: AgentCompleted
+    metadata:
+      recordsProcessed: "{{state.totalRecordsProcessed}}"
+      errorsEncountered: "{{state.totalErrors}}"
+    next: SUCCESS
+
+  # ========================================
+  # Terminal States
+  # ========================================
+
+  - id: SUCCESS
+    type: terminal
+    status: completed
+    emitEvent: GoalCompleted
+    metadata:
+      finalConfidence: "{{state.confidence}}"
+      totalIterations: "{{state.iteration}}"
+      patternsDiscovered: "{{state.patterns.length}}"
+      recordsProcessed: "{{state.totalRecordsProcessed}}"
+
+  - id: MAX_ITERATIONS_REACHED
+    type: terminal
+    status: max_iterations
+    emitEvent: GoalCompleted
+    metadata:
+      reason: "Maximum iterations reached without achieving target confidence"
+      finalConfidence: "{{state.confidence}}"
+      totalIterations: "{{state.iteration}}"
+      patternsDiscovered: "{{state.patterns.length}}"
+      recommendation: "Review patterns and consider manual intervention"
+
+  - id: CANCELLED
+    type: terminal
+    status: cancelled
+    emitEvent: GoalCancelled
+    metadata:
+      cancelledAt: "{{state.iteration}}"
+      samplesProcessed: "{{state.totalProcessed}}"
+
+  - id: FAILED
+    type: terminal
+    status: failed
+    emitEvent: GoalFailed
+
+# ========================================
+# Helper Functions (Evaluated by MAF)
+# ========================================
+#
+# shouldTriggerHitl(state, hitlSettings):
+#   Returns true if HITL should be triggered based on policy:
+#   - Always: Always trigger at checkpoints
+#   - OnUncertainty: Trigger when confidence < uncertaintyThreshold
+#   - OnThreshold: Trigger at specific iteration thresholds
+#   - OnException: Trigger when exceptions detected
+#   - Never: Never trigger (fully autonomous)
+#
+# Note: These functions are NOT implemented by Ironbees.
+#       They are declarations for MAF execution engine.

@@ -68,6 +68,19 @@ public record GoalDefinition
     /// The directory path where this goal was loaded from.
     /// </summary>
     public string? SourcePath { get; init; }
+
+    /// <summary>
+    /// Agentic pattern settings for iterative workflows with HITL, sampling, and confidence.
+    /// </summary>
+    /// <remarks>
+    /// When set, enables agentic patterns such as:
+    /// <list type="bullet">
+    /// <item><description>Progressive sampling for large datasets</description></item>
+    /// <item><description>Confidence-based early termination</description></item>
+    /// <item><description>Human-in-the-Loop checkpoints</description></item>
+    /// </list>
+    /// </remarks>
+    public AgenticSettings? Agentic { get; init; }
 }
 
 /// <summary>
