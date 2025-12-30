@@ -1,9 +1,12 @@
 // Copyright (c) Ironbees. All rights reserved.
 // Licensed under the MIT License.
 
+using Azure;
+using Azure.AI.ContentSafety;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using OpenAI.Moderations;
 
 namespace Ironbees.Core.Guardrails;
 
@@ -216,6 +219,166 @@ public sealed class GuardrailBuilder
 
         _inputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
         _outputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an Azure AI Content Safety guardrail.
+    /// </summary>
+    /// <param name="endpoint">The Azure Content Safety endpoint URL.</param>
+    /// <param name="apiKey">The API key for authentication.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddAzureContentSafety(
+        string endpoint,
+        string apiKey,
+        Action<AzureContentSafetyGuardrailOptions>? configure = null)
+    {
+        return AddAzureContentSafety(
+            new Uri(endpoint),
+            new AzureKeyCredential(apiKey),
+            configure);
+    }
+
+    /// <summary>
+    /// Adds an Azure AI Content Safety guardrail.
+    /// </summary>
+    /// <param name="endpoint">The Azure Content Safety endpoint URI.</param>
+    /// <param name="credential">The Azure credential for authentication.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddAzureContentSafety(
+        Uri endpoint,
+        AzureKeyCredential credential,
+        Action<AzureContentSafetyGuardrailOptions>? configure = null)
+    {
+        var options = new AzureContentSafetyGuardrailOptions();
+        configure?.Invoke(options);
+
+        var client = new ContentSafetyClient(endpoint, credential);
+        var guardrail = new AzureContentSafetyGuardrail(client, options);
+
+        if (options.ValidateInput)
+        {
+            _inputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        if (options.ValidateOutput)
+        {
+            _outputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an Azure AI Content Safety guardrail with a pre-configured client.
+    /// </summary>
+    /// <param name="client">The Content Safety client.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddAzureContentSafety(
+        ContentSafetyClient client,
+        Action<AzureContentSafetyGuardrailOptions>? configure = null)
+    {
+        var options = new AzureContentSafetyGuardrailOptions();
+        configure?.Invoke(options);
+
+        var guardrail = new AzureContentSafetyGuardrail(client, options);
+
+        if (options.ValidateInput)
+        {
+            _inputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        if (options.ValidateOutput)
+        {
+            _outputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an OpenAI Moderation guardrail.
+    /// </summary>
+    /// <param name="apiKey">The OpenAI API key.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <param name="model">The moderation model to use. Defaults to "omni-moderation-latest".</param>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddOpenAIModeration(
+        string apiKey,
+        Action<OpenAIModerationGuardrailOptions>? configure = null,
+        string model = "omni-moderation-latest")
+    {
+        var options = new OpenAIModerationGuardrailOptions();
+        configure?.Invoke(options);
+
+        var client = new ModerationClient(model, apiKey);
+        var guardrail = new OpenAIModerationGuardrail(client, options);
+
+        if (options.ValidateInput)
+        {
+            _inputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        if (options.ValidateOutput)
+        {
+            _outputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an OpenAI Moderation guardrail with a pre-configured client.
+    /// </summary>
+    /// <param name="client">The Moderation client.</param>
+    /// <param name="configure">Optional configuration action.</param>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddOpenAIModeration(
+        ModerationClient client,
+        Action<OpenAIModerationGuardrailOptions>? configure = null)
+    {
+        var options = new OpenAIModerationGuardrailOptions();
+        configure?.Invoke(options);
+
+        var guardrail = new OpenAIModerationGuardrail(client, options);
+
+        if (options.ValidateInput)
+        {
+            _inputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        if (options.ValidateOutput)
+        {
+            _outputGuardrails.Add(ServiceDescriptor.Singleton<IContentGuardrail>(guardrail));
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an audit logger for tracking guardrail decisions.
+    /// </summary>
+    /// <typeparam name="TLogger">The audit logger type.</typeparam>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddAuditLogger<TLogger>()
+        where TLogger : class, IAuditLogger
+    {
+        _services.AddSingleton<IAuditLogger, TLogger>();
+        return this;
+    }
+
+    /// <summary>
+    /// Adds an audit logger instance for tracking guardrail decisions.
+    /// </summary>
+    /// <param name="logger">The audit logger instance.</param>
+    /// <returns>This builder for chaining.</returns>
+    public GuardrailBuilder AddAuditLogger(IAuditLogger logger)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        _services.AddSingleton(logger);
         return this;
     }
 
