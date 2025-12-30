@@ -142,5 +142,6 @@ YAML Definition → YamlWorkflowLoader → MafWorkflowConverter → MAF Workflow
 ## Next Steps
 
 - [Quick Start](./QUICKSTART.md)
+- [Agentic Patterns](./AGENTIC-PATTERNS.md)
 - [LLM Providers](./PROVIDERS.md)
 - [Deployment](./DEPLOYMENT.md)
