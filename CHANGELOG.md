@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-12-30
+
+### Added - Guardrails & Content Validation System (Phase 7)
+
+- **Core Guardrail Infrastructure**
+  - `IContentGuardrail` - Interface for input/output content validation
+  - `GuardrailResult` - Result class with IsAllowed, Violations, Metadata
+  - `GuardrailViolation` - Violation details with Position, Severity, MatchedContent
+  - `GuardrailViolationException` - Exception for content violations
+  - `ViolationSeverity` enum (Low, Medium, High, Critical)
+
+- **GuardrailPipeline**
+  - Orchestrates multiple guardrails for input/output validation
+  - Configurable options: FailFast, ThrowOnViolation, ThrowOnGuardrailError
+  - Aggregates results with AllViolations, GuardrailsExecuted metrics
+  - Thread-safe concurrent guardrail execution
+
+- **Built-in Guardrail Implementations**
+  - `RegexGuardrail` - Pattern-based PII detection (email, SSN, credit card)
+    - PatternDefinition with Name, Description, ViolationType
+    - Configurable RegexOptions, FindAllViolations, IncludeMatchedContent
+    - Position tracking for violation locations
+  - `KeywordGuardrail` - Blocked keyword/profanity filtering
+    - CaseSensitive, WholeWordOnly options
+    - HashSet-based efficient lookup
+    - FindAllViolations mode for comprehensive detection
+  - `LengthGuardrail` - Min/max length validation for DoS prevention
+    - Separate MinLength and MaxLength constraints
+    - Friendly error messages for user feedback
+
+- **Dependency Injection Extensions**
+  - `GuardrailBuilder` for fluent configuration
+  - `AddInputGuardrail<T>()` and `AddOutputGuardrail<T>()` methods
+  - `AddGuardrail<T>()` for both input and output
+  - Automatic service registration
+
+### Test Coverage
+
+- **New Test Files**
+  - `GuardrailResultTests` - 8 tests for result creation and properties
+  - `GuardrailViolationTests` - 5 tests for violation factory methods
+  - `GuardrailViolationExceptionTests` - 8 tests for exception handling
+  - `LengthGuardrailTests` - 14 tests for length validation
+  - `KeywordGuardrailTests` - 19 tests for keyword filtering
+  - `RegexGuardrailTests` - 18 tests for pattern matching
+  - `GuardrailPipelineTests` - 14 tests for pipeline orchestration
+
+- **Test Statistics**
+  - Total: 754 tests (747 passed, 7 skipped)
+  - Phase 7 contribution: 81 new tests
+  - All tests passing after implementation
+
+### Technical Details
+
+- **Design Philosophy**: Thin Wrapper approach
+  - Simple pattern-based implementations (Regex, Keyword, Length)
+  - External service adapters for complex AI-based validation (Azure, OpenAI) planned
+  - Interfaces ready for enterprise integration
+
+- **Performance Characteristics**
+  - Compiled Regex patterns for efficient matching
+  - HashSet-based keyword lookup
+  - Configurable early-exit on first violation
+
 ## [0.1.9] - 2025-12-30
 
 ### Changed - Documentation Update
