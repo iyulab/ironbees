@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Package-specific Metadata -->
+    <Description>Claude Code CLI execution adapter for Ironbees. Provides process management, real-time output streaming, and integration with autonomous code execution workflows.</Description>
+    <PackageTags>$(PackageTagsBase);claude;claude-code;cli;process-management</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ChildProcessGuard" />
+  </ItemGroup>
+
+</Project>
