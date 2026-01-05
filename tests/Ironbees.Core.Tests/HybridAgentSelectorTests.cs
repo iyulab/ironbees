@@ -410,8 +410,8 @@ public class HybridAgentSelectorTests
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
-        Assert.Contains("70%", result.SelectionReason); // Keyword weight
-        Assert.Contains("30%", result.SelectionReason); // Embedding weight
+        Assert.Contains("70 %", result.SelectionReason); // Keyword weight (P0 format includes space)
+        Assert.Contains("30 %", result.SelectionReason); // Embedding weight (P0 format includes space)
     }
 
     [Fact]
@@ -511,6 +511,6 @@ public class HybridAgentSelectorTests
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
-        Assert.Contains("50%", result.SelectionReason); // Both weights should be 50%
+        Assert.Contains("50 %", result.SelectionReason); // Both weights should be 50% (P0 format includes space)
     }
 }

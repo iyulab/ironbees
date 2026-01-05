@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Ironbees.Core;
 
 /// <summary>
@@ -138,7 +140,7 @@ public class HybridAgentSelector : IAgentSelector
             {
                 Agent = kvp.Value.Agent,
                 Score = kvp.Value.Score,
-                Reasons = new List<string> { $"Hybrid: {kvp.Value.Score:P1}" }
+                Reasons = new List<string> { string.Format(CultureInfo.InvariantCulture, "Hybrid: {0:P1}", kvp.Value.Score) }
             })
             .ToList();
 
@@ -174,9 +176,11 @@ public class HybridAgentSelector : IAgentSelector
         var keywordAgentName = keywordResult.SelectedAgent?.Config.Name ?? "none";
         var embeddingAgentName = embeddingResult.SelectedAgent?.Config.Name ?? "none";
 
-        var reason = $"Hybrid selection: '{selectedAgent}' with {confidence:P1} confidence.\n";
-        reason += $"  Keyword ({_keywordWeight:P0}): '{keywordAgentName}' ({keywordResult.ConfidenceScore:P1})\n";
-        reason += $"  Embedding ({_embeddingWeight:P0}): '{embeddingAgentName}' ({embeddingResult.ConfidenceScore:P1})";
+        // Use InvariantCulture for consistent formatting across platforms
+        var culture = CultureInfo.InvariantCulture;
+        var reason = string.Format(culture, "Hybrid selection: '{0}' with {1:P1} confidence.\n", selectedAgent, confidence);
+        reason += string.Format(culture, "  Keyword ({0:P0}): '{1}' ({2:P1})\n", _keywordWeight, keywordAgentName, keywordResult.ConfidenceScore);
+        reason += string.Format(culture, "  Embedding ({0:P0}): '{1}' ({2:P1})", _embeddingWeight, embeddingAgentName, embeddingResult.ConfidenceScore);
 
         // Show if both selectors agreed
         if (keywordAgentName == embeddingAgentName && keywordAgentName == selectedAgent)
@@ -196,7 +200,7 @@ public class HybridAgentSelector : IAgentSelector
 
         if (runnerUp.Key != null)
         {
-            reason += $"\n  Runner-up: '{runnerUp.Key}' ({runnerUp.Value.Score:P1})";
+            reason += string.Format(culture, "\n  Runner-up: '{0}' ({1:P1})", runnerUp.Key, runnerUp.Value.Score);
         }
 
         return reason;
