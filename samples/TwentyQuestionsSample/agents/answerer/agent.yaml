@@ -1,0 +1,28 @@
+id: answerer
+name: Answer Oracle
+description: Agent that answers questions about the secret word honestly
+role: oracle
+
+output:
+  type: json
+  schema: |
+    {
+      "answer": "string - 'yes', 'no', or 'maybe'",
+      "explanation": "string - optional clarification if answer is 'maybe'",
+      "is_correct_guess": "boolean - true if the questioner correctly guessed the secret",
+      "goal_achieved": "boolean - true if the game should end (correct guess)"
+    }
+  example: |
+    {
+      "answer": "yes",
+      "explanation": null,
+      "is_correct_guess": false,
+      "goal_achieved": false
+    }
+
+llm:
+  max_output_tokens: 200
+  temperature: 0.3
+
+variables:
+  game_name: "Twenty Questions"

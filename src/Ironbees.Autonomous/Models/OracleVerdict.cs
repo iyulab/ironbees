@@ -41,14 +41,94 @@ public record OracleVerdict
     public OracleReflection? Reflection { get; init; }
 
     /// <summary>
-    /// Create an error verdict
+    /// Create an error verdict (allows continuation by default for resilience)
     /// </summary>
-    public static OracleVerdict Error(string message) => new()
+    public static OracleVerdict Error(string message, bool allowContinue = true) => new()
+    {
+        IsComplete = false,
+        CanContinue = allowContinue,
+        Analysis = message,
+        Confidence = 0
+    };
+
+    // ============================================================================
+    // Helper Methods for Clear Loop Control
+    // ============================================================================
+
+    /// <summary>
+    /// Goal achieved - stop all execution.
+    /// Use when the task is fully complete and no more iterations are needed.
+    /// </summary>
+    /// <param name="analysis">Explanation of successful completion</param>
+    /// <param name="confidence">Confidence level (default: 1.0)</param>
+    public static OracleVerdict GoalAchieved(string analysis, double confidence = 1.0) => new()
+    {
+        IsComplete = true,
+        CanContinue = false,
+        Analysis = analysis,
+        Confidence = confidence
+    };
+
+    /// <summary>
+    /// Continue to next main iteration (AutoContinue).
+    /// Does NOT set NextPromptSuggestion, allowing the main loop's AutoContinue to handle the next iteration.
+    /// Use when you want the orchestrator to proceed to the next iteration with a fresh task.
+    /// </summary>
+    /// <param name="analysis">Current progress analysis</param>
+    /// <param name="confidence">Current confidence level</param>
+    public static OracleVerdict ContinueToNextIteration(string analysis, double confidence = 0.5) => new()
+    {
+        IsComplete = false,
+        CanContinue = true,
+        Analysis = analysis,
+        Confidence = confidence,
+        NextPromptSuggestion = null  // Important: null triggers AutoContinue, not Oracle retry
+    };
+
+    /// <summary>
+    /// Retry within the same Oracle loop with a refined prompt.
+    /// Use when the current attempt needs refinement before moving to the next main iteration.
+    /// WARNING: Setting NextPromptSuggestion triggers Oracle retry loop, not main loop AutoContinue.
+    /// </summary>
+    /// <param name="refinedPrompt">The improved prompt for retry</param>
+    /// <param name="analysis">Explanation of why retry is needed</param>
+    /// <param name="confidence">Current confidence level</param>
+    public static OracleVerdict RetryWithRefinedPrompt(string refinedPrompt, string analysis, double confidence = 0.3) => new()
+    {
+        IsComplete = false,
+        CanContinue = true,
+        Analysis = analysis,
+        Confidence = confidence,
+        NextPromptSuggestion = refinedPrompt  // Triggers Oracle retry loop
+    };
+
+    /// <summary>
+    /// Stop execution without achieving goal.
+    /// Use when the task cannot continue (fatal error, resource exhaustion, etc.)
+    /// </summary>
+    /// <param name="reason">Reason for stopping</param>
+    public static OracleVerdict Stop(string reason) => new()
     {
         IsComplete = false,
         CanContinue = false,
-        Analysis = message,
+        Analysis = reason,
         Confidence = 0
+    };
+
+    /// <summary>
+    /// Create a verdict for partial progress.
+    /// Convenience method combining analysis with continuation.
+    /// </summary>
+    /// <param name="analysis">Progress analysis</param>
+    /// <param name="confidence">Confidence in progress</param>
+    /// <param name="continueToNext">If true, uses AutoContinue; if false, stops</param>
+    public static OracleVerdict Progress(string analysis, double confidence, bool continueToNext = true) => new()
+    {
+        IsComplete = false,
+        CanContinue = continueToNext,
+        Analysis = analysis,
+        Confidence = confidence,
+        NextPromptSuggestion = null
     };
 }
 

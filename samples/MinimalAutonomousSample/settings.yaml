@@ -1,0 +1,37 @@
+# Minimal Autonomous Sample Configuration
+# Environment variables can override settings using LLM_* prefix
+
+orchestration:
+  max_iterations: 10
+  completion_mode: until_goal_achieved
+  enable_checkpointing: false
+  continue_on_failure: false
+
+  oracle:
+    enabled: true
+    max_iterations: 3
+
+  confidence:
+    min_threshold: 0.8
+    human_review_threshold: 0.5
+
+  context:
+    enable_tracking: true
+    enable_reflection: false
+    max_learnings: 5
+    max_outputs: 3
+
+  auto_continue:
+    enabled: true
+    prompt_template: "Continue iteration {iteration}. Previous: {previous_output}"
+
+  retry:
+    count: 1
+    delay_ms: 500
+    enable_fallback: false
+
+debug:
+  enabled: true
+  show_llm_responses: false
+  show_token_usage: false
+  show_reasoning: false

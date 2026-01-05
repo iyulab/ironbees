@@ -1,0 +1,56 @@
+# Twenty Questions Game Settings
+# This configuration file demonstrates Ironbees SDK's YAML-based configuration
+
+llm:
+  # Use environment variables for sensitive settings
+  endpoint: ${GPUSTACK_ENDPOINT}
+  api_key: ${GPUSTACK_APIKEY}
+  model: ${GPUSTACK_MODEL}
+
+  # Generation settings - increased for reasoning models
+  max_output_tokens: 200
+  temperature: 0.7
+  timeout_seconds: 60
+
+  # Enable debug output to see raw LLM responses
+  enable_debug_output: true
+
+orchestration:
+  # Game allows up to 20 questions
+  max_iterations: 20
+
+  # Keep playing until the goal (correct guess) is achieved
+  completion_mode: until_goal_achieved
+
+  # No need for checkpointing in a simple game
+  enable_checkpointing: false
+
+  # Continue even if individual task fails (use fallback)
+  continue_on_failure: true
+
+  # Oracle settings (the answerer)
+  oracle:
+    enabled: true
+    max_iterations: 1
+
+  # High confidence required for correct guess
+  confidence:
+    min_threshold: 0.9
+    human_review_threshold: 0.5
+
+  # Auto-continue to next question automatically
+  auto_continue:
+    enabled: true
+    prompt_template: "Continue with question {iteration}"
+
+  # Retry on empty responses
+  retry:
+    count: 2
+    delay_ms: 500
+    enable_fallback: true
+
+debug:
+  enabled: true
+  show_llm_responses: true
+  show_token_usage: true
+  show_reasoning: true

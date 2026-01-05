@@ -1,0 +1,115 @@
+# Twenty Questions Game Configuration
+# This file defines the game rules, modes, and messages
+
+id: twenty-questions
+name: Twenty Questions
+description: |
+  Classic guessing game where the AI asks yes/no questions
+  to discover the secret word chosen by the human player.
+
+# Game Modes
+modes:
+  ai_guesser:
+    name: AI Guesser Mode
+    description: AI asks questions, human answers
+    agents:
+      questioner: ai      # AI generates questions
+      answerer: human     # Human answers about their secret
+
+  ai_answerer:
+    name: AI Answerer Mode
+    description: Human asks questions, AI answers
+    agents:
+      questioner: human   # Human asks questions
+      answerer: ai        # AI answers about a generated secret
+      secret_generator: ai
+
+  ai_vs_ai:
+    name: AI vs AI Mode
+    description: Fully autonomous game between two AI agents
+    agents:
+      questioner: ai
+      answerer: ai
+      secret_generator: ai
+
+# Game Rules
+rules:
+  max_questions: 20
+  max_guess_attempts: 3
+  guess_confidence_threshold: 0.8
+  valid_answers:
+    - "yes"
+    - "no"
+    - "maybe"
+
+# Human Input Validation
+validation:
+  # Open-ended question patterns (not allowed - must be Yes/No)
+  invalid_patterns:
+    english:
+      - "what "
+      - "where "
+      - "when "
+      - "who "
+      - "which "
+      - "how "
+      - "why "
+    korean:
+      - "뭐"
+      - "무엇"
+      - "어디"
+      - "언제"
+      - "누구"
+      - "어떻게"
+      - "왜"
+      - "몇"
+      - "어느"
+  # Choice question patterns
+  choice_patterns:
+    - " or "
+    - "인가요"
+  messages:
+    open_ended: "This looks like an open-ended question. Please ask a Yes/No question."
+    choice: "Please ask one Yes/No question at a time, not a choice question."
+    empty: "Please enter a question or guess."
+    examples: "Good examples: \"Is it alive?\", \"Can you eat it?\", \"살아있나요?\", \"먹을 수 있나요?\""
+
+# Human Player Prompts
+prompts:
+  questions_remaining: "📊 Questions remaining: {remaining}"
+  history_label: "📜 History:"
+  input_hint: "💡 Type your question, or 'guess: [answer]' to make a guess"
+  yes_no_hint: "(Questions must be answerable with Yes/No)"
+  your_move: "❓ Your move: "
+  ai_asks: "❓ AI asks: {question}"
+  your_secret: "(Your secret: {secret})"
+  answer_prompt: "[Y]es / [N]o / [M]aybe: "
+  clarification: "Clarification (optional): "
+  ai_guesses: "🎯 AI guesses: {guess}"
+  correct_prompt: "Is this correct? [Y/N]: "
+
+# Game Messages
+messages:
+  welcome: |
+    🎮 Welcome to Twenty Questions!
+
+    Think of something (an object, animal, or concept).
+    The AI will try to guess it by asking yes/no questions.
+
+    Ready? Let's begin!
+
+  enter_secret: |
+    📝 Please enter your secret word (the AI won't see this):
+
+  ai_wins: |
+    🎉 The AI guessed it correctly!
+    Great game - the AI found your secret in {questions} questions.
+
+  human_wins: |
+    🏆 You win!
+    The AI couldn't guess your secret within {max_questions} questions.
+    Your secret was: {secret}
+
+  timeout: |
+    ⏱️ Game ended - maximum questions ({max_questions}) reached.
+    The secret was: {secret}

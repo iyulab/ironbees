@@ -1,0 +1,115 @@
+id: questioner
+name: Question Generator
+description: AI agent that asks strategic yes/no questions to guess the secret
+role: questioner
+
+output:
+  type: json
+  schema: |
+    {
+      "question": "string - the yes/no question to ask",
+      "reasoning": "string - brief explanation of strategy",
+      "confidence": "number - 0.0 to 1.0 confidence level",
+      "is_guess": "boolean - true if this is a final guess attempt"
+    }
+  example: |
+    {
+      "question": "Is it a living thing?",
+      "reasoning": "Starting with broad category to narrow down possibilities",
+      "confidence": 0.1,
+      "is_guess": false
+    }
+
+llm:
+  max_output_tokens: 300
+  temperature: 0.7
+
+resilience:
+  max_retries: 3
+  initial_delay_ms: 500
+  backoff_multiplier: 2.0
+  max_delay_seconds: 10
+
+# Context-aware fallback configuration
+fallback:
+  enabled: true
+  strategy: context-aware
+
+  # Default fallback pool (used when no context matches)
+  default:
+    - "Is it a living thing?"
+    - "Is it man-made?"
+    - "Can you hold it in your hand?"
+    - "Is it electronic?"
+    - "Is it used for transportation?"
+    - "Is it found in homes?"
+    - "Is it made of metal?"
+
+  # Context-aware pools: matched by keywords in previous answers
+  pools:
+    - context: ["living"]
+      questions:
+        - "Is it an animal?"
+        - "Is it a plant?"
+        - "Can it move on its own?"
+        - "Is it found in homes?"
+
+    - context: ["animal"]
+      questions:
+        - "Is it a mammal?"
+        - "Does it have fur or feathers?"
+        - "Can it fly?"
+        - "Does it live in water?"
+        - "Is it a pet?"
+        - "Is it larger than a dog?"
+        - "Does it have four legs?"
+
+    - context: ["mammal"]
+      questions:
+        - "Is it larger than a human?"
+        - "Is it domesticated?"
+        - "Is it found in the wild?"
+        - "Does it eat meat?"
+
+    - context: ["mammal", "large", "wild"]
+      priority: high
+      questions:
+        - "Does it have a trunk?"
+        - "Does it have stripes or spots?"
+        - "Does it have a long neck?"
+        - "Does it have tusks?"
+        - "Does it have a mane?"
+        - "Is it found in Africa?"
+        - "Is it found in Asia?"
+        - "Is it a predator?"
+        - "Does it live in herds?"
+
+# Guess deduction rules for fallback scenarios
+guess_rules:
+  - conditions: ["trunk", "tusks"]
+    guess: "elephant"
+  - conditions: ["stripes", "mammal"]
+    guess: "zebra"
+  - conditions: ["large", "mammal", "water"]
+    guess: "hippopotamus"
+  - conditions: ["large", "mammal", "wild", "africa"]
+    guess: "elephant"
+  - conditions: ["large", "mammal", "wild"]
+    guess: "elephant"
+  - conditions: ["mammal", "wild"]
+    guess: "lion"
+  - conditions: ["mammal"]
+    guess: "dog"
+  - conditions: ["animal"]
+    guess: "bird"
+  - conditions: ["living"]
+    guess: "tree"
+  - conditions: ["electronic"]
+    guess: "smartphone"
+  - conditions: ["man-made"]
+    guess: "book"
+  - default: "computer"
+
+variables:
+  game_name: "Twenty Questions"
+  max_questions: "20"

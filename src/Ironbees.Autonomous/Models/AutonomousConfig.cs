@@ -99,6 +99,52 @@ public record AutonomousConfig
     /// Maximum number of previous outputs to keep in context
     /// </summary>
     public int MaxContextOutputs { get; init; } = 5;
+
+    // ========================================
+    // Auto-Continue Configuration (Lesson from TwentyQuestions)
+    // ========================================
+
+    /// <summary>
+    /// Automatically enqueue next iteration when oracle returns CanContinue=true.
+    /// Eliminates need for manual event handling to continue iterative workflows.
+    /// </summary>
+    public bool AutoContinueOnOracle { get; init; } = false;
+
+    /// <summary>
+    /// Template for generating the next iteration prompt.
+    /// Supports placeholders: {iteration}, {previous_output}, {oracle_analysis}
+    /// </summary>
+    public string AutoContinuePromptTemplate { get; init; } = "Continue with iteration {iteration}";
+
+    // ========================================
+    // Retry and Resilience Configuration
+    // ========================================
+
+    /// <summary>
+    /// Number of retry attempts when executor returns empty or failed result
+    /// </summary>
+    public int RetryOnFailureCount { get; init; } = 0;
+
+    /// <summary>
+    /// Delay between retry attempts in milliseconds
+    /// </summary>
+    public int RetryDelayMs { get; init; } = 1000;
+
+    /// <summary>
+    /// Enable fallback strategy when all retries fail
+    /// </summary>
+    public bool EnableFallbackStrategy { get; init; } = false;
+
+    // ========================================
+    // Final Iteration Strategy Configuration
+    // ========================================
+
+    /// <summary>
+    /// Enable final iteration strategy for enforcing completion on last iteration.
+    /// Use this to ensure the task produces a complete result when max iterations is reached.
+    /// Example: In 20 Questions, force a guess on question 20.
+    /// </summary>
+    public bool EnableFinalIterationStrategy { get; init; } = false;
 }
 
 /// <summary>

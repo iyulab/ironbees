@@ -57,6 +57,7 @@ public enum AutonomousEventType
     IterationStarted = 30,
     IterationCompleted = 31,
     MaxIterationsReached = 32,
+    AutoContinuing = 33,
 
     // Oracle events
     OracleVerifying = 60,
@@ -86,5 +87,16 @@ public enum AutonomousEventType
     LearningCaptured = 112,
 
     // Error events
-    Error = 90
+    Error = 90,
+
+    // Resilience events (lessons from TwentyQuestions)
+    RetryAttempt = 120,
+    FallbackTriggered = 121,
+    FallbackSucceeded = 122,
+    FallbackFailed = 123,
+
+    // Final iteration strategy events
+    FinalIterationApproaching = 130,
+    RequestModified = 131,
+    ForcedCompletion = 132
 }

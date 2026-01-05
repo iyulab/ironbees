@@ -19,8 +19,16 @@ public class AutonomousOrchestrator<TRequest, TResult>
     private readonly ITaskExecutor<TRequest, TResult> _executor;
     private readonly IOracleVerifier? _oracle;
     private readonly IHumanInTheLoop? _humanInTheLoop;
+    private readonly IFallbackStrategy<TRequest, TResult>? _fallbackStrategy;
     private readonly Func<string, string, TRequest> _requestFactory;
     private readonly ILogger _logger;
+    private readonly List<string> _previousOutputs = [];
+    private IFinalIterationStrategy<TRequest, TResult>? _finalIterationStrategy;
+
+    // Context management (enabled by default via builder)
+    private readonly IAutonomousContextProvider? _contextProvider;
+    private readonly IAutonomousMemoryStore? _memoryStore;
+    private readonly IContextSaturationMonitor? _saturationMonitor;
 
     private readonly ConcurrentQueue<TRequest> _taskQueue = new();
     private readonly ConcurrentDictionary<string, ExecutionHistoryEntry> _history = new();
@@ -28,6 +36,7 @@ public class AutonomousOrchestrator<TRequest, TResult>
 
     private AutonomousState _state = AutonomousState.Idle;
     private AutonomousConfig _config = new();
+    private AutonomousConfig? _defaultConfig;  // Stored from builder
     private string _sessionId = string.Empty;
     private int _currentIteration;
     private int _currentOracleIteration;
@@ -84,23 +93,101 @@ public class AutonomousOrchestrator<TRequest, TResult>
     /// <param name="requestFactory">Factory to create requests from (requestId, prompt)</param>
     /// <param name="oracle">Optional oracle verifier for goal checking</param>
     /// <param name="humanInTheLoop">Optional human-in-the-loop handler</param>
+    /// <param name="fallbackStrategy">Optional fallback strategy for failed executions</param>
     /// <param name="logger">Optional logger</param>
+    /// <param name="contextProvider">Optional context provider (enabled by default via builder)</param>
+    /// <param name="memoryStore">Optional memory store (enabled by default via builder)</param>
+    /// <param name="saturationMonitor">Optional saturation monitor (enabled by default via builder)</param>
     public AutonomousOrchestrator(
         ITaskExecutor<TRequest, TResult> executor,
         Func<string, string, TRequest> requestFactory,
         IOracleVerifier? oracle = null,
         IHumanInTheLoop? humanInTheLoop = null,
-        ILogger? logger = null)
+        IFallbackStrategy<TRequest, TResult>? fallbackStrategy = null,
+        ILogger? logger = null,
+        IAutonomousContextProvider? contextProvider = null,
+        IAutonomousMemoryStore? memoryStore = null,
+        IContextSaturationMonitor? saturationMonitor = null)
     {
         _executor = executor ?? throw new ArgumentNullException(nameof(executor));
         _requestFactory = requestFactory ?? throw new ArgumentNullException(nameof(requestFactory));
         _oracle = oracle;
         _humanInTheLoop = humanInTheLoop;
+        _fallbackStrategy = fallbackStrategy;
         _logger = logger ?? NullLogger.Instance;
+        _contextProvider = contextProvider;
+        _memoryStore = memoryStore;
+        _saturationMonitor = saturationMonitor;
     }
 
     /// <summary>
-    /// Start autonomous execution with configuration
+    /// Context provider for managing execution context (enabled by default)
+    /// </summary>
+    public IAutonomousContextProvider? ContextProvider => _contextProvider;
+
+    /// <summary>
+    /// Memory store for persistent memory across iterations (enabled by default)
+    /// </summary>
+    public IAutonomousMemoryStore? MemoryStore => _memoryStore;
+
+    /// <summary>
+    /// Saturation monitor for context window management (enabled by default)
+    /// </summary>
+    public IContextSaturationMonitor? SaturationMonitor => _saturationMonitor;
+
+    /// <summary>
+    /// Set the default configuration (called by builder).
+    /// This config is used by StartAsync() when no explicit config is provided.
+    /// </summary>
+    internal void SetDefaultConfig(AutonomousConfig config)
+    {
+        _defaultConfig = config;
+    }
+
+    /// <summary>
+    /// Set the final iteration strategy (called by builder).
+    /// This strategy is invoked when the last iteration is reached to enforce completion behavior.
+    /// </summary>
+    internal void SetFinalIterationStrategy(IFinalIterationStrategy<TRequest, TResult> strategy)
+    {
+        _finalIterationStrategy = strategy;
+    }
+
+    /// <summary>
+    /// Get the current active configuration
+    /// </summary>
+    public AutonomousConfig CurrentConfig => _config;
+
+    /// <summary>
+    /// Dump current configuration to a TextWriter for debugging
+    /// </summary>
+    public void DumpConfiguration(TextWriter writer)
+    {
+        var config = _state == AutonomousState.Running ? _config : (_defaultConfig ?? _config);
+        writer.WriteLine("┌─── Autonomous Configuration ─────────────────────────────");
+        writer.WriteLine($"│ MaxIterations: {config.MaxIterations}");
+        writer.WriteLine($"│ MaxOracleIterations: {config.MaxOracleIterations}");
+        writer.WriteLine($"│ CompletionMode: {config.CompletionMode}");
+        writer.WriteLine($"│ EnableOracle: {config.EnableOracle}");
+        writer.WriteLine($"│ EnableHumanInTheLoop: {config.EnableHumanInTheLoop}");
+        writer.WriteLine($"│ EnableCheckpointing: {config.EnableCheckpointing}");
+        writer.WriteLine($"│ EnableContextTracking: {config.EnableContextTracking}");
+        writer.WriteLine($"│ EnableReflection: {config.EnableReflection}");
+        writer.WriteLine($"│ EnableFallbackStrategy: {config.EnableFallbackStrategy}");
+        writer.WriteLine($"│ EnableFinalIterationStrategy: {config.EnableFinalIterationStrategy}");
+        writer.WriteLine($"│ AutoContinueOnOracle: {config.AutoContinueOnOracle}");
+        writer.WriteLine($"│ AutoContinuePromptTemplate: {config.AutoContinuePromptTemplate}");
+        writer.WriteLine($"│ ContinueOnFailure: {config.ContinueOnFailure}");
+        writer.WriteLine($"│ MinConfidenceThreshold: {config.MinConfidenceThreshold:P0}");
+        writer.WriteLine($"│ HumanReviewConfidenceThreshold: {config.HumanReviewConfidenceThreshold:P0}");
+        writer.WriteLine($"│ RetryOnFailureCount: {config.RetryOnFailureCount}");
+        writer.WriteLine($"│ RetryDelayMs: {config.RetryDelayMs}");
+        writer.WriteLine("└──────────────────────────────────────────────────────────");
+    }
+
+    /// <summary>
+    /// Start autonomous execution with configuration.
+    /// If no config is provided, uses the configuration from the builder (WithSettings/WithXxx methods).
     /// </summary>
     public async Task StartAsync(AutonomousConfig? config = null, CancellationToken cancellationToken = default)
     {
@@ -110,7 +197,8 @@ public class AutonomousOrchestrator<TRequest, TResult>
             return;
         }
 
-        _config = config ?? new AutonomousConfig();
+        // Use provided config, or fall back to builder's stored config, or default
+        _config = config ?? _defaultConfig ?? new AutonomousConfig();
         _sessionId = Guid.NewGuid().ToString("N")[..8];
         _currentIteration = 0;
         _currentOracleIteration = 0;
@@ -370,11 +458,29 @@ public class AutonomousOrchestrator<TRequest, TResult>
                 RaiseEvent(AutonomousEventType.ContextUpdated, "Context updated for new iteration");
             }
 
+            // Final iteration strategy: modify request if approaching final iteration
+            if (_config.EnableFinalIterationStrategy && _finalIterationStrategy != null)
+            {
+                var finalContext = CreateFinalIterationContext(request, default);
+                if (finalContext.IsInFinalPhase)
+                {
+                    RaiseEvent(AutonomousEventType.FinalIterationApproaching,
+                        $"Approaching final iteration ({finalContext.RemainingIterations} remaining)");
+
+                    var modifiedRequest = await _finalIterationStrategy.BeforeFinalIterationAsync(finalContext);
+                    if (modifiedRequest != null)
+                    {
+                        request = modifiedRequest;
+                        RaiseEvent(AutonomousEventType.RequestModified, "Request modified by final iteration strategy");
+                    }
+                }
+            }
+
             try
             {
-                var completed = await ExecuteTaskWithOracleLoopAsync(request, cancellationToken);
+                var (goalAchieved, lastVerdict) = await ExecuteTaskWithOracleLoopAsync(request, cancellationToken);
 
-                if (completed && _config.CompletionMode == CompletionMode.UntilGoalAchieved)
+                if (goalAchieved && _config.CompletionMode == CompletionMode.UntilGoalAchieved)
                 {
                     _state = AutonomousState.StoppedByGoalAchieved;
                     RaiseEvent(AutonomousEventType.Completed, "Goal achieved");
@@ -382,6 +488,19 @@ public class AutonomousOrchestrator<TRequest, TResult>
                 }
 
                 RaiseEvent(AutonomousEventType.IterationCompleted, $"Iteration {_currentIteration} completed");
+
+                // AutoContinue: Automatically enqueue next iteration if oracle says CanContinue
+                // Eliminates need for manual event handling in client code
+                if (_config.AutoContinueOnOracle &&
+                    lastVerdict != null &&
+                    !lastVerdict.IsComplete &&
+                    lastVerdict.CanContinue)
+                {
+                    var nextPrompt = BuildAutoContinuePrompt(lastVerdict);
+                    RaiseEvent(AutonomousEventType.AutoContinuing,
+                        $"Auto-continuing with prompt: {nextPrompt[..Math.Min(50, nextPrompt.Length)]}...");
+                    EnqueuePrompt(nextPrompt);
+                }
 
                 // Request feedback after task completion if enabled
                 if (_config.EnableHumanInTheLoop && _config.RequestFeedbackOnComplete)
@@ -431,12 +550,13 @@ public class AutonomousOrchestrator<TRequest, TResult>
         }
     }
 
-    private async Task<bool> ExecuteTaskWithOracleLoopAsync(TRequest request, CancellationToken cancellationToken)
+    private async Task<(bool GoalAchieved, OracleVerdict? LastVerdict)> ExecuteTaskWithOracleLoopAsync(TRequest request, CancellationToken cancellationToken)
     {
         _currentTaskId = request.RequestId;
         _currentOracleIteration = 0;
         var currentPrompt = request.Prompt;
         var goalAchieved = false;
+        OracleVerdict? lastVerdict = null;
 
         RaiseEvent(AutonomousEventType.TaskStarted, $"Task started: {request.RequestId}", request.RequestId);
 
@@ -477,11 +597,39 @@ public class AutonomousOrchestrator<TRequest, TResult>
                 CompletedAt = DateTimeOffset.UtcNow
             };
 
-            // Update context with output
+            // === Context Management Integration ===
+            // Record output to context provider (for deep research, software automation, etc.)
+            if (_contextProvider != null && !string.IsNullOrEmpty(result.Output))
+            {
+                await _contextProvider.RecordOutputAsync(result.Output, new ContextMetadata
+                {
+                    OutputType = result.Success ? "execution_result" : "error",
+                    Importance = result.Success ? 0.7 : 0.9,
+                    IterationNumber = _currentIteration,
+                    Tags = [$"iteration_{_currentIteration}", $"oracle_{_currentOracleIteration}"]
+                }, cancellationToken);
+
+                // Track token usage (estimate based on output length)
+                var estimatedTokens = EstimateTokens(currentPrompt) + EstimateTokens(result.Output);
+                _saturationMonitor?.RecordUsage(estimatedTokens, "execution");
+            }
+
+            // Update legacy context with output
             if (_config.EnableContextTracking && _executionContext != null)
             {
                 _executionContext = _executionContext.WithPreviousOutput(
                     result.Output.Length > 1000 ? result.Output[..1000] + "..." : result.Output);
+            }
+
+            // Track output for AutoContinue template
+            if (!string.IsNullOrEmpty(result.Output))
+            {
+                _previousOutputs.Add(result.Output);
+                // Keep only recent outputs per config
+                while (_previousOutputs.Count > _config.MaxContextOutputs)
+                {
+                    _previousOutputs.RemoveAt(0);
+                }
             }
 
             // Oracle verification if enabled
@@ -491,10 +639,24 @@ public class AutonomousOrchestrator<TRequest, TResult>
 
                 try
                 {
-                    // Build context-aware prompt if context tracking enabled
-                    var contextSummary = _config.EnableContextTracking && _executionContext != null
-                        ? _executionContext.BuildContextSummary()
-                        : "No prior context.";
+                    // Build context-aware prompt - integrate with ContextProvider if available
+                    string contextSummary;
+                    if (_contextProvider != null)
+                    {
+                        var relevantContext = await _contextProvider.GetRelevantContextAsync(
+                            request.Prompt, _currentIteration, cancellationToken);
+                        contextSummary = relevantContext.Count > 0
+                            ? string.Join("\n", relevantContext.Select(c => $"[{c.Type}] {c.Content}"))
+                            : "No prior context.";
+                    }
+                    else if (_config.EnableContextTracking && _executionContext != null)
+                    {
+                        contextSummary = _executionContext.BuildContextSummary();
+                    }
+                    else
+                    {
+                        contextSummary = "No prior context.";
+                    }
 
                     var oraclePrompt = BuildOraclePrompt(request.Prompt, result.Output, contextSummary);
 
@@ -503,6 +665,13 @@ public class AutonomousOrchestrator<TRequest, TResult>
                         result.Output,
                         _config.OracleConfig,
                         cancellationToken);
+
+                    lastVerdict = verdict;
+
+                    // Track oracle token usage
+                    _saturationMonitor?.RecordUsage(
+                        EstimateTokens(oraclePrompt) + EstimateTokens(verdict.Analysis),
+                        "oracle");
 
                     historyEntry = historyEntry with
                     {
@@ -602,7 +771,7 @@ public class AutonomousOrchestrator<TRequest, TResult>
         RaiseEvent(AutonomousEventType.TaskCompleted, $"Task completed: {request.RequestId}", request.RequestId);
         _currentTaskId = null;
 
-        return goalAchieved;
+        return (goalAchieved, lastVerdict);
     }
 
     private string BuildOraclePrompt(string originalPrompt, string executionOutput, string context)
@@ -615,6 +784,21 @@ public class AutonomousOrchestrator<TRequest, TResult>
             .Replace("{original_prompt}", originalPrompt)
             .Replace("{execution_output}", executionOutput)
             .Replace("{context}", context);
+    }
+
+    private string BuildAutoContinuePrompt(OracleVerdict verdict)
+    {
+        var template = _config.AutoContinuePromptTemplate;
+
+        // Get last output for the template
+        var lastOutput = _previousOutputs.Count > 0
+            ? _previousOutputs[^1]
+            : "";
+
+        return template
+            .Replace("{iteration}", (_currentIteration + 1).ToString())
+            .Replace("{previous_output}", lastOutput.Length > 200 ? lastOutput[..200] + "..." : lastOutput)
+            .Replace("{oracle_analysis}", verdict.Analysis ?? "No analysis");
     }
 
     private async Task<bool> ShouldRequestApprovalAsync(HumanInterventionPoint point, CancellationToken cancellationToken)
@@ -729,6 +913,19 @@ public class AutonomousOrchestrator<TRequest, TResult>
         return context;
     }
 
+    private FinalIterationContext<TRequest, TResult> CreateFinalIterationContext(TRequest request, TResult? lastResult)
+    {
+        return new FinalIterationContext<TRequest, TResult>
+        {
+            CurrentIteration = _currentIteration,
+            MaxIterations = _config.MaxIterations,
+            OriginalRequest = request,
+            LastResult = lastResult,
+            PreviousOutputs = _previousOutputs.AsReadOnly(),
+            SessionId = _sessionId
+        };
+    }
+
     private void CreateCheckpoint()
     {
         var checkpoint = new ExecutionCheckpoint
@@ -766,4 +963,10 @@ public class AutonomousOrchestrator<TRequest, TResult>
         OnEvent?.Invoke(evt);
         _logger.LogDebug("Event: {Type} - {Message}", type, message);
     }
+
+    /// <summary>
+    /// Estimate token count for a string (rough approximation: ~4 chars per token)
+    /// </summary>
+    private static int EstimateTokens(string? text) =>
+        string.IsNullOrEmpty(text) ? 0 : (int)Math.Ceiling(text.Length / 4.0);
 }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Ironbees.Autonomous\Ironbees.Autonomous.csproj" />
+    <ProjectReference Include="..\..\src\Ironbees.Autonomous.OpenAI\Ironbees.Autonomous.OpenAI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="game-settings.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

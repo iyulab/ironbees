@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-01-05
+
+### Added - Autonomous SDK Context Integration
+
+- **Context Management Interfaces**
+  - `IAutonomousContextProvider` - Context tracking for autonomous execution
+  - `IAutonomousMemoryStore` - Memory storage with tier-based retention
+  - `IContextSaturationMonitor` - Token usage tracking and saturation monitoring
+
+- **DefaultContextManager**
+  - All-in-one implementation of context, memory, and saturation interfaces
+  - Enabled by default in `AutonomousOrchestratorBuilder.Build()`
+  - `WithoutContext()` opt-out method for disabling context management
+  - Working memory model with 7-item recency-based retrieval
+  - Token estimation (~4 characters per token)
+
+- **Automatic Context Integration in Orchestrator**
+  - Auto-records execution outputs to ContextProvider
+  - Tracks token usage for execution and oracle phases
+  - Provides relevant context for oracle prompts
+  - Cumulative saturation tracking across iterations
+
+- **Saturation Monitoring**
+  - `SaturationLevel` enum: Normal, Elevated, High, Critical, Overflow
+  - `SaturationState` with current tokens, percentage, and recommended actions
+  - Events: `SaturationChanged`, `ActionRequired`
+  - Configurable max tokens and threshold levels
+
+### Test Coverage
+
+- **New Test Files**
+  - `DefaultContextManagerTests` - 18 comprehensive tests
+  - Context recording, memory operations, saturation tracking
+  - Builder integration (default activation, opt-out)
+
+- **Test Statistics**
+  - Total: 903 tests (894 passed, 7 skipped, 2 flaky benchmark)
+  - Phase contribution: 18 new tests
+
+### Technical Details
+
+- **Design Philosophy**: Automatic integration without explicit configuration
+- **Token Estimation**: `EstimateTokens()` - ~4 characters per token approximation
+- **Memory Model**: 7-item working memory limit based on cognitive science research
+- **Saturation Levels**: Configurable thresholds (60%, 75%, 85%, 95%)
+
+### Usage Example
+
+```csharp
+// Context management enabled by default
+var orchestrator = AutonomousOrchestrator.Create<TRequest, TResult>()
+    .WithExecutor(executor)
+    .WithRequestFactory((id, prompt) => new Request(id, prompt))
+    .Build();  // DefaultContextManager auto-created
+
+// Access context management
+var saturation = orchestrator.SaturationMonitor.CurrentState;
+Console.WriteLine($"Tokens: {saturation.CurrentTokens} ({saturation.Percentage:F1}%)");
+
+// Opt-out if not needed
+var orchestrator = AutonomousOrchestrator.Create<TRequest, TResult>()
+    .WithExecutor(executor)
+    .WithoutContext()  // Disable context management
+    .Build();
+```
+
 ## [0.3.0] - 2025-12-30
 
 ### Added - External Guardrail Adapters (Phase 7.3)

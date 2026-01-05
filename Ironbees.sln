@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ironbees.Autonomous", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ironbees.Autonomous.OpenAI", "src\Ironbees.Autonomous.OpenAI\Ironbees.Autonomous.OpenAI.csproj", "{3B138820-E748-4A04-98F6-446D2791013D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MinimalAutonomousSample", "samples\MinimalAutonomousSample\MinimalAutonomousSample.csproj", "{1B50B660-35EF-4FCB-AE4B-0C4120479611}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -287,6 +289,18 @@ Global
 		{3B138820-E748-4A04-98F6-446D2791013D}.Release|x64.Build.0 = Release|Any CPU
 		{3B138820-E748-4A04-98F6-446D2791013D}.Release|x86.ActiveCfg = Release|Any CPU
 		{3B138820-E748-4A04-98F6-446D2791013D}.Release|x86.Build.0 = Release|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Debug|x64.Build.0 = Debug|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Debug|x86.Build.0 = Debug|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Release|x64.ActiveCfg = Release|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Release|x64.Build.0 = Release|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Release|x86.ActiveCfg = Release|Any CPU
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -312,5 +326,6 @@ Global
 		{1A2B3C4D-5E6F-7A8B-9C0D-E1F2A3B4C5D6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{DAF58BC1-2A59-4302-9D5E-962CF8CE7440} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{3B138820-E748-4A04-98F6-446D2791013D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{1B50B660-35EF-4FCB-AE4B-0C4120479611} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 EndGlobal
