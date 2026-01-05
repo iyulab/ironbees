@@ -59,7 +59,7 @@ jobs:
         PACKAGES=(
           "Ironbees.Core"
           "Ironbees.AgentFramework"
-          "Ironbees.AgentMode.Core"
+          "Ironbees.AgentMode"
           "Ironbees.AgentMode.Agents"
           "Ironbees.AgentMode.MCP"
           "Ironbees.AgentMode.Providers"
@@ -103,8 +103,8 @@ jobs:
           --no-build \
           --output ./packages
 
-        echo "🔨 Packing Ironbees.AgentMode.Core..."
-        dotnet pack src/Ironbees.AgentMode.Core/Ironbees.AgentMode.Core.csproj \
+        echo "🔨 Packing Ironbees.AgentMode..."
+        dotnet pack src/Ironbees.AgentMode/Ironbees.AgentMode.csproj \
           --configuration Release \
           --no-build \
           --output ./packages
@@ -170,7 +170,7 @@ jobs:
           - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }})
 
           **Agent Mode Packages:**
-          - [Ironbees.AgentMode.Core ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Core/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.AgentMode ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode/${{ steps.extract_version.outputs.version }})
           - [Ironbees.AgentMode.Agents ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Agents/${{ steps.extract_version.outputs.version }})
           - [Ironbees.AgentMode.MCP ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.MCP/${{ steps.extract_version.outputs.version }})
           - [Ironbees.AgentMode.Providers ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Providers/${{ steps.extract_version.outputs.version }})

@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ironbees.Core\Ironbees.Core.csproj" />
-    <ProjectReference Include="..\Ironbees.AgentMode.Core\Ironbees.AgentMode.Core.csproj" />
+    <ProjectReference Include="..\Ironbees.AgentMode\Ironbees.AgentMode.csproj" />
   </ItemGroup>
 
   <ItemGroup>

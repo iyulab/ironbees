@@ -55,7 +55,7 @@ jobs:
 
     - name: Build Agent Mode projects
       run: |
-        dotnet build src/Ironbees.AgentMode.Core/Ironbees.AgentMode.Core.csproj --configuration Release --no-restore
+        dotnet build src/Ironbees.AgentMode/Ironbees.AgentMode.csproj --configuration Release --no-restore
         dotnet build src/Ironbees.AgentMode.Agents/Ironbees.AgentMode.Agents.csproj --configuration Release --no-restore
         dotnet build src/Ironbees.AgentMode.MCP/Ironbees.AgentMode.MCP.csproj --configuration Release --no-restore
         dotnet build src/Ironbees.AgentMode.Providers/Ironbees.AgentMode.Providers.csproj --configuration Release --no-restore

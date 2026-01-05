@@ -1,6 +1,6 @@
-using Ironbees.AgentMode.Core.Exceptions;
-using Ironbees.AgentMode.Core.Workflow;
-using Ironbees.AgentMode.Core.Workflow.Triggers;
+using Ironbees.AgentMode.Exceptions;
+using Ironbees.AgentMode.Workflow;
+using Ironbees.AgentMode.Workflow.Triggers;
 using Ironbees.AgentMode.Models;
 using Xunit;
 

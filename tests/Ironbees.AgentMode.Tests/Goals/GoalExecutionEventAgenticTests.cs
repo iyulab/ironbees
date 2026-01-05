@@ -1,7 +1,7 @@
 // Copyright (c) IYULab. All rights reserved.
 // Licensed under the MIT License.
 
-using Ironbees.AgentMode.Core.Goals;
+using Ironbees.AgentMode.Goals;
 using Xunit;
 
 namespace Ironbees.AgentMode.Tests.Goals;

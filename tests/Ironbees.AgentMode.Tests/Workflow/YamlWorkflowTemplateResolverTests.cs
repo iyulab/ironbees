@@ -1,7 +1,7 @@
 // Copyright (c) IYULab. All rights reserved.
 // Licensed under the MIT License.
 
-using Ironbees.AgentMode.Core.Workflow;
+using Ironbees.AgentMode.Workflow;
 using Ironbees.Core.Goals;
 using Xunit;
 

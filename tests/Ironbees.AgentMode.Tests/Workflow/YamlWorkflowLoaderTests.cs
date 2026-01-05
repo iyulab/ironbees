@@ -1,5 +1,5 @@
-using Ironbees.AgentMode.Core.Exceptions;
-using Ironbees.AgentMode.Core.Workflow;
+using Ironbees.AgentMode.Exceptions;
+using Ironbees.AgentMode.Workflow;
 using Xunit;
 
 namespace Ironbees.AgentMode.Tests.Workflow;

@@ -66,7 +66,7 @@ states:
 
 ```csharp
 using Ironbees.AgentFramework.Workflow;
-using Ironbees.AgentMode.Core.Workflow;
+using Ironbees.AgentMode.Workflow;
 
 var converter = new MafWorkflowConverter(logger);
 var executor = new MafWorkflowExecutor(converter, logger);

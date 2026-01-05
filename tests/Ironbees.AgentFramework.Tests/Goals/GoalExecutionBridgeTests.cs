@@ -3,8 +3,8 @@
 
 using Ironbees.AgentFramework.Goals;
 using Ironbees.AgentFramework.Workflow;
-using Ironbees.AgentMode.Core.Goals;
-using Ironbees.AgentMode.Core.Workflow;
+using Ironbees.AgentMode.Goals;
+using Ironbees.AgentMode.Workflow;
 using Ironbees.Core.Goals;
 using Microsoft.Agents.AI;
 using Moq;

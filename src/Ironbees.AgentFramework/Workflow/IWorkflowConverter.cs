@@ -1,4 +1,4 @@
-using Ironbees.AgentMode.Core.Workflow;
+using Ironbees.AgentMode.Workflow;
 using Microsoft.Agents.AI;
 
 namespace Ironbees.AgentFramework.Workflow;

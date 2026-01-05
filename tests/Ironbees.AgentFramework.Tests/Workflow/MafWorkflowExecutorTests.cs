@@ -1,5 +1,5 @@
 using Ironbees.AgentFramework.Workflow;
-using Ironbees.AgentMode.Core.Workflow;
+using Ironbees.AgentMode.Workflow;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;

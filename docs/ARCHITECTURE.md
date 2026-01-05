@@ -65,7 +65,7 @@ src/
 ├── Ironbees.AgentFramework/        # MAF integration
 │   └── Workflow/                   # Workflow converter, executor, checkpoint
 │
-└── Ironbees.AgentMode.Core/        # YAML workflow definitions
+└── Ironbees.AgentMode/        # YAML workflow definitions
     └── Workflow/                   # YamlDrivenOrchestrator
 ```
 

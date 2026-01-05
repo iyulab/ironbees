@@ -73,7 +73,7 @@ try
 
         foreach (var project in solution.Projects)
         {
-            if (project.Name.Contains("Ironbees.AgentMode.Core"))
+            if (project.Name.Contains("Ironbees.AgentMode"))
             {
                 coreProject = project;
                 var compilation = await project.GetCompilationAsync();
@@ -144,7 +144,7 @@ try
     Console.WriteLine("Test 5: Semantic Model Analysis");
     try
     {
-        var coreProject = solution.Projects.FirstOrDefault(p => p.Name.Contains("Ironbees.AgentMode.Core"));
+        var coreProject = solution.Projects.FirstOrDefault(p => p.Name.Contains("Ironbees.AgentMode"));
         if (coreProject != null)
         {
             var document = coreProject.Documents.FirstOrDefault(d => d.Name == "CodingState.cs");
