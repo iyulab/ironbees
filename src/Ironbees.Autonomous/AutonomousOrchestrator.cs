@@ -176,6 +176,8 @@ public class AutonomousOrchestrator<TRequest, TResult>
         writer.WriteLine($"│ EnableFallbackStrategy: {config.EnableFallbackStrategy}");
         writer.WriteLine($"│ EnableFinalIterationStrategy: {config.EnableFinalIterationStrategy}");
         writer.WriteLine($"│ AutoContinueOnOracle: {config.AutoContinueOnOracle}");
+        writer.WriteLine($"│ AutoContinueOnIncomplete: {config.AutoContinueOnIncomplete}");
+        writer.WriteLine($"│ InferCanContinueFromComplete: {config.InferCanContinueFromComplete}");
         writer.WriteLine($"│ AutoContinuePromptTemplate: {config.AutoContinuePromptTemplate}");
         writer.WriteLine($"│ ContinueOnFailure: {config.ContinueOnFailure}");
         writer.WriteLine($"│ MinConfidenceThreshold: {config.MinConfidenceThreshold:P0}");
@@ -491,10 +493,11 @@ public class AutonomousOrchestrator<TRequest, TResult>
 
                 // AutoContinue: Automatically enqueue next iteration if oracle says CanContinue
                 // Eliminates need for manual event handling in client code
+                // AutoContinueOnIncomplete: Continue even if CanContinue=false when IsComplete=false
                 if (_config.AutoContinueOnOracle &&
                     lastVerdict != null &&
                     !lastVerdict.IsComplete &&
-                    lastVerdict.CanContinue)
+                    (lastVerdict.CanContinue || _config.AutoContinueOnIncomplete))
                 {
                     var nextPrompt = BuildAutoContinuePrompt(lastVerdict);
                     RaiseEvent(AutonomousEventType.AutoContinuing,
@@ -667,6 +670,14 @@ public class AutonomousOrchestrator<TRequest, TResult>
                         cancellationToken);
 
                     lastVerdict = verdict;
+
+                    // Infer CanContinue from IsComplete if configured (for local/smaller LLMs)
+                    if (_config.InferCanContinueFromComplete && !verdict.IsComplete && !verdict.CanContinue)
+                    {
+                        RaiseEvent(AutonomousEventType.OracleVerified,
+                            "Inferring CanContinue=true from IsComplete=false (InferCanContinueFromComplete enabled)");
+                        lastVerdict = verdict with { CanContinue = true };
+                    }
 
                     // Track oracle token usage
                     _saturationMonitor?.RecordUsage(

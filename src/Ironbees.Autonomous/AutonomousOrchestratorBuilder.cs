@@ -162,6 +162,29 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     }
 
     /// <summary>
+    /// Enable auto-continue even when CanContinue=false but IsComplete=false.
+    /// Useful for LLMs that don't reliably set CanContinue correctly.
+    /// Must be used with WithAutoContinue().
+    /// </summary>
+    public AutonomousOrchestratorBuilder<TRequest, TResult> WithAutoContinueOnIncomplete()
+    {
+        _config = _config with { AutoContinueOnIncomplete = true };
+        return this;
+    }
+
+    /// <summary>
+    /// Automatically infer CanContinue from IsComplete in oracle verdict.
+    /// When enabled, CanContinue is set to !IsComplete after parsing verdict.
+    /// Useful for smaller/local LLMs (GPUStack, Ollama) that don't reliably
+    /// follow the CanContinue guideline in their JSON responses.
+    /// </summary>
+    public AutonomousOrchestratorBuilder<TRequest, TResult> WithInferCanContinueFromComplete()
+    {
+        _config = _config with { InferCanContinueFromComplete = true };
+        return this;
+    }
+
+    /// <summary>
     /// Configure retry behavior for failed executions
     /// </summary>
     public AutonomousOrchestratorBuilder<TRequest, TResult> WithRetry(

@@ -116,6 +116,22 @@ public record AutonomousConfig
     /// </summary>
     public string AutoContinuePromptTemplate { get; init; } = "Continue with iteration {iteration}";
 
+    /// <summary>
+    /// Continue when IsComplete=false regardless of CanContinue value.
+    /// Useful when using LLMs that don't reliably set CanContinue correctly.
+    /// When true: AutoContinue triggers if !IsComplete (ignores CanContinue)
+    /// When false: AutoContinue requires both !IsComplete AND CanContinue=true
+    /// </summary>
+    public bool AutoContinueOnIncomplete { get; init; } = false;
+
+    /// <summary>
+    /// Automatically infer CanContinue from IsComplete in oracle verdict.
+    /// When true: CanContinue is set to !IsComplete after parsing verdict.
+    /// Useful for smaller/local LLMs (GPUStack, Ollama) that don't reliably
+    /// follow the CanContinue guideline in their JSON responses.
+    /// </summary>
+    public bool InferCanContinueFromComplete { get; init; } = false;
+
     // ========================================
     // Retry and Resilience Configuration
     // ========================================
