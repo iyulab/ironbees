@@ -53,15 +53,11 @@ jobs:
         files: '**/*-test-results.trx'
         check_name: 'Test Results'
 
-    - name: Build Agent Mode projects
-      run: |
-        dotnet build src/Ironbees.AgentMode/Ironbees.AgentMode.csproj --configuration Release --no-restore
-        dotnet build src/Ironbees.AgentMode.Agents/Ironbees.AgentMode.Agents.csproj --configuration Release --no-restore
-        dotnet build src/Ironbees.AgentMode.MCP/Ironbees.AgentMode.MCP.csproj --configuration Release --no-restore
-        dotnet build src/Ironbees.AgentMode.Providers/Ironbees.AgentMode.Providers.csproj --configuration Release --no-restore
-        dotnet build src/Ironbees.AgentMode.Tools/Ironbees.AgentMode.Tools.csproj --configuration Release --no-restore
+    - name: Test Autonomous (CI - No API keys)
+      run: dotnet test tests/Ironbees.Autonomous.Tests/Ironbees.Autonomous.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=autonomous-test-results.trx"
 
     - name: Build samples
       run: |
         dotnet build samples/OpenAISample/OpenAISample.csproj --configuration Release --no-restore
         dotnet build samples/WebApiSample/Ironbees.WebApi/Ironbees.WebApi.csproj --configuration Release --no-restore
+        dotnet build samples/TwentyQuestionsSample/TwentyQuestionsSample.csproj --configuration Release --no-restore

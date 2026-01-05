@@ -60,10 +60,7 @@ jobs:
           "Ironbees.Core"
           "Ironbees.AgentFramework"
           "Ironbees.AgentMode"
-          "Ironbees.AgentMode.Agents"
-          "Ironbees.AgentMode.MCP"
-          "Ironbees.AgentMode.Providers"
-          "Ironbees.AgentMode.Tools"
+          "Ironbees.Autonomous"
         )
 
         NEEDS_PUBLISH=false
@@ -109,26 +106,8 @@ jobs:
           --no-build \
           --output ./packages
 
-        echo "🔨 Packing Ironbees.AgentMode.Agents..."
-        dotnet pack src/Ironbees.AgentMode.Agents/Ironbees.AgentMode.Agents.csproj \
-          --configuration Release \
-          --no-build \
-          --output ./packages
-
-        echo "🔨 Packing Ironbees.AgentMode.MCP..."
-        dotnet pack src/Ironbees.AgentMode.MCP/Ironbees.AgentMode.MCP.csproj \
-          --configuration Release \
-          --no-build \
-          --output ./packages
-
-        echo "🔨 Packing Ironbees.AgentMode.Providers..."
-        dotnet pack src/Ironbees.AgentMode.Providers/Ironbees.AgentMode.Providers.csproj \
-          --configuration Release \
-          --no-build \
-          --output ./packages
-
-        echo "🔨 Packing Ironbees.AgentMode.Tools..."
-        dotnet pack src/Ironbees.AgentMode.Tools/Ironbees.AgentMode.Tools.csproj \
+        echo "🔨 Packing Ironbees.Autonomous..."
+        dotnet pack src/Ironbees.Autonomous/Ironbees.Autonomous.csproj \
           --configuration Release \
           --no-build \
           --output ./packages
@@ -168,13 +147,8 @@ jobs:
           **Core Packages:**
           - [Ironbees.Core ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Core/${{ steps.extract_version.outputs.version }})
           - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }})
-
-          **Agent Mode Packages:**
           - [Ironbees.AgentMode ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentMode.Agents ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Agents/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentMode.MCP ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.MCP/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentMode.Providers ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Providers/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentMode.Tools ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode.Tools/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.Autonomous ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Autonomous/${{ steps.extract_version.outputs.version }})
         draft: false
         prerelease: ${{ contains(steps.extract_version.outputs.version, 'preview') || contains(steps.extract_version.outputs.version, 'beta') || contains(steps.extract_version.outputs.version, 'alpha') }}
         files: ./packages/*.nupkg
