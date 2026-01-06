@@ -1,3 +1,5 @@
+using Ironbees.Autonomous.Models;
+
 namespace Ironbees.Autonomous.Abstractions;
 
 /// <summary>
