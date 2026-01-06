@@ -7,6 +7,177 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-01-06
+
+### ⚠️ Breaking Changes - Migration Required
+
+This release consolidates the ironbees architecture with significant breaking changes. **Migration estimated at 2-4 hours** for typical projects.
+
+**Critical Changes**:
+1. **LLMProviderFactoryRegistry Removed** → Use `ChatClientBuilder` pattern
+2. **ConversationalAgent Removed** → Use Service Layer pattern
+3. **Namespace Restructuring** → `Ironbees.AgentMode.Core.*` → `Ironbees.AgentMode.*`
+
+**Migration Guides** (comprehensive documentation):
+- 📘 [ChatClientBuilder Migration Guide](./docs/migration/chatclientbuilder-pattern.md) - Provider setup patterns (OpenAI, Azure, Custom)
+- 📘 [Service Layer Pattern Guide](./docs/migration/service-layer-pattern.md) - Architectural migration with decision framework
+- 📘 [Namespace Migration Guide](./docs/migration/namespace-migration.md) - Automated migration with PowerShell script
+- 📋 [Documentation Roadmap](./local-docs/DOCUMENTATION-ROADMAP.md) - Complete sprint plan
+
+**Real-World Experience** (MLoop Team):
+- Migration time: ~4 hours for 5 agents
+- Test coverage: 45% → 85% (+40%)
+- Code reduction: 25%
+- **Result**: Cleaner, more testable architecture
+
+**Quick Start**:
+```powershell
+# 1. Automated namespace migration (15 minutes)
+.\scripts\migrate-namespaces.ps1 -DryRun  # Preview changes
+.\scripts\migrate-namespaces.ps1          # Apply changes
+
+# 2. Follow migration guides for ChatClientBuilder and Service Layer
+```
+
+### Changed - Microsoft.Extensions.AI Integration
+
+**LLMProviderFactoryRegistry Removal**:
+- ❌ Removed `Ironbees.AgentMode.Providers` package
+- ❌ Removed `LLMProviderFactoryRegistry` class
+- ✅ Replaced with `Microsoft.Extensions.AI` industry standard
+- ✅ Direct use of `ChatClientBuilder` pattern
+
+**Migration Pattern**:
+```csharp
+// Before (v0.1.8)
+var chatClient = LLMProviderFactoryRegistry.CreateChatClient(
+    provider: "openai",
+    modelName: "gpt-4o-mini",
+    apiKey: Environment.GetEnvironmentVariable("OPENAI_API_KEY")
+);
+
+// After (v0.4.1)
+var openAIClient = new OpenAIClient(apiKey);
+var chatClient = new ChatClientBuilder(
+    openAIClient.GetChatClient(model).AsIChatClient())
+    .UseFunctionInvocation()
+    .Build();
+```
+
+**Rationale**: Delegate provider abstraction to Microsoft.Extensions.AI (industry standard), maintain ironbees Thin Wrapper philosophy.
+
+**Migration Time**: 1-2 hours
+**Guide**: [docs/migration/chatclientbuilder-pattern.md](./docs/migration/chatclientbuilder-pattern.md)
+
+### Changed - Service Layer Architecture
+
+**ConversationalAgent Removal**:
+- ❌ Removed `ConversationalAgent` class
+- ✅ Replaced with **Service Layer Pattern**
+- ✅ Separation of concerns: Business logic (C#) vs LLM config (YAML/Markdown)
+
+**Migration Pattern**:
+```csharp
+// Before (v0.1.8) - Coupled logic and LLM
+var agent = new ConversationalAgent(chatClient);
+var response = await agent.SendAsync("analyze data");
+
+// After (v0.4.1) - Service Layer
+public class DataAnalyzer  // Pure business logic (testable)
+{
+    public DataAnalysisResult Analyze(DataFrame data)
+    {
+        // Deterministic C# logic (no LLM)
+        return new DataAnalysisResult { /* ... */ };
+    }
+}
+
+// agents/data-analyzer/agent.yaml + system-prompt.md  // LLM config
+// var result = await orchestrator.ExecuteAsync("data-analyzer", request);
+```
+
+**Benefits**:
+- ✅ 85% test coverage achievable (vs 45% with ConversationalAgent)
+- ✅ Business logic testable without LLM mocking
+- ✅ Prompts version-controlled and reviewable (markdown)
+- ✅ Clear separation of concerns
+
+**Rationale**: Align with "Declaration vs Execution" philosophy - ironbees declares patterns (YAML), MAF executes orchestration.
+
+**Migration Time**: 1-2 hours
+**Guide**: [docs/migration/service-layer-pattern.md](./docs/migration/service-layer-pattern.md)
+**ADR**: [docs/adr/001-remove-conversational-agent.md](./docs/adr/001-remove-conversational-agent.md)
+
+### Changed - Namespace Restructuring
+
+**Namespace Consolidation**:
+- ❌ `Ironbees.AgentMode.Core.Workflow` → ✅ `Ironbees.AgentMode.Workflow`
+- ❌ `Ironbees.AgentMode.Core.Models` → ✅ `Ironbees.AgentMode.Models`
+- ❌ `Ironbees.AgentMode.Core.Agents` → ✅ `Ironbees.AgentMode.Agents`
+- ❌ `Ironbees.AgentMode.Providers` → ✅ `Microsoft.Extensions.AI`
+
+**Package Consolidation**:
+```xml
+<!-- Before (v0.1.8) -->
+<PackageReference Include="Ironbees.AgentMode.Core" Version="0.1.8" />
+<PackageReference Include="Ironbees.AgentMode.Providers" Version="0.1.8" />
+
+<!-- After (v0.4.1) -->
+<PackageReference Include="Ironbees.Core" Version="0.4.1" />
+<PackageReference Include="Ironbees.AgentMode" Version="0.4.1" />
+```
+
+**Rationale**: Reduce package complexity, remove `.Core` suffix (all ironbees code is "core"), align with .NET conventions.
+
+**Migration Time**: 15 minutes (automated script)
+**Tool**: `scripts/migrate-namespaces.ps1` (PowerShell automation with backup)
+**Guide**: [docs/migration/namespace-migration.md](./docs/migration/namespace-migration.md)
+
+### Added - Documentation and Tooling
+
+**Migration Guides**:
+- `docs/migration/chatclientbuilder-pattern.md` - Provider setup (OpenAI, Azure, Custom endpoints)
+- `docs/migration/service-layer-pattern.md` - Architectural migration with decision framework
+- `docs/migration/namespace-migration.md` - Type migration map and validation steps
+
+**Automation**:
+- `scripts/migrate-namespaces.ps1` - PowerShell migration script with dry-run, backup, and validation
+
+**Architecture Documentation**:
+- `docs/adr/001-remove-conversational-agent.md` - Decision record with MLoop case study
+
+**FAQ Updates**:
+- Added "Migration (v0.1.8 → v0.4.1)" section
+- Common errors and solutions
+- Anthropic provider workaround (OpenAI-compatible proxy)
+
+### Fixed - Common Migration Errors
+
+**Documented Solutions**:
+- `CS1729: 'ChatClientBuilder' does not contain a constructor that takes 0 arguments`
+  - Solution: Pass `IChatClient` parameter with `.AsIChatClient()` extension
+- `CS0234: The type or namespace name 'Core' does not exist`
+  - Solution: Run `migrate-namespaces.ps1` or manually update using statements
+- `CS0246: The type or namespace name 'WorkflowDefinition' could not be found`
+  - Solution: Add `using Ironbees.AgentMode.Models;` (moved from Workflow namespace)
+
+**Error Reference**: [docs/migration/chatclientbuilder-pattern.md#common-errors](./docs/migration/chatclientbuilder-pattern.md#common-errors)
+
+### Notes - Philosophy Reinforcement
+
+**Thin Wrapper Principle**:
+- Ironbees handles **declaration** (YAML, agent.yaml, workflow templates)
+- MAF handles **execution** (orchestration, memory, tools, MCP)
+- Microsoft.Extensions.AI handles **provider abstraction**
+
+**Out of Scope** (will not be added):
+- Provider-specific SDK packages (e.g., `Ironbees.Autonomous.OpenAI`)
+- Built-in HITL UI implementation (application layer responsibility)
+- RAG/Vector DB implementation (external library responsibility)
+- AI-based content moderation (Azure AI Content Safety, OpenAI Moderation)
+
+**Philosophy Document**: [PHILOSOPHY.md](./PHILOSOPHY.md)
+
 ## [0.3.1] - 2026-01-05
 
 ### Added - Autonomous SDK Context Integration

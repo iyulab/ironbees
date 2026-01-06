@@ -1,6 +1,153 @@
 # Ironbees FAQ (Frequently Asked Questions)
 
-**Version**: 0.4.0 | **Updated**: 2026-01-06
+**Version**: 0.4.1 | **Updated**: 2026-01-06
+
+---
+
+## Migration (v0.1.8 → v0.4.1)
+
+### Q: How do I migrate from v0.1.8 to v0.4.1?
+
+**A:** Follow the comprehensive migration guides in order:
+
+**1. Namespace Migration** (15 minutes):
+- Run automated script: `.\scripts\migrate-namespaces.ps1 -DryRun`
+- Apply changes: `.\scripts\migrate-namespaces.ps1`
+- Guide: [docs/migration/namespace-migration.md](./migration/namespace-migration.md)
+
+**2. ChatClientBuilder Migration** (1-2 hours):
+- Replace `LLMProviderFactoryRegistry` with `ChatClientBuilder`
+- Update provider initialization patterns
+- Guide: [docs/migration/chatclientbuilder-pattern.md](./migration/chatclientbuilder-pattern.md)
+
+**3. Service Layer Migration** (1-2 hours):
+- Remove `ConversationalAgent` usage
+- Implement Service Layer pattern
+- Guide: [docs/migration/service-layer-pattern.md](./migration/service-layer-pattern.md)
+
+**Real-World Experience** (MLoop team):
+- Total time: ~4 hours
+- Test coverage: 45% → 85%
+- Code reduction: 25%
+- Result: Cleaner, more testable architecture
+
+---
+
+### Q: "ChatClientBuilder does not contain a constructor that takes 0 arguments" error?
+
+**A:** `ChatClientBuilder` requires an `IChatClient` parameter.
+
+**Wrong**:
+```csharp
+var builder = new ChatClientBuilder(); // ❌ Error CS1729
+```
+
+**Correct**:
+```csharp
+var openAIClient = new OpenAIClient(apiKey);
+var builder = new ChatClientBuilder(
+    openAIClient.GetChatClient(model).AsIChatClient()); // ✅
+```
+
+**Common Cause**: Forgetting `.AsIChatClient()` extension method.
+
+See: [ChatClientBuilder Migration Guide](./migration/chatclientbuilder-pattern.md#error-1-no-parameterless-constructor)
+
+---
+
+### Q: "The type or namespace name 'Core' does not exist" error?
+
+**A:** Namespace restructuring in v0.4.1 removed `.Core` suffix.
+
+**Wrong**:
+```csharp
+using Ironbees.AgentMode.Core.Workflow; // ❌ CS0234
+```
+
+**Correct**:
+```csharp
+using Ironbees.AgentMode.Workflow;
+using Ironbees.AgentMode.Models;
+```
+
+**Quick Fix**: Run `.\scripts\migrate-namespaces.ps1` to automate migration.
+
+See: [Namespace Migration Guide](./migration/namespace-migration.md#common-errors)
+
+---
+
+### Q: ConversationalAgent removed - how do I migrate?
+
+**A:** Replace with **Service Layer Pattern** for better testability.
+
+**Before** (v0.1.8 - ❌ Removed):
+```csharp
+var agent = new ConversationalAgent(chatClient);
+var response = await agent.SendAsync("analyze data");
+```
+
+**After** (v0.4.1 - ✅ Service Layer):
+```csharp
+// 1. Business logic in testable service
+public class DataAnalyzer
+{
+    public DataAnalysisResult Analyze(DataFrame data)
+    {
+        // Pure C# logic (no LLM)
+        return new DataAnalysisResult { /* ... */ };
+    }
+}
+
+// 2. LLM configuration in agent.yaml + system-prompt.md
+// agents/data-analyzer/agent.yaml
+# agents/data-analyzer/system-prompt.md
+
+// 3. Orchestration via IAgentOrchestrator
+var result = await orchestrator.ExecuteAsync("data-analyzer", request);
+```
+
+**Benefits**:
+- ✅ Business logic is testable (unit tests, no LLM)
+- ✅ LLM prompt is versioned and readable (markdown)
+- ✅ Separation of concerns (logic vs configuration)
+
+**Real Impact** (MLoop): Test coverage 45% → 85%, 25% code reduction
+
+See: [Service Layer Pattern Guide](./migration/service-layer-pattern.md)
+
+---
+
+### Q: Can I use Anthropic Claude instead of OpenAI?
+
+**A:** Yes, via **OpenAI-compatible proxy** (GPUStack, LiteLLM).
+
+**Pattern**:
+```csharp
+var proxyEndpoint = "https://gpustack.example.com/v1";
+var apiKey = Environment.GetEnvironmentVariable("GPUSTACK_KEY")!;
+var model = "claude-3-5-sonnet-20241022"; // Anthropic via proxy
+
+var customClient = new OpenAIClient(
+    new ApiKeyCredential(apiKey),
+    new OpenAIClientOptions
+    {
+        Endpoint = new Uri(proxyEndpoint)
+    });
+
+var chatClient = new ChatClientBuilder(
+    customClient.GetChatClient(model).AsIChatClient())
+    .UseFunctionInvocation()
+    .Build();
+```
+
+**Why No Native Support?**
+- ✅ Ironbees delegates provider support to `Microsoft.Extensions.AI`
+- ✅ ME.AI team handles Anthropic integration (industry standard)
+- ✅ Proxy pattern works with all OpenAI-compatible providers
+
+See: [ChatClientBuilder Guide - Custom Endpoints](./migration/chatclientbuilder-pattern.md#recipe-3-custom-endpoints-gpustack-litellm-etc)
+
+---
 
 ## Workflow Configuration
 

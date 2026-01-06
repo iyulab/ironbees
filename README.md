@@ -9,6 +9,49 @@
 
 Ironbees는 .NET 환경에서 LLM 에이전트의 **반복되는 패턴을 간소화**하는 경량 래퍼입니다. Microsoft Agent Framework, Semantic Kernel, LangChain, ironhive 등의 프레임워크를 대체하는 것이 아니라, **그 위에서 작동하며** 파일시스템 컨벤션으로 에이전트 관리를 단순화합니다.
 
+---
+
+## ⚠️ v0.1.8 → v0.4.1 마이그레이션 필수
+
+**v0.4.1에서 주요 아키텍처 변경이 있었습니다.** v0.1.8 사용자는 마이그레이션이 필요합니다.
+
+### 주요 변경사항
+
+1. **LLMProviderFactoryRegistry 제거** → `ChatClientBuilder` 패턴 사용
+2. **ConversationalAgent 제거** → Service Layer 패턴 사용
+3. **네임스페이스 재구조화** → `Ironbees.AgentMode.Core.*` → `Ironbees.AgentMode.*`
+
+### 마이그레이션 가이드 (포괄적 문서)
+
+| 가이드 | 소요 시간 | 설명 |
+|-------|----------|------|
+| 📘 [네임스페이스 마이그레이션](./docs/migration/namespace-migration.md) | 15분 | 자동화 스크립트 제공 |
+| 📘 [ChatClientBuilder 패턴](./docs/migration/chatclientbuilder-pattern.md) | 1-2시간 | Provider 설정 패턴 |
+| 📘 [Service Layer 패턴](./docs/migration/service-layer-pattern.md) | 1-2시간 | 아키텍처 마이그레이션 |
+
+### 실제 마이그레이션 경험 (MLoop 팀)
+
+- **총 소요 시간**: ~4시간 (5개 에이전트)
+- **테스트 커버리지**: 45% → 85% (+40%)
+- **코드 감소**: 25%
+- **결과**: 더 깔끔하고 테스트 가능한 아키텍처
+
+### 빠른 시작
+
+```powershell
+# 1. 네임스페이스 자동 마이그레이션 (15분)
+.\scripts\migrate-namespaces.ps1 -DryRun  # 변경사항 미리보기
+.\scripts\migrate-namespaces.ps1          # 변경사항 적용
+
+# 2. ChatClientBuilder 및 Service Layer 가이드 참조
+```
+
+**전체 로드맵**: [Documentation Roadmap](./local-docs/DOCUMENTATION-ROADMAP.md)
+**FAQ**: [Migration FAQ](./docs/FAQ.md#migration-v018--v041)
+**CHANGELOG**: [v0.4.1 Breaking Changes](./CHANGELOG.md#041---2026-01-06)
+
+---
+
 ## 🎯 핵심 가치 제안
 
 **Ironbees가 하는 것:**
