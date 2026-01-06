@@ -139,6 +139,90 @@ await foreach (var chunk in orchestrator.StreamAsync(
 }
 ```
 
+## ⚙️ YAML 기반 설정 (Autonomous SDK)
+
+**v0.4.0부터 Autonomous SDK는 YAML 설정을 완전 지원합니다!**
+
+### 간단한 YAML 설정으로 자율 실행 구성
+
+**settings.yaml:**
+```yaml
+orchestration:
+  max_iterations: 10
+  completion_mode: until_goal_achieved
+  enable_checkpointing: false
+  continue_on_failure: false
+
+  oracle:
+    enabled: true
+    max_iterations: 3
+
+  confidence:
+    min_threshold: 0.8
+    human_review_threshold: 0.5
+
+  context:
+    enable_tracking: true
+    enable_reflection: false
+    max_learnings: 5
+    max_outputs: 3
+
+  auto_continue:
+    enabled: true
+    prompt_template: "Continue iteration {iteration}. Previous: {previous_output}"
+
+  retry:
+    count: 1
+    delay_ms: 500
+    enable_fallback: false
+
+debug:
+  enabled: true
+  show_llm_responses: false
+  show_token_usage: false
+```
+
+### 코드에서 YAML 로드
+
+```csharp
+// 방법 1: YAML 파일에서 설정 로드
+var settings = await OrchestratorSettings.LoadFromFileAsync("settings.yaml");
+
+var orchestrator = AutonomousOrchestrator.Create<TaskRequest, TaskResult>()
+    .WithSettings(settings)
+    .WithExecutor(executor)
+    .Build();
+
+// 방법 2: 환경 변수 + YAML 조합 (프로덕션용)
+var orchestrator = await AutonomousOrchestrator
+    .FromEnvironmentAsync<TaskRequest, TaskResult>("settings.yaml");
+
+// 방법 3: 빌더 패턴으로 YAML 로드
+var builder = AutonomousOrchestrator.Create<TaskRequest, TaskResult>()
+    .WithExecutor(executor);
+
+await builder.WithSettingsFileAsync("settings.yaml");
+var orchestrator = builder.Build();
+```
+
+### 버전 관리 친화적
+
+```bash
+# settings.yaml을 Git으로 버전 관리
+git add settings.yaml
+git commit -m "Update oracle threshold to 0.8"
+
+# 환경별 설정 관리
+settings.development.yaml
+settings.staging.yaml
+settings.production.yaml
+```
+
+### 실제 예제
+
+- [MinimalAutonomousSample](samples/MinimalAutonomousSample/settings.yaml) - 기본 설정 예제
+- [TwentyQuestionsSample](samples/TwentyQuestionsSample/game-settings.yaml) - 게임 설정 예제
+
 ## 🏗️ 아키텍처
 
 ```

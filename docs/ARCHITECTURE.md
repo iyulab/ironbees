@@ -1,6 +1,6 @@
 # Ironbees Architecture
 
-**Version**: 0.3.0 | **Target**: .NET 10.0
+**Version**: 0.4.0 | **Target**: .NET 10.0 | **Updated**: 2026-01-06
 
 ## Overview
 
@@ -65,8 +65,23 @@ src/
 ├── Ironbees.AgentFramework/        # MAF integration
 │   └── Workflow/                   # Workflow converter, executor, checkpoint
 │
-└── Ironbees.AgentMode/        # YAML workflow definitions
-    └── Workflow/                   # YamlDrivenOrchestrator
+├── Ironbees.AgentMode/             # YAML workflow definitions
+│   └── Workflow/                   # YamlDrivenOrchestrator
+│
+└── Ironbees.Autonomous/            # Autonomous execution SDK (v0.4.0)
+    ├── Abstractions/               # Core interfaces
+    │   ├── IOracleVerifier         # Completion verification
+    │   ├── ITaskExecutor           # Task execution
+    │   ├── IHumanInTheLoop         # HITL interface
+    │   ├── IAutonomousContextProvider  # Context management
+    │   └── IAutonomousMemoryStore  # Memory storage
+    ├── Context/                    # Context management
+    │   └── DefaultContextManager   # Built-in context tracking
+    ├── Configuration/              # YAML configuration
+    │   └── OrchestratorSettings    # Settings loader
+    └── Models/                     # Domain models
+        ├── AutonomousEvent         # Event system
+        └── OracleVerdict           # Oracle responses
 ```
 
 ## Key Interfaces
@@ -211,9 +226,204 @@ if (!result.IsAllowed)
 <PackageReference Include="Polly" Version="8.6.5" />
 ```
 
+## Workflow Decision Guide
+
+Ironbees provides three layers for different workflow complexity levels:
+
+### When to Use AutonomousOrchestrator (Ironbees.Autonomous)
+
+**Use for**: Simple iterative autonomous execution
+
+✅ **Good fit when**:
+- Self-directed agents with oracle verification
+- Sequential task execution with auto-continuation
+- Iterative improvement patterns (e.g., 20 Questions game)
+- Simple autonomous workflows with YAML configuration
+
+**Configuration**:
+```csharp
+// Code-based configuration
+var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
+    .WithExecutor(executor)
+    .WithOracle(oracle)
+    .WithMaxIterations(10)
+    .Build();
+
+// YAML-based configuration
+var settings = await OrchestratorSettings.LoadFromFileAsync("settings.yaml");
+var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
+    .WithSettings(settings)
+    .WithExecutor(executor)
+    .Build();
+```
+
+**YAML Configuration Example** (`settings.yaml`):
+```yaml
+orchestration:
+  max_iterations: 10
+  completion_mode: until_goal_achieved
+
+  oracle:
+    enabled: true
+    max_iterations: 3
+
+  confidence:
+    min_threshold: 0.8
+    human_review_threshold: 0.5
+
+  context:
+    enable_tracking: true
+    max_learnings: 5
+
+  auto_continue:
+    enabled: true
+    prompt_template: "Continue iteration {iteration}"
+```
+
+**Examples**:
+- 20 Questions game (`samples/TwentyQuestionsSample/`)
+- Automated data processing
+- Simple agent conversations
+
+### When to Use YamlDrivenOrchestrator (Ironbees.AgentMode)
+
+**Use for**: Complex multi-agent workflows with state machines
+
+✅ **Good fit when**:
+- State machine workflows with branching logic
+- Human-in-the-Loop (HITL) checkpoints
+- Agentic patterns (sampling, confidence thresholds)
+- Multi-agent collaboration workflows
+
+**Configuration**:
+```yaml
+# workflow.yaml
+name: "data-processing-workflow"
+version: "1.0"
+
+states:
+  - id: START
+    type: start
+    next: SAMPLE
+
+  - id: SAMPLE
+    type: action
+    agent: sampling-agent
+    next: ANALYZE
+
+  - id: ANALYZE
+    type: action
+    agent: analysis-agent
+    next: HITL_CHECKPOINT
+
+  - id: HITL_CHECKPOINT
+    type: hitl
+    requestType: Review
+    options:
+      - id: approve
+        label: "Approve"
+      - id: reject
+        label: "Reject"
+    next:
+      approve: SUCCESS
+      reject: FAILED
+```
+
+**Examples**:
+- Data preprocessing with human approval gates (`workflows/templates/agentic-loop.yaml`)
+- Multi-step validation workflows
+- Complex decision trees
+
+### When to Use MAF Directly
+
+**Use for**: Full workflow orchestration with advanced features
+
+✅ **Good fit when**:
+- DAG task dependencies and parallel execution
+- Advanced state management
+- Tool execution and MCP integration
+- Complex memory and context management
+
+**Integration**:
+```csharp
+// Ironbees converts YAML → MAF workflow
+var converter = new MafWorkflowConverter();
+var mafWorkflow = converter.Convert(yamlWorkflow);
+
+// Execute via MAF
+var executor = new MafWorkflowExecutor();
+await executor.ExecuteAsync(mafWorkflow);
+```
+
+**Examples**:
+- Multi-step parallel data pipelines
+- Complex tool orchestration
+- Advanced agent collaboration
+
+## Decision Tree
+
+```
+┌─ Need workflow orchestration?
+│
+├─ YES → Complex multi-step?
+│        │
+│        ├─ NO → Simple iterations?
+│        │        │
+│        │        ├─ YES → AutonomousOrchestrator ✅
+│        │        │        (+ OrchestratorSettings YAML)
+│        │        │
+│        │        └─ NO → State machine required?
+│        │                 │
+│        │                 └─ YES → YamlDrivenOrchestrator ✅
+│        │                          (+ MAF integration)
+│        │
+│        └─ YES → Parallel tasks / DAG?
+│                 │
+│                 └─ YES → MAF directly ✅
+│                          (via MafWorkflowConverter)
+│
+└─ NO → Single agent interaction
+         → Use IAgentOrchestrator (Ironbees.Core)
+```
+
+## Scope Boundaries (Updated v0.4.0)
+
+**Ironbees Handles**:
+- Filesystem convention-based agent loading
+- Intelligent agent routing (keyword/embedding/hybrid)
+- Multi-LLM framework integration (Adapter pattern)
+- YAML workflow definition and parsing
+- **YAML configuration for Autonomous SDK** (OrchestratorSettings)
+- **Interface abstractions** (IOracleVerifier, ITaskExecutor, IContextAwareOracleVerifier)
+- Token tracking / cost monitoring
+- Conversation state management
+- Middleware pipeline
+- Guardrails & content validation
+- Audit logging for compliance
+- **Context management abstractions** (DefaultContextManager)
+
+**Delegated to MAF**:
+- Complex workflow execution (state machines)
+- DAG task scheduling and parallel execution
+- Tool execution engine
+- Conversation memory
+- MCP integration
+- **Business logic implementation** (sampling algorithms, confidence calculations)
+
+**Delegated to Application Layer**:
+- Multi-execution coordination
+- Multi-tenancy management
+- Scaling and load balancing
+- Custom orchestration logic
+
+**Delegated to External Services**:
+- AI-based content moderation → Azure AI Content Safety, OpenAI Moderation
+
 ## Next Steps
 
+- [Philosophy](./PHILOSOPHY.md) - Design principles and scope boundaries
 - [Quick Start](./QUICKSTART.md)
 - [Agentic Patterns](./AGENTIC-PATTERNS.md)
+- [Autonomous SDK Guide](./autonomous-sdk-guide.md)
 - [LLM Providers](./PROVIDERS.md)
 - [Deployment](./DEPLOYMENT.md)
