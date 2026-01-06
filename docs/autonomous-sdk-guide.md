@@ -1,7 +1,7 @@
 # Ironbees Autonomous SDK Guide
 
-> **Version**: v0.3.1
-> **Last Updated**: 2025-01-04
+> **Version**: v0.4.1
+> **Last Updated**: 2026-01-06
 
 ## Overview
 

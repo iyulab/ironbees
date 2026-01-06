@@ -457,7 +457,7 @@ Ironbees provides **integration and abstraction** for all these scenarios.
 
 - [Architecture](./ARCHITECTURE.md) - System architecture and layer diagram
 - [Agentic Patterns](./AGENTIC-PATTERNS.md) - Declarative agentic pattern examples
-- [Quick Start](./QUICKSTART.md) - Getting started guide
+- [README](../README.md) - Getting started guide
 - [CLAUDE.md](../CLAUDE.md) - Development guidelines
 
 ---

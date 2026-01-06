@@ -397,5 +397,5 @@ bridge.OnEvent += (sender, evt) =>
 ## Related Documentation
 
 - [Architecture](./ARCHITECTURE.md) - System overview
-- [Quick Start](./QUICKSTART.md) - Getting started guide
+- [README](../README.md) - Getting started guide
 - [Providers](./PROVIDERS.md) - LLM provider configuration

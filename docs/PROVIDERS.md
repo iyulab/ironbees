@@ -169,6 +169,6 @@ catch (UnauthorizedAccessException) { /* Invalid API key */ }
 
 ## Next Steps
 
-- [Quick Start](./QUICKSTART.md)
+- [README](../README.md) - Quick start examples
 - [Architecture](./ARCHITECTURE.md)
 - [Deployment](./DEPLOYMENT.md)

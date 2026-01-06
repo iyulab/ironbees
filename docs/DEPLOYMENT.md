@@ -181,6 +181,6 @@ builder.Services.AddApplicationInsightsTelemetry(options =>
 
 ## Next Steps
 
-- [Quick Start](./QUICKSTART.md)
+- [README](../README.md) - Quick start examples
 - [Architecture](./ARCHITECTURE.md)
 - [LLM Providers](./PROVIDERS.md)

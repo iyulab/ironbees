@@ -422,7 +422,7 @@ await executor.ExecuteAsync(mafWorkflow);
 ## Next Steps
 
 - [Philosophy](./PHILOSOPHY.md) - Design principles and scope boundaries
-- [Quick Start](./QUICKSTART.md)
+- [README](../README.md) - Getting started and quick examples
 - [Agentic Patterns](./AGENTIC-PATTERNS.md)
 - [Autonomous SDK Guide](./autonomous-sdk-guide.md)
 - [LLM Providers](./PROVIDERS.md)
