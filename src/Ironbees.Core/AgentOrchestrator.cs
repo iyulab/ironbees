@@ -35,10 +35,11 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         if (!configs.Any())
         {
-            throw new InvalidOperationException("No agents found to load");
+            throw new AgentLoadException("No agents found to load");
         }
 
-        // Create and register each agent
+        // Create and register each agent, collecting any errors
+        var errors = new List<AgentLoadError>();
         foreach (var config in configs)
         {
             try
@@ -46,16 +47,28 @@ public class AgentOrchestrator : IAgentOrchestrator
                 var agent = await _frameworkAdapter.CreateAgentAsync(config, cancellationToken);
                 _registry.Register(config.Name, agent);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Silently continue loading other agents
-                // Callers can check if expected agents are loaded
+                errors.Add(new AgentLoadError(
+                    config.Name,
+                    _agentsDirectory ?? "agents",
+                    ex));
             }
         }
 
-        if (!_registry.ListAgents().Any())
+        // Check results
+        var loadedAgents = _registry.ListAgents();
+        if (!loadedAgents.Any())
         {
-            throw new InvalidOperationException("Failed to load any agents");
+            throw new AgentLoadException("Failed to load any agents", errors);
+        }
+
+        // If some agents failed but others succeeded, throw with partial failure info
+        if (errors.Count > 0)
+        {
+            throw new AgentLoadException(
+                $"Loaded {loadedAgents.Count} agent(s) but {errors.Count} failed",
+                errors);
         }
     }
 

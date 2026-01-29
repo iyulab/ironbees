@@ -1,8 +1,5 @@
 # Ironbees Autonomous SDK Guide
 
-> **Version**: v0.4.1
-> **Last Updated**: 2026-01-06
-
 ## Overview
 
 The Ironbees Autonomous SDK provides a framework for building goal-based iterative execution systems with Oracle verification, human-in-the-loop oversight, and reflection capabilities.

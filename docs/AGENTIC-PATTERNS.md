@@ -1,7 +1,5 @@
 # Agentic Patterns
 
-**Version**: 0.2.4 | **Target**: .NET 10.0
-
 ## Overview
 
 Agentic Patterns enable iterative, human-supervised workflows where an AI agent progressively processes data, builds confidence, and requests human intervention at critical checkpoints.

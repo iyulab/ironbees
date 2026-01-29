@@ -1,6 +1,6 @@
 # Ironbees Architecture
 
-**Version**: 0.4.0 | **Target**: .NET 10.0 | **Updated**: 2026-01-06
+**Target**: .NET 10.0
 
 ## Overview
 
@@ -52,7 +52,7 @@ src/
 │   ├── Conversation/               # FileSystemConversationStore
 │   ├── Streaming/                  # StreamChunk types
 │   ├── AgentDirectory/             # Filesystem agent loading
-│   └── Guardrails/                 # Content validation (v0.3.0)
+│   └── Guardrails/                 # Content validation
 │       ├── IContentGuardrail       # Core interface
 │       ├── GuardrailPipeline       # Multi-guardrail orchestrator
 │       ├── RegexGuardrail          # Pattern-based filtering
@@ -68,7 +68,7 @@ src/
 ├── Ironbees.AgentMode/             # YAML workflow definitions
 │   └── Workflow/                   # YamlDrivenOrchestrator
 │
-└── Ironbees.Autonomous/            # Autonomous execution SDK (v0.4.0)
+└── Ironbees.Autonomous/            # Autonomous execution SDK
     ├── Abstractions/               # Core interfaces
     │   ├── IOracleVerifier         # Completion verification
     │   ├── ITaskExecutor           # Task execution
@@ -163,7 +163,7 @@ Input → GuardrailPipeline → [Regex|Keyword|Length|Azure|OpenAI] → ✓ or V
 | `KeywordGuardrail` | Blocked word filtering | `blockedKeywords`, `WholeWordOnly` |
 | `LengthGuardrail` | DoS prevention | `maxInputLength`, `maxOutputLength` |
 
-### External Adapters (v0.3.0)
+### External Adapters
 
 | Adapter | Service | Categories |
 |---------|---------|------------|
@@ -205,8 +205,8 @@ if (!result.IsAllowed)
 - Token tracking / cost monitoring
 - Conversation state management
 - Middleware pipeline
-- **Guardrails & content validation** (v0.3.0)
-- **Audit logging for compliance** (v0.3.0)
+- Guardrails & content validation
+- Audit logging for compliance
 
 **Delegated to External Services**:
 - AI-based content moderation → Azure AI Content Safety, OpenAI Moderation
@@ -386,7 +386,7 @@ await executor.ExecuteAsync(mafWorkflow);
          → Use IAgentOrchestrator (Ironbees.Core)
 ```
 
-## Scope Boundaries (Updated v0.4.0)
+## Scope Boundaries
 
 **Ironbees Handles**:
 - Filesystem convention-based agent loading

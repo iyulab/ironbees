@@ -99,7 +99,35 @@ public class AgentLoadException : Exception
         : base(message, innerException)
     {
     }
+
+    public AgentLoadException(string message, IReadOnlyList<AgentLoadError> failedAgents)
+        : base(BuildDetailedMessage(message, failedAgents))
+    {
+        FailedAgents = failedAgents;
+    }
+
+    /// <summary>
+    /// Gets the list of agents that failed to load with their errors.
+    /// </summary>
+    public IReadOnlyList<AgentLoadError>? FailedAgents { get; }
+
+    private static string BuildDetailedMessage(string message, IReadOnlyList<AgentLoadError> failedAgents)
+    {
+        if (failedAgents.Count == 0)
+        {
+            return message;
+        }
+
+        var details = string.Join(Environment.NewLine, failedAgents.Select(e =>
+            $"  - {e.AgentName}: {e.Error.Message}"));
+        return $"{message}{Environment.NewLine}Failed agents:{Environment.NewLine}{details}";
+    }
 }
+
+/// <summary>
+/// Represents an error that occurred while loading a specific agent.
+/// </summary>
+public sealed record AgentLoadError(string AgentName, string AgentPath, Exception Error);
 
 /// <summary>
 /// Exception thrown when agent directory structure is invalid

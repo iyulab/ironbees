@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Ironbees.Core.Embeddings;
 
@@ -11,6 +12,7 @@ public class ModelDownloader
 {
     private readonly string _cacheDirectory;
     private readonly HttpClient _httpClient;
+    private readonly ILogger<ModelDownloader>? _logger;
 
     /// <summary>
     /// Gets the default cache directory for downloaded models.
@@ -26,10 +28,12 @@ public class ModelDownloader
     /// </summary>
     /// <param name="cacheDirectory">Directory to cache downloaded models. Defaults to ~/.ironbees/models/</param>
     /// <param name="httpClient">HTTP client for downloads. If null, creates a new instance.</param>
-    public ModelDownloader(string? cacheDirectory = null, HttpClient? httpClient = null)
+    /// <param name="logger">Optional logger for download progress.</param>
+    public ModelDownloader(string? cacheDirectory = null, HttpClient? httpClient = null, ILogger<ModelDownloader>? logger = null)
     {
         _cacheDirectory = cacheDirectory ?? DefaultCacheDirectory;
         _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
+        _logger = logger;
 
         // Ensure cache directory exists
         Directory.CreateDirectory(_cacheDirectory);
@@ -102,7 +106,7 @@ public class ModelDownloader
 
     private async Task DownloadModelAsync(string modelName, string modelPath, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"Downloading model '{modelName}' from Hugging Face...");
+        _logger?.LogInformation("Downloading model '{ModelName}' from Hugging Face...", modelName);
 
         // Create model directory
         Directory.CreateDirectory(modelPath);
@@ -117,7 +121,7 @@ public class ModelDownloader
             await DownloadFileAsync(repoId, "tokenizer.json", Path.Combine(modelPath, "tokenizer.json"), cancellationToken);
             await DownloadFileAsync(repoId, "config.json", Path.Combine(modelPath, "config.json"), cancellationToken);
 
-            Console.WriteLine($"Model '{modelName}' downloaded successfully to: {modelPath}");
+            _logger?.LogInformation("Model '{ModelName}' downloaded successfully to: {ModelPath}", modelName, modelPath);
         }
         catch (Exception ex)
         {
@@ -134,13 +138,14 @@ public class ModelDownloader
     {
         var url = $"https://huggingface.co/{repoId}/resolve/main/{fileName}";
 
-        Console.WriteLine($"  Downloading {fileName}...");
+        _logger?.LogDebug("Downloading {FileName}...", fileName);
 
         using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         var totalBytes = response.Content.Headers.ContentLength ?? -1;
         var downloadedBytes = 0L;
+        var lastLoggedProgress = 0;
 
         await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         await using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, useAsync: true);
@@ -153,18 +158,20 @@ public class ModelDownloader
             await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
             downloadedBytes += bytesRead;
 
-            // Show progress
+            // Log progress at 25% intervals to avoid excessive logging
             if (totalBytes > 0)
             {
-                var progress = (double)downloadedBytes / totalBytes * 100;
-                Console.Write($"\r  Progress: {progress:F1}% ({downloadedBytes / 1024 / 1024:F1} MB / {totalBytes / 1024 / 1024:F1} MB)");
+                var progress = (int)((double)downloadedBytes / totalBytes * 100);
+                if (progress >= lastLoggedProgress + 25)
+                {
+                    lastLoggedProgress = progress;
+                    _logger?.LogDebug("  {FileName}: {Progress}% ({DownloadedMB:F1} MB / {TotalMB:F1} MB)",
+                        fileName, progress, downloadedBytes / 1024.0 / 1024.0, totalBytes / 1024.0 / 1024.0);
+                }
             }
         }
 
-        if (totalBytes > 0)
-        {
-            Console.WriteLine(); // New line after progress
-        }
+        _logger?.LogDebug("Completed downloading {FileName} ({SizeMB:F1} MB)", fileName, downloadedBytes / 1024.0 / 1024.0);
     }
 
     private string GetHuggingFaceRepoId(string modelName)

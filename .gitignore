@@ -45,3 +45,4 @@ appsettings.Development.json
 local-docs/
 CLAUDE.md
 *.local.md
+nul

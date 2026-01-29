@@ -1,7 +1,5 @@
 # Ironbees Design Philosophy
 
-**Version**: 0.4.0 | **Last Updated**: 2026-01-06
-
 ## Core Principle: Declaration vs Execution
 
 Ironbees follows a fundamental principle that shapes every design decision:
@@ -429,29 +427,6 @@ Full Orchestration      → MAF directly
 ```
 
 Ironbees provides **integration and abstraction** for all these scenarios.
-
-## Evolution of the Philosophy
-
-### v0.1.0 - v0.2.0: Finding Identity
-- Started as "simple agent management"
-- Realized thin wrapper value
-- Established filesystem conventions
-
-### v0.3.0: Guardrails Addition
-- Added content validation (still declarative)
-- External adapters (Azure AI, OpenAI)
-- Maintained thin wrapper philosophy
-
-### v0.4.0: Autonomous SDK
-- Context management abstractions
-- Oracle interface enhancements
-- **Strict adherence to Declaration vs Execution**
-
-### Future: Philosophy-Driven Growth
-- Only declarative patterns
-- More integration adapters
-- Better developer experience
-- **Never: execution engines**
 
 ## Related Documents
 

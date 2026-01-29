@@ -109,57 +109,51 @@ public sealed class MafDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRuntim
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotSupportedException">
+    /// MAF handles human-in-the-loop through its own workflow patterns.
+    /// Use CancellationToken for execution control.
+    /// </exception>
     public Task ApproveAsync(string executionId, ApprovalDecision decision)
     {
-        // MAF handles human-in-the-loop through its own mechanisms
-        // This method is kept for interface compatibility
-        _logger?.LogWarning(
-            "ApproveAsync called on MafDrivenOrchestrator for execution {ExecutionId}. " +
-            "MAF handles approvals through its workflow patterns.", executionId);
-        return Task.CompletedTask;
+        throw new NotSupportedException(
+            $"MafDrivenOrchestrator does not support ApproveAsync. " +
+            $"MAF handles approvals through its own workflow patterns. " +
+            $"ExecutionId: {executionId}");
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotSupportedException">
+    /// MAF cancellation is handled through CancellationToken passed to ExecuteAsync.
+    /// </exception>
     public Task CancelAsync(string executionId)
     {
-        // Cancellation is handled through the CancellationToken passed to ExecuteAsync
-        _logger?.LogWarning(
-            "CancelAsync called on MafDrivenOrchestrator for execution {ExecutionId}. " +
-            "Use CancellationToken for cancellation.", executionId);
-        return Task.CompletedTask;
+        throw new NotSupportedException(
+            $"MafDrivenOrchestrator does not support CancelAsync. " +
+            $"Use CancellationToken passed to ExecuteAsync for cancellation. " +
+            $"ExecutionId: {executionId}");
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotSupportedException">
+    /// MAF execution state is emitted through the async enumerable returned by ExecuteAsync.
+    /// </exception>
     public Task<WorkflowRuntimeState> GetStateAsync(string executionId)
     {
-        // MAF doesn't maintain execution state in the same way
-        // State is emitted through the async enumerable
-        _logger?.LogWarning(
-            "GetStateAsync called on MafDrivenOrchestrator for execution {ExecutionId}. " +
-            "State is emitted through ExecuteAsync enumerable.", executionId);
-
-        // Return a default state indicating state cannot be retrieved
-        // Note: This is a limitation of MAF-based execution where state is streamed
-        return Task.FromResult(new WorkflowRuntimeState
-        {
-            ExecutionId = executionId,
-            WorkflowName = "MAF-Managed",
-            CurrentStateId = "UNAVAILABLE",
-            Status = WorkflowExecutionStatus.Running,
-            Input = string.Empty,
-            StartedAt = DateTimeOffset.UtcNow,
-            LastUpdatedAt = DateTimeOffset.UtcNow
-        });
+        throw new NotSupportedException(
+            $"MafDrivenOrchestrator does not support GetStateAsync. " +
+            $"State is emitted through ExecuteAsync async enumerable. " +
+            $"ExecutionId: {executionId}");
     }
 
     /// <inheritdoc />
+    /// <exception cref="NotSupportedException">
+    /// MAF manages its own execution tracking internally.
+    /// </exception>
     public Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync()
     {
-        // MAF execution tracking is handled by MAF itself
-        _logger?.LogWarning(
-            "ListActiveExecutionsAsync called on MafDrivenOrchestrator. " +
-            "MAF manages its own execution tracking.");
-        return Task.FromResult<IReadOnlyList<WorkflowExecutionSummary>>(Array.Empty<WorkflowExecutionSummary>());
+        throw new NotSupportedException(
+            "MafDrivenOrchestrator does not support ListActiveExecutionsAsync. " +
+            "MAF manages its own execution tracking internally.");
     }
 
     /// <summary>

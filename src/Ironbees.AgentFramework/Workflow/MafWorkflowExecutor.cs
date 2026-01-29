@@ -190,20 +190,21 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
 
     /// <summary>
     /// Maps MAF WorkflowEvent to Ironbees WorkflowExecutionEvent.
+    /// Note: AgentRunUpdateEvent was removed in MAF v1.0.0-preview.260128.1
     /// </summary>
     private WorkflowExecutionEvent? MapWorkflowEvent(WorkflowEvent evt)
     {
         return evt switch
         {
-            AgentRunUpdateEvent update => new WorkflowExecutionEvent
+            ExecutorInvokedEvent invoked => new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.AgentMessage,
-                AgentName = update.ExecutorId,
-                Content = update.Data?.ToString(),
+                AgentName = invoked.ExecutorId,
+                Content = $"Executor '{invoked.ExecutorId}' started",
                 Metadata = new Dictionary<string, object>
                 {
-                    ["eventType"] = "AgentRunUpdate",
-                    ["executorId"] = update.ExecutorId ?? "unknown"
+                    ["eventType"] = "ExecutorInvoked",
+                    ["executorId"] = invoked.ExecutorId ?? "unknown"
                 }
             },
 
@@ -216,6 +217,18 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                 {
                     ["eventType"] = "ExecutorCompleted",
                     ["executorId"] = completed.ExecutorId ?? "unknown"
+                }
+            },
+
+            ExecutorFailedEvent failed => new WorkflowExecutionEvent
+            {
+                Type = WorkflowExecutionEventType.Error,
+                AgentName = failed.ExecutorId,
+                Content = failed.Data?.Message ?? "Executor failed",
+                Metadata = new Dictionary<string, object>
+                {
+                    ["eventType"] = "ExecutorFailed",
+                    ["executorId"] = failed.ExecutorId ?? "unknown"
                 }
             },
 

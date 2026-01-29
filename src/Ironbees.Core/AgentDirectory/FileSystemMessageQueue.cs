@@ -265,7 +265,13 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
     {
         if (_disposed) return;
 
-        _watcher?.Dispose();
+        if (_watcher != null)
+        {
+            _watcher.EnableRaisingEvents = false;
+            _watcher.Created -= OnFileCreated;
+            _watcher.Dispose();
+        }
+
         _dequeueLock.Dispose();
         _disposed = true;
     }

@@ -805,8 +805,9 @@ public class MafWorkflowConverterTests
         // This is the recommended way to create AIAgent instances for testing
         var mockChatClient = new Mock<IChatClient>();
 
-        // Create ChatClientAgent using the extension method
-        return mockChatClient.Object.CreateAIAgent(
+        // Create ChatClientAgent using constructor (MAF v1.0.0-preview.260128.1+)
+        return new ChatClientAgent(
+            mockChatClient.Object,
             instructions: $"Test instructions for {name}",
             name: name);
     }

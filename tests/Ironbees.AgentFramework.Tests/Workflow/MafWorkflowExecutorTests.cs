@@ -366,7 +366,8 @@ public class MafWorkflowExecutorTests
         return (name, _) =>
         {
             var mockChatClient = new Mock<IChatClient>();
-            AIAgent agent = mockChatClient.Object.CreateAIAgent(
+            AIAgent agent = new ChatClientAgent(
+                mockChatClient.Object,
                 instructions: $"Test agent: {name}",
                 name: name);
             return Task.FromResult(agent);
@@ -377,7 +378,8 @@ public class MafWorkflowExecutorTests
     {
         // Create a minimal MAF workflow for testing
         var mockChatClient = new Mock<IChatClient>();
-        var agent = mockChatClient.Object.CreateAIAgent(
+        var agent = new ChatClientAgent(
+            mockChatClient.Object,
             instructions: "Test agent",
             name: "test");
 

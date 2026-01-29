@@ -108,12 +108,12 @@ public class AgentOrchestratorTests
             mockSelector.Object);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<AgentLoadException>(
             async () => await orchestrator.LoadAgentsAsync());
     }
 
     [Fact]
-    public async Task LoadAgentsAsync_AllAgentsFail_ThrowsInvalidOperationException()
+    public async Task LoadAgentsAsync_AllAgentsFail_ThrowsAgentLoadException()
     {
         // Arrange
         var mockLoader = new Mock<IAgentLoader>();
@@ -154,8 +154,10 @@ public class AgentOrchestratorTests
             mockSelector.Object);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<AgentLoadException>(
             async () => await orchestrator.LoadAgentsAsync());
+        Assert.NotNull(ex.FailedAgents);
+        Assert.Single(ex.FailedAgents);
     }
 
     [Fact]

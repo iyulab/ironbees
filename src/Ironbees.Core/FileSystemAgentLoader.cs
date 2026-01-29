@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -28,6 +29,7 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
 
     private readonly IDeserializer _yamlDeserializer;
     private readonly FileSystemAgentLoaderOptions _options;
+    private readonly ILogger<FileSystemAgentLoader>? _logger;
     private readonly ConcurrentDictionary<string, AgentConfig> _configCache = new();
     private readonly ConcurrentDictionary<string, DateTime> _fileLastModified = new();
     private FileSystemWatcher? _fileWatcher;
@@ -35,11 +37,11 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
     private readonly object _loadLock = new();
 
     public FileSystemAgentLoader()
-        : this(new FileSystemAgentLoaderOptions())
+        : this(new FileSystemAgentLoaderOptions(), null)
     {
     }
 
-    public FileSystemAgentLoader(FileSystemAgentLoaderOptions options)
+    public FileSystemAgentLoader(FileSystemAgentLoaderOptions options, ILogger<FileSystemAgentLoader>? logger = null)
     {
         _yamlDeserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -47,6 +49,7 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
             .Build();
 
         _options = options;
+        _logger = logger;
     }
 
     /// <summary>
@@ -135,8 +138,7 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
                     }
                     else if (validationResult.Warnings.Count > 0 && _options.LogWarnings)
                     {
-                        // TODO: Log warnings (would need ILogger injection)
-                        Console.WriteLine($"[Warning] {validationResult.GetFormattedErrors()}");
+                        _logger?.LogWarning("Agent validation warnings: {Warnings}", validationResult.GetFormattedErrors());
                     }
                 }
             }
@@ -210,7 +212,7 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
                 }
                 else if (_options.LogWarnings)
                 {
-                    Console.WriteLine($"[Warning] {duplicateMessage}");
+                    _logger?.LogWarning("Duplicate agent names: {Message}", duplicateMessage);
                 }
             }
         }
@@ -218,10 +220,10 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
         // Log errors if enabled and errors occurred
         if (errors.Count > 0 && _options.LogWarnings)
         {
-            Console.WriteLine($"[Warning] Failed to load {errors.Count} agent(s):");
+            _logger?.LogWarning("Failed to load {ErrorCount} agent(s)", errors.Count);
             foreach (var (path, error) in errors)
             {
-                Console.WriteLine($"  - {Path.GetFileName(path)}: {error.Message}");
+                _logger?.LogWarning("  - {AgentName}: {ErrorMessage}", Path.GetFileName(path), error.Message);
             }
         }
 
@@ -378,6 +380,10 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
         if (_fileWatcher != null)
         {
             _fileWatcher.EnableRaisingEvents = false;
+            _fileWatcher.Changed -= OnFileChanged;
+            _fileWatcher.Created -= OnFileChanged;
+            _fileWatcher.Deleted -= OnFileChanged;
+            _fileWatcher.Renamed -= OnFileRenamed;
             _fileWatcher.Dispose();
             _fileWatcher = null;
         }

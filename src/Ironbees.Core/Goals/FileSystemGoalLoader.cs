@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -28,16 +29,17 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
 
     private readonly IDeserializer _yamlDeserializer;
     private readonly FileSystemGoalLoaderOptions _options;
+    private readonly ILogger<FileSystemGoalLoader>? _logger;
     private readonly ConcurrentDictionary<string, GoalDefinition> _goalCache = new();
     private readonly ConcurrentDictionary<string, DateTime> _fileLastModified = new();
     private FileSystemWatcher? _fileWatcher;
 
     public FileSystemGoalLoader()
-        : this(new FileSystemGoalLoaderOptions())
+        : this(new FileSystemGoalLoaderOptions(), null)
     {
     }
 
-    public FileSystemGoalLoader(FileSystemGoalLoaderOptions options)
+    public FileSystemGoalLoader(FileSystemGoalLoaderOptions options, ILogger<FileSystemGoalLoader>? logger = null)
     {
         _yamlDeserializer = new DeserializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -45,6 +47,7 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
             .Build();
 
         _options = options;
+        _logger = logger;
     }
 
     /// <summary>
@@ -118,7 +121,7 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
                     {
                         foreach (var error in validationResult.Errors)
                         {
-                            Console.WriteLine($"[Warning] {error}");
+                            _logger?.LogWarning("Goal validation error: {Error}", error);
                         }
                     }
                 }
@@ -127,7 +130,7 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
                 {
                     foreach (var warning in validationResult.Warnings)
                     {
-                        Console.WriteLine($"[Warning] {warning}");
+                        _logger?.LogWarning("Goal validation warning: {Warning}", warning);
                     }
                 }
             }
@@ -200,7 +203,7 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
                 }
                 else if (_options.LogWarnings)
                 {
-                    Console.WriteLine($"[Warning] {duplicateMessage}");
+                    _logger?.LogWarning("Duplicate goal IDs: {Message}", duplicateMessage);
                 }
             }
         }
@@ -208,10 +211,10 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
         // Log errors if enabled
         if (errors.Count > 0 && _options.LogWarnings)
         {
-            Console.WriteLine($"[Warning] Failed to load {errors.Count} goal(s):");
+            _logger?.LogWarning("Failed to load {ErrorCount} goal(s)", errors.Count);
             foreach (var (path, error) in errors)
             {
-                Console.WriteLine($"  - {Path.GetFileName(path)}: {error.Message}");
+                _logger?.LogWarning("  - {GoalName}: {ErrorMessage}", Path.GetFileName(path), error.Message);
             }
         }
 
@@ -344,6 +347,10 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
         if (_fileWatcher != null)
         {
             _fileWatcher.EnableRaisingEvents = false;
+            _fileWatcher.Changed -= OnFileChanged;
+            _fileWatcher.Created -= OnFileChanged;
+            _fileWatcher.Deleted -= OnFileChanged;
+            _fileWatcher.Renamed -= OnFileRenamed;
             _fileWatcher.Dispose();
             _fileWatcher = null;
         }

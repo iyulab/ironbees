@@ -355,7 +355,8 @@ public class MafWorkflowIntegrationTests
         return (name, _) =>
         {
             var mockChatClient = new Mock<IChatClient>();
-            AIAgent agent = mockChatClient.Object.CreateAIAgent(
+            AIAgent agent = new ChatClientAgent(
+                mockChatClient.Object,
                 instructions: $"Test agent: {name}",
                 name: name);
             return Task.FromResult(agent);

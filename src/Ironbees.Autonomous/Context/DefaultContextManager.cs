@@ -222,8 +222,12 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
     /// <inheritdoc />
     public void RecordUsage(int tokens, string source = "unknown")
     {
-        _tokenUsage.AddOrUpdate(source, tokens, (_, existing) => existing + tokens);
-        UpdateSaturationState();
+        // Ensure atomicity of token update and state recalculation
+        lock (_lock)
+        {
+            _tokenUsage.AddOrUpdate(source, tokens, (_, existing) => existing + tokens);
+            UpdateSaturationStateCore();
+        }
     }
 
     /// <inheritdoc />
@@ -251,44 +255,52 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
     {
         lock (_lock)
         {
-            var totalTokens = _tokenUsage.Values.Sum();
-            var maxTokens = _options.Saturation.MaxTokens;
-            var percentage = maxTokens > 0 ? (float)totalTokens / maxTokens * 100 : 0;
-            var level = GetLevel(percentage);
-            var action = GetAction(level);
+            UpdateSaturationStateCore();
+        }
+    }
 
-            CurrentState = new SaturationState
-            {
-                Level = level,
-                Percentage = percentage,
-                CurrentTokens = totalTokens,
-                MaxTokens = maxTokens,
-                UsageBySource = new Dictionary<string, int>(_tokenUsage),
-                RecommendedAction = action,
-                LastUpdated = DateTimeOffset.UtcNow
-            };
+    /// <summary>
+    /// Core saturation state update logic. Must be called within _lock.
+    /// </summary>
+    private void UpdateSaturationStateCore()
+    {
+        var totalTokens = _tokenUsage.Values.Sum();
+        var maxTokens = _options.Saturation.MaxTokens;
+        var percentage = maxTokens > 0 ? (float)totalTokens / maxTokens * 100 : 0;
+        var level = GetLevel(percentage);
+        var action = GetAction(level);
 
-            if (level != _previousLevel)
-            {
-                SaturationChanged?.Invoke(this, new SaturationChangedEventArgs
-                {
-                    PreviousLevel = _previousLevel,
-                    NewLevel = level,
-                    CurrentState = CurrentState
-                });
-                _previousLevel = level;
-            }
+        CurrentState = new SaturationState
+        {
+            Level = level,
+            Percentage = percentage,
+            CurrentTokens = totalTokens,
+            MaxTokens = maxTokens,
+            UsageBySource = new Dictionary<string, int>(_tokenUsage),
+            RecommendedAction = action,
+            LastUpdated = DateTimeOffset.UtcNow
+        };
 
-            if (_options.Saturation.AutoTriggerActions && action >= SaturationAction.ShouldPageOut)
+        if (level != _previousLevel)
+        {
+            SaturationChanged?.Invoke(this, new SaturationChangedEventArgs
             {
-                ActionRequired?.Invoke(this, new SaturationActionRequiredEventArgs
-                {
-                    Action = action,
-                    CurrentState = CurrentState,
-                    SuggestedTokensToFree = (int)(totalTokens - maxTokens * _options.Saturation.TargetAfterEviction / 100),
-                    Reason = $"Saturation at {percentage:F1}%"
-                });
-            }
+                PreviousLevel = _previousLevel,
+                NewLevel = level,
+                CurrentState = CurrentState
+            });
+            _previousLevel = level;
+        }
+
+        if (_options.Saturation.AutoTriggerActions && action >= SaturationAction.ShouldPageOut)
+        {
+            ActionRequired?.Invoke(this, new SaturationActionRequiredEventArgs
+            {
+                Action = action,
+                CurrentState = CurrentState,
+                SuggestedTokensToFree = (int)(totalTokens - maxTokens * _options.Saturation.TargetAfterEviction / 100),
+                Reason = $"Saturation at {percentage:F1}%"
+            });
         }
     }
 
@@ -314,7 +326,48 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
 
     #region Helpers
 
-    private static int EstimateTokens(string text) => (int)Math.Ceiling(text.Length / 4.0);
+    /// <summary>
+    /// Estimates token count using content-aware heuristics.
+    /// Different content types have different character-per-token ratios:
+    /// - Korean/CJK: ~1.5 chars/token (due to Unicode decomposition)
+    /// - Code: ~3 chars/token (more special characters)
+    /// - English: ~4 chars/token (standard)
+    /// </summary>
+    private static int EstimateTokens(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return 0;
+
+        // Count different character types
+        var koreanCount = 0;
+        var codeCharCount = 0;
+        var totalCount = text.Length;
+
+        foreach (var c in text)
+        {
+            // Korean characters (Hangul Syllables block: AC00-D7A3)
+            if (c >= '\uAC00' && c <= '\uD7A3')
+                koreanCount++;
+            // Code-related characters
+            else if ("{}[]();,<>=+-*/%&|!~^".Contains(c))
+                codeCharCount++;
+        }
+
+        // Calculate weighted chars-per-token ratio
+        var koreanRatio = totalCount > 0 ? (double)koreanCount / totalCount : 0;
+        var codeRatio = totalCount > 0 ? (double)codeCharCount / totalCount : 0;
+
+        // Determine effective chars-per-token based on content type
+        double charsPerToken;
+        if (koreanRatio > 0.3)
+            charsPerToken = 1.5; // Korean-heavy content
+        else if (codeRatio > 0.1)
+            charsPerToken = 3.0; // Code-heavy content
+        else
+            charsPerToken = 4.0; // Standard English/mixed content
+
+        return (int)Math.Ceiling(totalCount / charsPerToken);
+    }
 
     private static string Truncate(string text, int maxLength) =>
         text.Length <= maxLength ? text : text[..(maxLength - 3)] + "...";

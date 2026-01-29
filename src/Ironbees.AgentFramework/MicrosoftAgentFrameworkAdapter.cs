@@ -5,6 +5,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
+using OpenAI.Chat;
 
 namespace Ironbees.AgentFramework;
 
@@ -38,14 +39,15 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
         try
         {
             // Get ChatClient for the specified deployment and create AIAgent
-            // Using method chaining as per Microsoft Agent Framework pattern
-            // Note: AsIChatClient() is required for the CreateAIAgent extension method
-            var aiAgent = _client
+            // Using ChatClientAgent constructor directly for compatibility with MAF v1.0.0-preview.260128.1
+            var chatClient = _client
                 .GetChatClient(config.Model.Deployment)
-                .AsIChatClient()
-                .CreateAIAgent(
-                    instructions: config.SystemPrompt,
-                    name: config.Name);
+                .AsIChatClient();
+
+            var aiAgent = new ChatClientAgent(
+                chatClient,
+                instructions: config.SystemPrompt,
+                name: config.Name);
 
             _logger.LogInformation("Successfully created Microsoft Agent Framework agent '{AgentName}'", config.Name);
 

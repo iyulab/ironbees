@@ -92,8 +92,9 @@ internal class Program
         var openAiClient = new OpenAIClient(apiKey);
         var chatClient = openAiClient.GetChatClient(model).AsIChatClient();
 
-        // Create AI Agent using MAF
-        var agent = chatClient.CreateAIAgent(
+        // Create AI Agent using MAF (ChatClientAgent constructor for MAF v1.0.0-preview.260128.1+)
+        var agent = new ChatClientAgent(
+            chatClient,
             instructions: "You are a helpful assistant. Be concise and direct.",
             name: "test-agent");
 
@@ -251,7 +252,8 @@ states:
 
         Func<string, CancellationToken, Task<AIAgent>> agentResolver = (name, ct) =>
         {
-            AIAgent agent = chatClient.CreateAIAgent(
+            AIAgent agent = new ChatClientAgent(
+                chatClient,
                 instructions: $"You are {name}. Be helpful and concise.",
                 name: name);
             return Task.FromResult(agent);
@@ -324,7 +326,7 @@ states:
                 _ => $"You are {name}. Be helpful and concise."
             };
 
-            AIAgent agent = chatClient.CreateAIAgent(instructions: instructions, name: name);
+            AIAgent agent = new ChatClientAgent(chatClient, instructions: instructions, name: name);
             return Task.FromResult(agent);
         };
 

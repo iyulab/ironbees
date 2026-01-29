@@ -481,14 +481,15 @@ public class MafDrivenOrchestratorTests
     #region ApproveAsync Tests
 
     [Fact]
-    public async Task ApproveAsync_CompletesWithoutException()
+    public async Task ApproveAsync_ThrowsNotSupportedException()
     {
         // Arrange
         var orchestrator = CreateOrchestrator();
         var decision = new ApprovalDecision { Approved = true };
 
-        // Act & Assert - should not throw
-        await orchestrator.ApproveAsync("execution-1", decision);
+        // Act & Assert - should throw NotSupportedException
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            orchestrator.ApproveAsync("execution-1", decision));
     }
 
     #endregion
@@ -496,13 +497,14 @@ public class MafDrivenOrchestratorTests
     #region CancelAsync Tests
 
     [Fact]
-    public async Task CancelAsync_CompletesWithoutException()
+    public async Task CancelAsync_ThrowsNotSupportedException()
     {
         // Arrange
         var orchestrator = CreateOrchestrator();
 
-        // Act & Assert - should not throw
-        await orchestrator.CancelAsync("execution-1");
+        // Act & Assert - should throw NotSupportedException
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            orchestrator.CancelAsync("execution-1"));
     }
 
     #endregion
@@ -510,20 +512,15 @@ public class MafDrivenOrchestratorTests
     #region GetStateAsync Tests
 
     [Fact]
-    public async Task GetStateAsync_ReturnsDefaultState()
+    public async Task GetStateAsync_ThrowsNotSupportedException()
     {
         // Arrange
         var orchestrator = CreateOrchestrator();
         var executionId = "execution-1";
 
-        // Act
-        var state = await orchestrator.GetStateAsync(executionId);
-
-        // Assert
-        Assert.NotNull(state);
-        Assert.Equal(executionId, state.ExecutionId);
-        Assert.Equal(WorkflowExecutionStatus.Running, state.Status);
-        Assert.Equal("UNAVAILABLE", state.CurrentStateId);
+        // Act & Assert - should throw NotSupportedException
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            orchestrator.GetStateAsync(executionId));
     }
 
     #endregion
@@ -531,17 +528,14 @@ public class MafDrivenOrchestratorTests
     #region ListActiveExecutionsAsync Tests
 
     [Fact]
-    public async Task ListActiveExecutionsAsync_ReturnsEmptyList()
+    public async Task ListActiveExecutionsAsync_ThrowsNotSupportedException()
     {
         // Arrange
         var orchestrator = CreateOrchestrator();
 
-        // Act
-        var executions = await orchestrator.ListActiveExecutionsAsync();
-
-        // Assert
-        Assert.NotNull(executions);
-        Assert.Empty(executions);
+        // Act & Assert - should throw NotSupportedException
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            orchestrator.ListActiveExecutionsAsync());
     }
 
     #endregion
