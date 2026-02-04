@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ironbees.Core.AgentDirectory;
 
@@ -17,6 +19,7 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
     private const string FailedSubdir = ".failed";
 
     private readonly IAgentDirectory _directory;
+    private readonly ILogger _logger;
     private readonly SemaphoreSlim _dequeueLock = new(1, 1);
     private readonly FileSystemWatcher? _watcher;
     private readonly ConcurrentDictionary<Guid, Func<AgentMessage, CancellationToken, Task>> _subscribers = new();
@@ -27,9 +30,11 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
     /// </summary>
     /// <param name="directory">The agent directory.</param>
     /// <param name="enableWatcher">Whether to enable file system watcher for subscriptions.</param>
-    public FileSystemMessageQueue(IAgentDirectory directory, bool enableWatcher = false)
+    /// <param name="logger">Optional logger.</param>
+    public FileSystemMessageQueue(IAgentDirectory directory, bool enableWatcher = false, ILogger<FileSystemMessageQueue>? logger = null)
     {
         _directory = directory ?? throw new ArgumentNullException(nameof(directory));
+        _logger = logger ?? (ILogger)NullLogger.Instance;
 
         if (enableWatcher)
         {
@@ -208,9 +213,9 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
                 {
                     messages.Add(AgentMessage.FromJson(content));
                 }
-                catch (JsonException)
+                catch (JsonException ex)
                 {
-                    // Skip invalid messages
+                    _logger.LogDebug(ex, "Skipping invalid message file in outbox: {File}", file);
                 }
             }
         }
@@ -238,9 +243,9 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
                     cleaned++;
                 }
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // Skip invalid messages
+                _logger.LogDebug(ex, "Skipping invalid message file during cleanup: {File}", file);
             }
         }
 
@@ -296,9 +301,9 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
                     messages.Add(message);
                 }
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                // Skip invalid messages
+                _logger.LogDebug(ex, "Skipping invalid message file in inbox: {File}", file);
             }
         }
 
@@ -373,15 +378,15 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
                 {
                     await handler(message, CancellationToken.None);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore handler exceptions
+                    _logger.LogWarning(ex, "Message subscription handler threw an exception for file: {File}", e.FullPath);
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore parsing errors
+            _logger.LogWarning(ex, "Failed to process file watcher event for file: {File}", e.FullPath);
         }
     }
 
@@ -411,6 +416,7 @@ public sealed class FileSystemMessageQueueFactory : IMessageQueueFactory
 {
     private readonly string _agentsDirectory;
     private readonly bool _enableWatchers;
+    private readonly ILoggerFactory? _loggerFactory;
     private readonly ConcurrentDictionary<string, FileSystemMessageQueue> _queues = new();
 
     /// <summary>
@@ -418,11 +424,13 @@ public sealed class FileSystemMessageQueueFactory : IMessageQueueFactory
     /// </summary>
     /// <param name="agentsDirectory">The root agents directory.</param>
     /// <param name="enableWatchers">Whether to enable file system watchers.</param>
-    public FileSystemMessageQueueFactory(string agentsDirectory, bool enableWatchers = false)
+    /// <param name="loggerFactory">Optional logger factory.</param>
+    public FileSystemMessageQueueFactory(string agentsDirectory, bool enableWatchers = false, ILoggerFactory? loggerFactory = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agentsDirectory);
         _agentsDirectory = agentsDirectory;
         _enableWatchers = enableWatchers;
+        _loggerFactory = loggerFactory;
     }
 
     /// <inheritdoc />
@@ -434,7 +442,8 @@ public sealed class FileSystemMessageQueueFactory : IMessageQueueFactory
         {
             var agentPath = Path.Combine(_agentsDirectory, name);
             var directory = new FileSystemAgentDirectory(name, agentPath);
-            return new FileSystemMessageQueue(directory, _enableWatchers);
+            var logger = _loggerFactory?.CreateLogger<FileSystemMessageQueue>();
+            return new FileSystemMessageQueue(directory, _enableWatchers, logger);
         });
     }
 

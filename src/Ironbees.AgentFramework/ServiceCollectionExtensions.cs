@@ -2,20 +2,20 @@ using Azure;
 using Azure.AI.OpenAI;
 using Ironbees.Core;
 using Microsoft.Extensions.DependencyInjection;
+using OpenAI;
 
 namespace Ironbees.AgentFramework;
 
 /// <summary>
-/// Extension methods for setting up Ironbees services
+/// Extension methods for setting up Ironbees services with OpenAI or Azure OpenAI
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Add Ironbees services with Azure OpenAI
+    /// Add Ironbees services with OpenAI or Azure OpenAI.
+    /// Provide either <see cref="IronbeesOptions.OpenAIApiKey"/> for plain OpenAI
+    /// or <see cref="IronbeesOptions.AzureOpenAIEndpoint"/> + <see cref="IronbeesOptions.AzureOpenAIKey"/> for Azure OpenAI.
     /// </summary>
-    /// <param name="services">Service collection</param>
-    /// <param name="configure">Configuration action</param>
-    /// <returns>Service collection for chaining</returns>
     public static IServiceCollection AddIronbees(
         this IServiceCollection services,
         Action<IronbeesOptions> configure)
@@ -26,28 +26,41 @@ public static class ServiceCollectionExtensions
         var options = new IronbeesOptions();
         configure(options);
 
-        // Validate options
-        if (string.IsNullOrWhiteSpace(options.AzureOpenAIEndpoint))
+        var hasOpenAI = !string.IsNullOrWhiteSpace(options.OpenAIApiKey);
+        var hasAzure = !string.IsNullOrWhiteSpace(options.AzureOpenAIEndpoint)
+                    && !string.IsNullOrWhiteSpace(options.AzureOpenAIKey);
+
+        if (!hasOpenAI && !hasAzure)
         {
-            throw new ArgumentException("AzureOpenAIEndpoint is required", nameof(options));
+            throw new ArgumentException(
+                "Either OpenAIApiKey or (AzureOpenAIEndpoint + AzureOpenAIKey) must be provided.",
+                nameof(options));
         }
 
-        if (string.IsNullOrWhiteSpace(options.AzureOpenAIKey))
+        // Register core services via AddIronbeesCore
+        services.AddIronbeesCore(core =>
         {
-            throw new ArgumentException("AzureOpenAIKey is required", nameof(options));
-        }
-
-        // Register AzureOpenAIClient
-        services.AddSingleton(sp =>
-        {
-            return new AzureOpenAIClient(
-                new Uri(options.AzureOpenAIEndpoint),
-                new AzureKeyCredential(options.AzureOpenAIKey));
+            core.AgentsDirectory = options.AgentsDirectory;
+            core.MinimumConfidenceThreshold = options.MinimumConfidenceThreshold ?? 0.3;
         });
 
-        // Register core services
-        services.AddSingleton<IAgentLoader, FileSystemAgentLoader>();
-        services.AddSingleton<IAgentRegistry, AgentRegistry>();
+        // Register OpenAIClient (base class — works for both plain OpenAI and Azure)
+        if (hasAzure)
+        {
+            services.AddSingleton<OpenAIClient>(sp =>
+            {
+                return new AzureOpenAIClient(
+                    new Uri(options.AzureOpenAIEndpoint!),
+                    new AzureKeyCredential(options.AzureOpenAIKey!));
+            });
+        }
+        else
+        {
+            services.AddSingleton<OpenAIClient>(sp =>
+            {
+                return new OpenAIClient(options.OpenAIApiKey!);
+            });
+        }
 
         // Register LLM framework adapter based on configuration
         if (options.UseMicrosoftAgentFramework)
@@ -59,30 +72,6 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<ILLMFrameworkAdapter, AgentFrameworkAdapter>();
         }
 
-        // Register agent selector
-        services.AddSingleton<IAgentSelector>(sp =>
-        {
-            return new KeywordAgentSelector(
-                minimumConfidenceThreshold: options.MinimumConfidenceThreshold ?? 0.3,
-                fallbackAgent: null); // Will be set after agents are loaded if needed
-        });
-
-        // Register orchestrator
-        services.AddSingleton<IAgentOrchestrator>(sp =>
-        {
-            var loader = sp.GetRequiredService<IAgentLoader>();
-            var registry = sp.GetRequiredService<IAgentRegistry>();
-            var adapter = sp.GetRequiredService<ILLMFrameworkAdapter>();
-            var selector = sp.GetRequiredService<IAgentSelector>();
-
-            return new AgentOrchestrator(
-                loader,
-                registry,
-                adapter,
-                selector,
-                options.AgentsDirectory);
-        });
-
         return services;
     }
 }
@@ -93,12 +82,17 @@ public static class ServiceCollectionExtensions
 public class IronbeesOptions
 {
     /// <summary>
-    /// Azure OpenAI endpoint URL
+    /// Plain OpenAI API key. Alternative to Azure credentials.
+    /// </summary>
+    public string? OpenAIApiKey { get; set; }
+
+    /// <summary>
+    /// Azure OpenAI endpoint URL. Use with <see cref="AzureOpenAIKey"/>.
     /// </summary>
     public string? AzureOpenAIEndpoint { get; set; }
 
     /// <summary>
-    /// Azure OpenAI API key
+    /// Azure OpenAI API key. Use with <see cref="AzureOpenAIEndpoint"/>.
     /// </summary>
     public string? AzureOpenAIKey { get; set; }
 
@@ -113,7 +107,7 @@ public class IronbeesOptions
     public double? MinimumConfidenceThreshold { get; set; }
 
     /// <summary>
-    /// Use Microsoft Agent Framework for agent execution (default: false, uses Azure.AI.OpenAI ChatClient)
+    /// Use Microsoft Agent Framework for agent execution (default: false, uses OpenAI ChatClient directly)
     /// </summary>
     public bool UseMicrosoftAgentFramework { get; set; } = false;
 }

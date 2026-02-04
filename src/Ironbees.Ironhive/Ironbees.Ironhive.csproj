@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ironbees.Core\Ironbees.Core.csproj" />
+    <ProjectReference Include="..\Ironbees.AgentMode\Ironbees.AgentMode.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- IronHive local project references -->
+    <ProjectReference Include="D:\data\ironhive\src\IronHive.Abstractions\IronHive.Abstractions.csproj" />
+    <ProjectReference Include="D:\data\ironhive\src\IronHive.Core\IronHive.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ironbees.Ironhive.Tests" />
+    <InternalsVisibleTo Include="Ironbees.Ironhive.LocalTests" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Package-specific Metadata -->
+    <Description>Thin adapter layer integrating Ironbees with IronHive multi-provider AI framework. Provides execution adapters, dependency injection extensions - delegates actual agent execution to IronHive.</Description>
+    <PackageTags>$(PackageTagsBase);ironhive;multi-provider;dependency-injection</PackageTags>
+  </PropertyGroup>
+
+</Project>

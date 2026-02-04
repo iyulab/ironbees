@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Ironbees.Autonomous.Abstractions;
+using Ironbees.Autonomous.Utilities;
 
 namespace Ironbees.Autonomous.Context;
 
@@ -178,10 +179,7 @@ public class InMemoryMemoryStore : IAutonomousMemoryStore
         return Math.Exp(-age.TotalDays * 0.693);
     }
 
-    private static int EstimateTokens(string text)
-    {
-        return (int)Math.Ceiling(text.Length / 4.0);
-    }
+    private static int EstimateTokens(string text) => TokenEstimator.EstimateTokens(text);
 
     private static IReadOnlyDictionary<string, object>? MergeMetadata(
         IReadOnlyDictionary<string, object>? existing,

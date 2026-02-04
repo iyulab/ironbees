@@ -1,6 +1,7 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using TokenMeter;
 
 namespace Ironbees.Core.Middleware;
 
@@ -19,6 +20,7 @@ public sealed class TokenTrackingMiddleware : DelegatingChatClient
     private readonly ITokenUsageStore _store;
     private readonly ILogger<TokenTrackingMiddleware> _logger;
     private readonly TokenTrackingOptions _options;
+    private readonly ICostCalculator? _costCalculator;
 
     /// <summary>
     /// Initializes a new instance of <see cref="TokenTrackingMiddleware"/>.
@@ -26,16 +28,19 @@ public sealed class TokenTrackingMiddleware : DelegatingChatClient
     /// <param name="innerClient">The inner chat client to delegate to.</param>
     /// <param name="store">The store for recording token usage.</param>
     /// <param name="options">Optional configuration for token tracking.</param>
+    /// <param name="costCalculator">Optional cost calculator from TokenMeter.</param>
     /// <param name="logger">Optional logger for diagnostics.</param>
     public TokenTrackingMiddleware(
         IChatClient innerClient,
         ITokenUsageStore store,
         TokenTrackingOptions? options = null,
+        ICostCalculator? costCalculator = null,
         ILogger<TokenTrackingMiddleware>? logger = null)
         : base(innerClient)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _options = options ?? new TokenTrackingOptions();
+        _costCalculator = costCalculator;
         _logger = logger ?? NullLogger<TokenTrackingMiddleware>.Instance;
     }
 
@@ -149,6 +154,12 @@ public sealed class TokenTrackingMiddleware : DelegatingChatClient
             }
         }
 
+        decimal? estimatedCost = null;
+        if (_options.EnableCostTracking && _costCalculator is not null)
+        {
+            estimatedCost = _costCalculator.CalculateCost(modelId, (int)inputTokens, (int)outputTokens);
+        }
+
         return new TokenUsage
         {
             ModelId = modelId,
@@ -156,7 +167,8 @@ public sealed class TokenTrackingMiddleware : DelegatingChatClient
             InputTokens = inputTokens,
             OutputTokens = outputTokens,
             SessionId = sessionId,
-            Metadata = metadata.Count > 0 ? metadata : null
+            Metadata = metadata.Count > 0 ? metadata : null,
+            EstimatedCost = estimatedCost
         };
     }
 
@@ -195,4 +207,10 @@ public sealed class TokenTrackingOptions
     /// Whether to include additional request metadata in usage records. Default is true.
     /// </summary>
     public bool IncludeRequestMetadata { get; set; } = true;
+
+    /// <summary>
+    /// Whether to calculate and record estimated costs using TokenMeter. Default is false.
+    /// Requires an <see cref="ICostCalculator"/> to be provided.
+    /// </summary>
+    public bool EnableCostTracking { get; set; } = false;
 }

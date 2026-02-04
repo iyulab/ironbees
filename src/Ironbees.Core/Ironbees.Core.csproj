@@ -15,6 +15,10 @@
     <PackageReference Include="Polly" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- Token Counting and Cost Tracking -->
+    <PackageReference Include="TokenMeter" />
+    <!-- DI -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <!-- External Guardrails (Optional) -->
     <PackageReference Include="Azure.AI.ContentSafety" />
     <PackageReference Include="OpenAI" />

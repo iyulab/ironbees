@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Polly;
+using TokenMeter;
 
 namespace Ironbees.Core.Middleware;
 
@@ -16,15 +17,17 @@ public static class ChatClientBuilderExtensions
     /// <param name="builder">The chat client builder.</param>
     /// <param name="store">The token usage store.</param>
     /// <param name="options">Optional token tracking configuration.</param>
+    /// <param name="costCalculator">Optional cost calculator from TokenMeter.</param>
     /// <param name="logger">Optional logger.</param>
     /// <returns>The builder for chaining.</returns>
     public static ChatClientBuilder UseTokenTracking(
         this ChatClientBuilder builder,
         ITokenUsageStore store,
         TokenTrackingOptions? options = null,
+        ICostCalculator? costCalculator = null,
         ILogger<TokenTrackingMiddleware>? logger = null)
     {
-        return builder.Use(inner => new TokenTrackingMiddleware(inner, store, options, logger));
+        return builder.Use(inner => new TokenTrackingMiddleware(inner, store, options, costCalculator, logger));
     }
 
     /// <summary>
@@ -33,16 +36,18 @@ public static class ChatClientBuilderExtensions
     /// <param name="builder">The chat client builder.</param>
     /// <param name="store">Output parameter to receive the created store.</param>
     /// <param name="options">Optional token tracking configuration.</param>
+    /// <param name="costCalculator">Optional cost calculator from TokenMeter.</param>
     /// <param name="logger">Optional logger.</param>
     /// <returns>The builder for chaining.</returns>
     public static ChatClientBuilder UseTokenTracking(
         this ChatClientBuilder builder,
         out InMemoryTokenUsageStore store,
         TokenTrackingOptions? options = null,
+        ICostCalculator? costCalculator = null,
         ILogger<TokenTrackingMiddleware>? logger = null)
     {
         store = new InMemoryTokenUsageStore();
-        return builder.UseTokenTracking(store, options, logger);
+        return builder.UseTokenTracking(store, options, costCalculator, logger);
     }
 
     /// <summary>
@@ -132,21 +137,30 @@ public static class ChatClientBuilderExtensions
     /// <param name="builder">The chat client builder.</param>
     /// <param name="tokenStore">The token usage store.</param>
     /// <param name="cache">The memory cache.</param>
+    /// <param name="costCalculator">Optional cost calculator from TokenMeter.</param>
     /// <param name="loggerFactory">Optional logger factory for all middleware.</param>
     /// <returns>The builder for chaining.</returns>
     public static ChatClientBuilder UseProductionStack(
         this ChatClientBuilder builder,
         ITokenUsageStore tokenStore,
         IMemoryCache cache,
+        ICostCalculator? costCalculator = null,
         ILoggerFactory? loggerFactory = null)
     {
+        var trackingOptions = new TokenTrackingOptions
+        {
+            LogUsage = false,
+            EnableCostTracking = costCalculator is not null
+        };
+
         return builder
             .UseLogging(
                 LoggingOptions.Production,
                 loggerFactory?.CreateLogger<LoggingMiddleware>())
             .UseTokenTracking(
                 tokenStore,
-                new TokenTrackingOptions { LogUsage = false },
+                trackingOptions,
+                costCalculator,
                 loggerFactory?.CreateLogger<TokenTrackingMiddleware>())
             .UseResilience(
                 ResilienceOptions.Production,
@@ -163,14 +177,22 @@ public static class ChatClientBuilderExtensions
     /// </summary>
     /// <param name="builder">The chat client builder.</param>
     /// <param name="tokenStore">Output parameter to receive the created token store.</param>
+    /// <param name="costCalculator">Optional cost calculator from TokenMeter.</param>
     /// <param name="loggerFactory">Optional logger factory for all middleware.</param>
     /// <returns>The builder for chaining.</returns>
     public static ChatClientBuilder UseDevelopmentStack(
         this ChatClientBuilder builder,
         out InMemoryTokenUsageStore tokenStore,
+        ICostCalculator? costCalculator = null,
         ILoggerFactory? loggerFactory = null)
     {
         tokenStore = new InMemoryTokenUsageStore();
+
+        var trackingOptions = new TokenTrackingOptions
+        {
+            LogUsage = true,
+            EnableCostTracking = costCalculator is not null
+        };
 
         return builder
             .UseLogging(
@@ -178,7 +200,8 @@ public static class ChatClientBuilderExtensions
                 loggerFactory?.CreateLogger<LoggingMiddleware>())
             .UseTokenTracking(
                 tokenStore,
-                new TokenTrackingOptions { LogUsage = true },
+                trackingOptions,
+                costCalculator,
                 loggerFactory?.CreateLogger<TokenTrackingMiddleware>())
             .UseCaching(
                 CachingOptions.Development,

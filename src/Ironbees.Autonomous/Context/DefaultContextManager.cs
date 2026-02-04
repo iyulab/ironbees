@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Ironbees.Autonomous.Abstractions;
+using Ironbees.Autonomous.Utilities;
 
 namespace Ironbees.Autonomous.Context;
 
@@ -326,48 +327,7 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
 
     #region Helpers
 
-    /// <summary>
-    /// Estimates token count using content-aware heuristics.
-    /// Different content types have different character-per-token ratios:
-    /// - Korean/CJK: ~1.5 chars/token (due to Unicode decomposition)
-    /// - Code: ~3 chars/token (more special characters)
-    /// - English: ~4 chars/token (standard)
-    /// </summary>
-    private static int EstimateTokens(string text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return 0;
-
-        // Count different character types
-        var koreanCount = 0;
-        var codeCharCount = 0;
-        var totalCount = text.Length;
-
-        foreach (var c in text)
-        {
-            // Korean characters (Hangul Syllables block: AC00-D7A3)
-            if (c >= '\uAC00' && c <= '\uD7A3')
-                koreanCount++;
-            // Code-related characters
-            else if ("{}[]();,<>=+-*/%&|!~^".Contains(c))
-                codeCharCount++;
-        }
-
-        // Calculate weighted chars-per-token ratio
-        var koreanRatio = totalCount > 0 ? (double)koreanCount / totalCount : 0;
-        var codeRatio = totalCount > 0 ? (double)codeCharCount / totalCount : 0;
-
-        // Determine effective chars-per-token based on content type
-        double charsPerToken;
-        if (koreanRatio > 0.3)
-            charsPerToken = 1.5; // Korean-heavy content
-        else if (codeRatio > 0.1)
-            charsPerToken = 3.0; // Code-heavy content
-        else
-            charsPerToken = 4.0; // Standard English/mixed content
-
-        return (int)Math.Ceiling(totalCount / charsPerToken);
-    }
+    private static int EstimateTokens(string? text) => TokenEstimator.EstimateTokens(text);
 
     private static string Truncate(string text, int maxLength) =>
         text.Length <= maxLength ? text : text[..(maxLength - 3)] + "...";

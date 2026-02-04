@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="YamlDotNet" />
+    <!-- Token Counting -->
+    <PackageReference Include="TokenMeter" />
   </ItemGroup>
 
 </Project>

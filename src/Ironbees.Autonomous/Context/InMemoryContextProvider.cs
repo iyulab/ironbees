@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Ironbees.Autonomous.Abstractions;
+using Ironbees.Autonomous.Utilities;
 
 namespace Ironbees.Autonomous.Context;
 
@@ -95,11 +96,7 @@ public class InMemoryContextProvider : IAutonomousContextProvider
         return Task.CompletedTask;
     }
 
-    private static int EstimateTokens(string text)
-    {
-        // Rough estimation: ~4 chars per token for English
-        return (int)Math.Ceiling(text.Length / 4.0);
-    }
+    private static int EstimateTokens(string text) => TokenEstimator.EstimateTokens(text);
 
     private static string TruncateContent(string content, int maxLength)
     {

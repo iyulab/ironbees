@@ -112,7 +112,8 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
                 {
                     Requests = g.Count(),
                     InputTokens = g.Sum(u => u.InputTokens),
-                    OutputTokens = g.Sum(u => u.OutputTokens)
+                    OutputTokens = g.Sum(u => u.OutputTokens),
+                    EstimatedCost = g.Sum(u => u.EstimatedCost ?? 0)
                 });
 
         var byAgent = usages
@@ -127,6 +128,7 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
             TotalRequests = usages.Count,
             TotalInputTokens = usages.Sum(u => u.InputTokens),
             TotalOutputTokens = usages.Sum(u => u.OutputTokens),
+            TotalEstimatedCost = usages.Sum(u => u.EstimatedCost ?? 0),
             ByModel = byModel,
             ByAgent = byAgent,
             From = from,

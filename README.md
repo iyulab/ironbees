@@ -3,36 +3,66 @@
 [![CI](https://github.com/iyulab/ironbees/actions/workflows/ci.yml/badge.svg)](https://github.com/iyulab/ironbees/actions/workflows/ci.yml)
 [![NuGet - Core](https://img.shields.io/nuget/v/Ironbees.Core?label=Ironbees.Core)](https://www.nuget.org/packages/Ironbees.Core)
 [![NuGet - AgentFramework](https://img.shields.io/nuget/v/Ironbees.AgentFramework?label=Ironbees.AgentFramework)](https://www.nuget.org/packages/Ironbees.AgentFramework)
+[![NuGet - Ironhive](https://img.shields.io/nuget/v/Ironbees.Ironhive?label=Ironbees.Ironhive)](https://www.nuget.org/packages/Ironbees.Ironhive)
 [![License](https://img.shields.io/github/license/iyulab/ironbees)](LICENSE)
 
-> Filesystem convention-based LLM agent management wrapper for .NET
+> GitOps-style declarative AI agent management for .NET
 
-Ironbees is a lightweight wrapper that simplifies **repetitive patterns** in LLM agent development. It doesn't replace frameworks like Microsoft Agent Framework or Semantic Kernel—it **complements them** by providing filesystem conventions for agent management.
+Ironbees brings **filesystem conventions** and **declarative agent definitions** to .NET AI development. Define agents as YAML files, let Ironbees handle loading, routing, and orchestration - then plug in any LLM backend.
 
-## Key Features
+## Why Ironbees?
 
-- **Filesystem Convention**: Define agents via `agents/{name}/agent.yaml` + `system-prompt.md`
-- **Intelligent Routing**: Keyword, embedding, and hybrid agent selection
-- **Multi-Framework Support**: Microsoft Agent Framework, OpenAI, and custom providers
-- **YAML Workflows**: Declarative workflow definitions with MAF integration
-- **Guardrails**: Content validation with Azure AI and OpenAI Moderation support
-- **Autonomous SDK**: Iterative autonomous execution with oracle verification
+| Feature | What it means |
+|---------|--------------|
+| **GitOps-Ready** | Agent definitions are YAML files under version control - review, diff, rollback |
+| **Zero-Code Agent Setup** | `agent.yaml` + `system-prompt.md` = fully configured agent |
+| **Observable** | All state lives in the filesystem - debug with `ls`, `grep`, `cat` |
+| **Portable** | Swap between IronHive and Microsoft Agent Framework without changing agent definitions |
+| **Intelligent Routing** | Keyword, embedding, and hybrid agent selection out of the box |
+| **Cost Tracking** | Accurate token counting and cost estimation via [TokenMeter](https://github.com/iyulab/TokenMeter) |
+
+## Architecture
+
+```
+                    Ironbees.Core
+         (Agent loading, routing, guardrails,
+          token tracking, cost estimation)
+                    |
+              Ironbees.AgentMode
+           (YAML workflows, definitions)
+                  /            \
+Ironbees.AgentFramework    Ironbees.Ironhive
+  (Azure OpenAI + MAF)      (IronHive multi-provider)
+
+              Ironbees.Autonomous
+        (Iterative execution, oracle verification)
+```
+
+Ironbees Core is **backend-agnostic**. Pick the adapter that fits your stack:
+
+- **Ironbees.Ironhive** - Multi-provider (OpenAI, Anthropic, Google, Ollama) via [IronHive](https://github.com/iyulab/ironhive)
+- **Ironbees.AgentFramework** - Azure OpenAI + Microsoft Agent Framework
 
 ## Installation
 
+**Option A: IronHive backend** (multi-provider)
+
 ```bash
-dotnet add package Ironbees.Core
-dotnet add package Ironbees.AgentFramework  # For Azure OpenAI + MAF
+dotnet add package Ironbees.Ironhive
 ```
 
-## Quick Start
+**Option B: Azure OpenAI backend**
 
-### 1. Define an Agent
+```bash
+dotnet add package Ironbees.AgentFramework
+```
+
+## Define an Agent
 
 ```
 agents/
 └── coding-agent/
-    ├── agent.yaml          # Agent metadata
+    ├── agent.yaml          # Agent metadata and model config
     └── system-prompt.md    # System prompt
 ```
 
@@ -42,6 +72,7 @@ name: coding-agent
 description: Expert software developer
 capabilities: [code-generation, code-review]
 model:
+  provider: openai
   deployment: gpt-4o
   temperature: 0.7
 ```
@@ -51,7 +82,22 @@ model:
 You are an expert software developer specializing in C# and .NET...
 ```
 
-### 2. Configure Services
+## Quick Start
+
+### With IronHive
+
+```csharp
+services.AddIronbeesIronhive(options =>
+{
+    options.AgentsDirectory = "./agents";
+    options.ConfigureHive = hive =>
+    {
+        hive.AddMessageGenerator("openai", new OpenAIMessageGenerator(apiKey));
+    };
+});
+```
+
+### With Azure OpenAI
 
 ```csharp
 services.AddIronbees(options =>
@@ -62,7 +108,7 @@ services.AddIronbees(options =>
 });
 ```
 
-### 3. Use the Agent
+### Use the Agent
 
 ```csharp
 var orchestrator = serviceProvider.GetRequiredService<IAgentOrchestrator>();
@@ -75,7 +121,7 @@ var response = await orchestrator.ProcessAsync(
 
 // Automatic routing
 var response = await orchestrator.ProcessAsync(
-    "fibonacci in C#"); // Routes based on keywords
+    "fibonacci in C#"); // Routes based on keywords/embeddings
 
 // Streaming
 await foreach (var chunk in orchestrator.StreamAsync("Write a blog post"))
@@ -84,23 +130,30 @@ await foreach (var chunk in orchestrator.StreamAsync("Write a blog post"))
 }
 ```
 
+## Token Tracking & Cost Estimation
+
+Ironbees integrates [TokenMeter](https://github.com/iyulab/TokenMeter) for accurate tiktoken-based token counting and cost estimation across 40+ models (OpenAI, Anthropic, Google, xAI, Azure).
+
+```csharp
+// Middleware pipeline with cost tracking
+var builder = new ChatClientBuilder(innerClient)
+    .UseTokenTracking(
+        store,
+        new TokenTrackingOptions { EnableCostTracking = true },
+        CostCalculator.Default());
+
+// Query cost statistics
+var stats = await store.GetStatisticsAsync();
+Console.WriteLine($"Total cost: ${stats.TotalEstimatedCost:F4}");
+Console.WriteLine($"By model: {string.Join(", ",
+    stats.ByModel.Select(m => $"{m.Key}: ${m.Value.EstimatedCost:F4}"))}");
+```
+
 ## Autonomous SDK
 
 For iterative autonomous execution with oracle verification:
 
-**settings.yaml:**
-```yaml
-orchestration:
-  max_iterations: 10
-  oracle:
-    enabled: true
-  confidence:
-    min_threshold: 0.8
-```
-
 ```csharp
-var settings = await OrchestratorSettings.LoadFromFileAsync("settings.yaml");
-
 var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
     .WithSettings(settings)
     .WithExecutor(executor)
@@ -113,21 +166,12 @@ await foreach (var evt in orchestrator.StartAsync(request))
 }
 ```
 
-## Architecture
+## Design Principles
 
-```
-┌─────────────────────────────────────────────┐
-│   Ironbees (Thin Wrapper)                   │
-│   - FileSystemAgentLoader                   │
-│   - Agent Routing (Keyword/Embedding)       │
-│   - Guardrails Pipeline                     │
-├─────────────────────────────────────────────┤
-│   Microsoft Agent Framework / LLM Providers │
-│   - Agent execution                         │
-│   - Tool integration                        │
-│   - Conversation management                 │
-└─────────────────────────────────────────────┘
-```
+- **Thin Wrapper** - Complement LLM frameworks, don't replace them
+- **Convention over Configuration** - Filesystem structure defines behavior
+- **Declaration vs Execution** - Ironbees declares patterns; backends execute them
+- **Filesystem = Single Source of Truth** - All state observable via standard tools
 
 ## Documentation
 
@@ -138,7 +182,6 @@ await foreach (var evt in orchestrator.StartAsync(request))
 | [Autonomous SDK](docs/autonomous-sdk-guide.md) | Autonomous execution guide |
 | [Agentic Patterns](docs/AGENTIC-PATTERNS.md) | HITL, sampling, confidence |
 | [Providers](docs/PROVIDERS.md) | LLM provider configuration |
-| [FAQ](docs/FAQ.md) | Common questions |
 
 ## Samples
 
@@ -149,12 +192,6 @@ await foreach (var evt in orchestrator.StartAsync(request))
 | [EmbeddingSample](samples/EmbeddingSample/) | ONNX embedding and semantic routing |
 | [TwentyQuestionsSample](samples/TwentyQuestionsSample/) | Autonomous SDK demo |
 
-## Design Principles
-
-- **Thin Wrapper**: Complement LLM frameworks, don't replace them
-- **Convention over Configuration**: Filesystem structure defines behavior
-- **Filesystem = Single Source of Truth**: All state observable via `ls`, `grep`, `cat`
-
 ## Contributing
 
 Issues and PRs welcome. Please maintain the thin wrapper philosophy.
@@ -162,7 +199,3 @@ Issues and PRs welcome. Please maintain the thin wrapper philosophy.
 ## License
 
 MIT License - See [LICENSE](LICENSE)
-
----
-
-**Ironbees** - Filesystem convention-based LLM agent wrapper for .NET

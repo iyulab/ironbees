@@ -1,8 +1,7 @@
-using Azure;
-using Azure.AI.OpenAI;
 using Ironbees.Core;
 using Microsoft.Extensions.Logging;
 using Moq;
+using OpenAI;
 
 namespace Ironbees.AgentFramework.Tests;
 
@@ -12,9 +11,7 @@ public class AgentFrameworkAdapterTests
     public async Task CreateAgentAsync_ValidConfig_ReturnsAgentWrapper()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
         var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
@@ -47,9 +44,7 @@ public class AgentFrameworkAdapterTests
     public async Task CreateAgentAsync_NullConfig_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
         var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
@@ -63,9 +58,7 @@ public class AgentFrameworkAdapterTests
     public async Task RunAsync_NullAgent_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
         var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
@@ -79,9 +72,7 @@ public class AgentFrameworkAdapterTests
     public async Task RunAsync_EmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
         var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
@@ -111,9 +102,7 @@ public class AgentFrameworkAdapterTests
     public async Task StreamAsync_NullAgent_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
         var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
@@ -132,9 +121,7 @@ public class AgentFrameworkAdapterTests
     public async Task StreamAsync_EmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
         var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
@@ -180,9 +167,7 @@ public class AgentFrameworkAdapterTests
     public void Constructor_NullLogger_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<AzureOpenAIClient>(
-            new Uri("https://test.openai.azure.com"),
-            new AzureKeyCredential("test-key"));
+        var mockClient = new Mock<OpenAIClient>("test-key");
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(

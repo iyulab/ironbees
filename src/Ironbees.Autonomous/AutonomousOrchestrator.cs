@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Ironbees.Autonomous.Abstractions;
 using Ironbees.Autonomous.Models;
+using Ironbees.Autonomous.Utilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -975,9 +976,5 @@ public class AutonomousOrchestrator<TRequest, TResult>
         _logger.LogDebug("Event: {Type} - {Message}", type, message);
     }
 
-    /// <summary>
-    /// Estimate token count for a string (rough approximation: ~4 chars per token)
-    /// </summary>
-    private static int EstimateTokens(string? text) =>
-        string.IsNullOrEmpty(text) ? 0 : (int)Math.Ceiling(text.Length / 4.0);
+    private static int EstimateTokens(string? text) => TokenEstimator.EstimateTokens(text);
 }

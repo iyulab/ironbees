@@ -46,3 +46,6 @@ local-docs/
 CLAUDE.md
 *.local.md
 nul
+
+# Local integration tests (not for CI)
+local-tests/

@@ -1,22 +1,23 @@
-using System.ClientModel;
 using System.Runtime.CompilerServices;
-using Azure.AI.OpenAI;
 using Ironbees.Core;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using OpenAI;
 using OpenAI.Chat;
+using ChatMessage = OpenAI.Chat.ChatMessage;
 
 namespace Ironbees.AgentFramework;
 
 /// <summary>
-/// Adapter for Azure OpenAI ChatClient
+/// Adapter for OpenAI-compatible ChatClient (supports both plain OpenAI and Azure OpenAI)
 /// </summary>
 public class AgentFrameworkAdapter : ILLMFrameworkAdapter
 {
-    private readonly AzureOpenAIClient _client;
+    private readonly OpenAIClient _client;
     private readonly ILogger<AgentFrameworkAdapter> _logger;
 
     public AgentFrameworkAdapter(
-        AzureOpenAIClient client,
+        OpenAIClient client,
         ILogger<AgentFrameworkAdapter> logger)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
@@ -51,9 +52,19 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
+    public Task<string> RunAsync(
+        IAgent agent,
+        string input,
+        CancellationToken cancellationToken = default)
+    {
+        return RunAsync(agent, input, conversationHistory: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<string> RunAsync(
         IAgent agent,
         string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -70,34 +81,11 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
 
         try
         {
-            // Build messages with system prompt and user input
-            var messages = new List<ChatMessage>
-            {
-                new SystemChatMessage(wrapper.Config.SystemPrompt),
-                new UserChatMessage(input)
-            };
+            // Build messages with system prompt, optional history, and user input
+            var messages = BuildMessages(wrapper.Config.SystemPrompt, input, conversationHistory);
 
             // Create chat options
-            var options = new ChatCompletionOptions
-            {
-                Temperature = (float)wrapper.Config.Model.Temperature,
-                MaxOutputTokenCount = wrapper.Config.Model.MaxTokens
-            };
-
-            if (wrapper.Config.Model.TopP.HasValue)
-            {
-                options.TopP = (float)wrapper.Config.Model.TopP.Value;
-            }
-
-            if (wrapper.Config.Model.FrequencyPenalty.HasValue)
-            {
-                options.FrequencyPenalty = (float)wrapper.Config.Model.FrequencyPenalty.Value;
-            }
-
-            if (wrapper.Config.Model.PresencePenalty.HasValue)
-            {
-                options.PresencePenalty = (float)wrapper.Config.Model.PresencePenalty.Value;
-            }
+            var options = BuildChatOptions(wrapper.Config.Model);
 
             // Call chat completion
             var response = await wrapper.ChatClient.CompleteChatAsync(messages, options, cancellationToken);
@@ -116,9 +104,19 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
+    public IAsyncEnumerable<string> StreamAsync(
+        IAgent agent,
+        string input,
+        CancellationToken cancellationToken = default)
+    {
+        return StreamAsync(agent, input, conversationHistory: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async IAsyncEnumerable<string> StreamAsync(
         IAgent agent,
         string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -133,34 +131,11 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
             agent.Name,
             input.Length);
 
-        // Build messages with system prompt and user input
-        var messages = new List<ChatMessage>
-        {
-            new SystemChatMessage(wrapper.Config.SystemPrompt),
-            new UserChatMessage(input)
-        };
+        // Build messages with system prompt, optional history, and user input
+        var messages = BuildMessages(wrapper.Config.SystemPrompt, input, conversationHistory);
 
         // Create chat options
-        var options = new ChatCompletionOptions
-        {
-            Temperature = (float)wrapper.Config.Model.Temperature,
-            MaxOutputTokenCount = wrapper.Config.Model.MaxTokens
-        };
-
-        if (wrapper.Config.Model.TopP.HasValue)
-        {
-            options.TopP = (float)wrapper.Config.Model.TopP.Value;
-        }
-
-        if (wrapper.Config.Model.FrequencyPenalty.HasValue)
-        {
-            options.FrequencyPenalty = (float)wrapper.Config.Model.FrequencyPenalty.Value;
-        }
-
-        if (wrapper.Config.Model.PresencePenalty.HasValue)
-        {
-            options.PresencePenalty = (float)wrapper.Config.Model.PresencePenalty.Value;
-        }
+        var options = BuildChatOptions(wrapper.Config.Model);
 
         // Stream chat completion
         var streamingResponse = wrapper.ChatClient.CompleteChatStreamingAsync(messages, options, cancellationToken);
@@ -177,5 +152,63 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
         }
 
         _logger.LogDebug("Agent '{AgentName}' streaming completed", agent.Name);
+    }
+
+    /// <summary>
+    /// Builds the message list: System + optional history + User input.
+    /// </summary>
+    private static List<ChatMessage> BuildMessages(
+        string systemPrompt,
+        string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory)
+    {
+        var messages = new List<ChatMessage> { new SystemChatMessage(systemPrompt) };
+
+        if (conversationHistory is { Count: > 0 })
+        {
+            foreach (var historyMsg in conversationHistory)
+            {
+                if (historyMsg.Role == ChatRole.User)
+                {
+                    messages.Add(new UserChatMessage(historyMsg.Text ?? string.Empty));
+                }
+                else if (historyMsg.Role == ChatRole.Assistant)
+                {
+                    messages.Add(new AssistantChatMessage(historyMsg.Text ?? string.Empty));
+                }
+            }
+        }
+
+        messages.Add(new UserChatMessage(input));
+        return messages;
+    }
+
+    /// <summary>
+    /// Builds ChatCompletionOptions from model configuration.
+    /// </summary>
+    private static ChatCompletionOptions BuildChatOptions(ModelConfig model)
+    {
+        var options = new ChatCompletionOptions
+        {
+            Temperature = (float)model.Temperature,
+            MaxOutputTokenCount = model.MaxTokens
+        };
+
+        if (model.TopP.HasValue)
+        {
+            options.TopP = (float)model.TopP.Value;
+        }
+
+        if (model.FrequencyPenalty.HasValue)
+        {
+            options.FrequencyPenalty = (float)model.FrequencyPenalty.Value;
+        }
+
+        if (model.PresencePenalty.HasValue)
+        {
+            options.PresencePenalty = (float)model.PresencePenalty.Value;
+        }
+
+        return options;
     }
 }

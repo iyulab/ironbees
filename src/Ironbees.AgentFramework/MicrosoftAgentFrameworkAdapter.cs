@@ -1,24 +1,24 @@
 using System.Runtime.CompilerServices;
-using Azure.AI.OpenAI;
 using Ironbees.Core;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
-using OpenAI.Chat;
+using AIChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Ironbees.AgentFramework;
 
 /// <summary>
-/// Adapter for Microsoft Agent Framework (AIAgent)
+/// Adapter for Microsoft Agent Framework (AIAgent).
+/// Supports both plain OpenAI and Azure OpenAI via OpenAIClient base class.
 /// </summary>
 public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
 {
-    private readonly AzureOpenAIClient _client;
+    private readonly OpenAIClient _client;
     private readonly ILogger<MicrosoftAgentFrameworkAdapter> _logger;
 
     public MicrosoftAgentFrameworkAdapter(
-        AzureOpenAIClient client,
+        OpenAIClient client,
         ILogger<MicrosoftAgentFrameworkAdapter> logger)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
@@ -39,7 +39,6 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
         try
         {
             // Get ChatClient for the specified deployment and create AIAgent
-            // Using ChatClientAgent constructor directly for compatibility with MAF v1.0.0-preview.260128.1
             var chatClient = _client
                 .GetChatClient(config.Model.Deployment)
                 .AsIChatClient();
@@ -61,9 +60,19 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
+    public Task<string> RunAsync(
+        IAgent agent,
+        string input,
+        CancellationToken cancellationToken = default)
+    {
+        return RunAsync(agent, input, conversationHistory: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<string> RunAsync(
         IAgent agent,
         string input,
+        IReadOnlyList<AIChatMessage>? conversationHistory,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -80,8 +89,11 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
 
         try
         {
+            // Build conversation input with history
+            var fullInput = BuildInputWithHistory(input, conversationHistory);
+
             // Use AIAgent.RunAsync - returns AgentRunResponse
-            var response = await wrapper.AIAgent.RunAsync(input, cancellationToken: cancellationToken);
+            var response = await wrapper.AIAgent.RunAsync(fullInput, cancellationToken: cancellationToken);
 
             _logger.LogDebug("Microsoft Agent Framework agent '{AgentName}' completed successfully", agent.Name);
 
@@ -96,9 +108,19 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
+    public IAsyncEnumerable<string> StreamAsync(
+        IAgent agent,
+        string input,
+        CancellationToken cancellationToken = default)
+    {
+        return StreamAsync(agent, input, conversationHistory: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async IAsyncEnumerable<string> StreamAsync(
         IAgent agent,
         string input,
+        IReadOnlyList<AIChatMessage>? conversationHistory,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(agent);
@@ -113,9 +135,11 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
             agent.Name,
             input.Length);
 
+        // Build conversation input with history
+        var fullInput = BuildInputWithHistory(input, conversationHistory);
+
         // Microsoft Agent Framework supports streaming via RunStreamingAsync
-        // Iterate through the streaming updates
-        await foreach (var update in wrapper.AIAgent.RunStreamingAsync(input, cancellationToken: cancellationToken))
+        await foreach (var update in wrapper.AIAgent.RunStreamingAsync(fullInput, cancellationToken: cancellationToken))
         {
             if (!string.IsNullOrEmpty(update.Text))
             {
@@ -124,5 +148,28 @@ public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter
         }
 
         _logger.LogDebug("Microsoft Agent Framework agent '{AgentName}' streaming completed", agent.Name);
+    }
+
+    /// <summary>
+    /// Builds input string with conversation history for MAF agents.
+    /// MAF's RunAsync takes a single string, so we format history as a conversation transcript.
+    /// </summary>
+    private static string BuildInputWithHistory(
+        string input,
+        IReadOnlyList<AIChatMessage>? conversationHistory)
+    {
+        if (conversationHistory is not { Count: > 0 })
+            return input;
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Previous conversation:");
+        foreach (var msg in conversationHistory)
+        {
+            var role = msg.Role == ChatRole.User ? "User" : "Assistant";
+            sb.AppendLine($"{role}: {msg.Text}");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"Current message: {input}");
+        return sb.ToString();
     }
 }

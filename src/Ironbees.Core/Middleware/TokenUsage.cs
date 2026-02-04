@@ -50,6 +50,11 @@ public sealed record TokenUsage
     /// Optional metadata for additional tracking.
     /// </summary>
     public IReadOnlyDictionary<string, string>? Metadata { get; init; }
+
+    /// <summary>
+    /// Estimated cost in USD for this request, calculated by TokenMeter if available.
+    /// </summary>
+    public decimal? EstimatedCost { get; init; }
 }
 
 /// <summary>
@@ -96,6 +101,11 @@ public sealed record TokenUsageStatistics
         new Dictionary<string, long>();
 
     /// <summary>
+    /// Total estimated cost in USD across all requests.
+    /// </summary>
+    public decimal TotalEstimatedCost { get; init; }
+
+    /// <summary>
     /// Time range start for these statistics.
     /// </summary>
     public DateTimeOffset? From { get; init; }
@@ -130,4 +140,9 @@ public sealed record ModelUsageStatistics
     /// Total tokens for this model.
     /// </summary>
     public long TotalTokens => InputTokens + OutputTokens;
+
+    /// <summary>
+    /// Estimated cost in USD for this model.
+    /// </summary>
+    public decimal EstimatedCost { get; init; }
 }

@@ -16,7 +16,7 @@ public sealed class ConversationState
     /// <summary>
     /// Agent name associated with this conversation.
     /// </summary>
-    public string? AgentName { get; init; }
+    public string? AgentName { get; set; }
 
     /// <summary>
     /// List of messages in the conversation.

@@ -16,6 +16,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ironbees.AgentFramework.Tests" />
+    <InternalsVisibleTo Include="Ironbees.AgentFramework.LocalTests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- Package-specific Metadata -->
     <Description>Thin adapter layer integrating Ironbees with Azure OpenAI and Microsoft Agent Framework. Provides execution adapters, dependency injection extensions, and ASP.NET Core setup - delegates actual agent execution to underlying frameworks.</Description>

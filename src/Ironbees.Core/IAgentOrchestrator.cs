@@ -56,6 +56,30 @@ public interface IAgentOrchestrator
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Process input with conversation context and options
+    /// </summary>
+    /// <param name="input">User input</param>
+    /// <param name="options">Processing options including conversation context</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Agent response</returns>
+    Task<string> ProcessAsync(
+        string input,
+        ProcessOptions options,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stream response with conversation context and options
+    /// </summary>
+    /// <param name="input">User input</param>
+    /// <param name="options">Processing options including conversation context</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async stream of response chunks</returns>
+    IAsyncEnumerable<string> StreamAsync(
+        string input,
+        ProcessOptions options,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Select the best agent for the given input
     /// </summary>
     /// <param name="input">User input</param>
