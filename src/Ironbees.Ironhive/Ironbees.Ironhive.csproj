@@ -6,9 +6,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- IronHive local project references -->
-    <ProjectReference Include="D:\data\ironhive\src\IronHive.Abstractions\IronHive.Abstractions.csproj" />
-    <ProjectReference Include="D:\data\ironhive\src\IronHive.Core\IronHive.Core.csproj" />
+    <!-- IronHive project references (via submodule) -->
+    <ProjectReference Include="..\..\libs\ironhive\src\IronHive.Abstractions\IronHive.Abstractions.csproj" />
+    <ProjectReference Include="..\..\libs\ironhive\src\IronHive.Core\IronHive.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

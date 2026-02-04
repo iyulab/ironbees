@@ -47,5 +47,8 @@ CLAUDE.md
 *.local.md
 nul
 
+# Local NuGet packages (built from submodules)
+local-packages/
+
 # Local integration tests (not for CI)
 local-tests/
