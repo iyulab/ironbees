@@ -96,13 +96,15 @@ public class IntegrationTests
         var directory = Directory.GetCurrentDirectory();
         while (directory != null)
         {
-            if (File.Exists(Path.Combine(directory, "Ironbees.sln")))
+            // Check for both .sln and .slnx solution files
+            if (File.Exists(Path.Combine(directory, "Ironbees.sln")) ||
+                File.Exists(Path.Combine(directory, "Ironbees.slnx")))
             {
                 return directory;
             }
             directory = Directory.GetParent(directory)?.FullName;
         }
-        throw new InvalidOperationException("Could not find project root (Ironbees.sln)");
+        throw new InvalidOperationException("Could not find project root (Ironbees.sln or Ironbees.slnx)");
     }
 
     private class TestAgent : IAgent

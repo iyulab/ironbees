@@ -22,8 +22,8 @@
     <PackageVersion Include="Microsoft.OpenApi" Version="3.3.1" />
   </ItemGroup>
   <ItemGroup Label="IronHive">
-    <PackageVersion Include="IronHive.Abstractions" Version="0.2.2" />
-    <PackageVersion Include="IronHive.Core" Version="0.2.2" />
+    <PackageVersion Include="IronHive.Abstractions" Version="0.3.0" />
+    <PackageVersion Include="IronHive.Core" Version="0.3.0" />
     <PackageVersion Include="IronHive.Providers.OpenAI" Version="0.2.2" />
   </ItemGroup>
   <ItemGroup Label="AI and Agent Framework">
@@ -60,7 +60,7 @@
   <ItemGroup Label="Web and API">
     <!-- ASP.NET Core -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.1" />
   </ItemGroup>
   <ItemGroup Label="Testing">
     <!-- xUnit -->

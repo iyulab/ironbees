@@ -7,13 +7,152 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-05
+
+### Added - IronHive Multi-Agent Orchestration Integration
+
+This release completes the **IronHive SDK integration**, enabling full multi-agent orchestration capabilities through Ironbees' declarative YAML configuration.
+
+**Core Orchestration Features**:
+- **IronhiveOrchestratorWrapper** - Bridges IronHive `IAgentOrchestrator` to Ironbees `IMultiAgentOrchestrator`
+- **IronhiveEventAdapter** - Converts IronHive streaming events to Ironbees event types
+- **IronhiveOrchestratorFactory** - Creates orchestrators from declarative settings
+
+**Orchestrator Types** (all configurable via YAML):
+| Type | Description |
+|------|-------------|
+| `Sequential` | Agents execute one after another, passing output as input |
+| `Parallel` | Agents execute concurrently, results aggregated |
+| `HubSpoke` | Central hub coordinates spoke agents |
+| `Handoff` | Agents transfer control based on context |
+| `GroupChat` | Multi-agent conversation with speaker selection |
+| `Graph` | DAG-based workflow with conditional edges |
+
+### Added - GraphOrchestrator Support (Phase 2)
+
+YAML-based DAG orchestration for complex workflows:
+
+```yaml
+orchestrator:
+  type: Graph
+  graph:
+    nodes:
+      - id: analyze
+        agent: code-analyzer
+      - id: review
+        agent: reviewer
+      - id: fix
+        agent: fixer
+    edges:
+      - from: analyze
+        to: review
+      - from: review
+        to: fix
+        condition: "needs_fix"  # Conditional routing
+    startNode: analyze
+    outputNode: fix
+```
+
+**New Types**:
+- `GraphSettings` - DAG configuration model
+- `GraphNodeDefinition` - Node-agent mapping
+- `GraphEdgeDefinition` - Edge with optional conditions
+
+### Added - Declarative Middleware Configuration (Phase 3)
+
+Configure resilience patterns in YAML:
+
+```yaml
+orchestrator:
+  type: Handoff
+  initialAgent: triage
+  middleware:
+    retry:
+      maxRetries: 3
+      initialDelay: 1s
+    circuitBreaker:
+      failureThreshold: 5
+      breakDuration: 30s
+    bulkhead:
+      maxConcurrency: 10
+    rateLimit:
+      maxRequests: 60
+      window: 1m
+    timeout:
+      duration: 30s
+    enableLogging: true
+```
+
+**Middleware Types**:
+- `RetryMiddleware` - Exponential backoff retry
+- `CircuitBreakerMiddleware` - Failure isolation
+- `BulkheadMiddleware` - Concurrency limiting
+- `RateLimitMiddleware` - Request throttling
+- `TimeoutMiddleware` - Execution time limits
+- `LoggingMiddleware` - Request/response logging
+
+**New Types**:
+- `MiddlewareSettings` - Unified middleware configuration
+- `IronhiveMiddlewareFactory` - Creates IronHive middleware from settings
+
+### Added - Checkpoint Store Integration (Phase 4)
+
+- **IronhiveCheckpointStoreAdapter** - Adapts Ironbees `ICheckpointStore` to IronHive `ICheckpointStore`
+- Enables orchestration state persistence and recovery
+- Bidirectional checkpoint conversion (Ironbees ↔ IronHive)
+
+### Changed - IronHive Package Update
+
+- Upgraded `IronHive.Abstractions` 0.2.3 → **0.3.0**
+- Upgraded `IronHive.Core` 0.2.3 → **0.3.0**
+- Full middleware support now available via NuGet packages
+
 ### Removed - MicrosoftAgentFrameworkAdapter Consolidation
 
 - **`MicrosoftAgentFrameworkAdapter`** and **`MicrosoftAgentWrapper`** removed
   - `AgentFrameworkAdapter` (OpenAI ChatClient direct) is the sole `ILLMFrameworkAdapter` implementation
-  - MAF adapter added unnecessary `ChatClientAgent` wrapping layer and converted history to lossy text transcript
-  - `UseMicrosoftAgentFramework` configuration option removed from `IronbeesOptions`
-  - `Microsoft.Agents.AI.*` packages retained for Workflow system (`MafWorkflowConverter`, `MafWorkflowExecutor`)
+  - MAF adapter added unnecessary `ChatClientAgent` wrapping layer
+  - `Microsoft.Agents.AI.*` packages retained for Workflow system
+
+### Test Coverage
+
+- All 885 tests passing (6 skipped)
+- New orchestrator factory tests with IronhiveAgentWrapper mocking
+
+### Usage Example
+
+```csharp
+// Configure via DI
+services.AddIronbeesIronhive(options =>
+{
+    options.AgentsDirectory = "./agents";
+    options.ConfigureHive = hive =>
+    {
+        hive.AddMessageGenerator("openai", generator);
+    };
+});
+
+// Or via YAML configuration
+// agents/orchestration.yaml
+orchestrator:
+  type: Handoff
+  initialAgent: triage
+  maxTransitions: 10
+  middleware:
+    retry:
+      maxRetries: 3
+    circuitBreaker:
+      failureThreshold: 5
+      breakDuration: 30s
+```
+
+## [0.5.1] - 2026-02-04
+
+### Changed - IronHive Adapter Integration
+
+- Initial IronHive adapter consolidation
+- Token tracking integration with IronHive
+- Conversation management improvements
 
 ## [0.4.1] - 2026-01-06
 

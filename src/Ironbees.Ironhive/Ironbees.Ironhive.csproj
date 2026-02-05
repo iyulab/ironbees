@@ -9,7 +9,7 @@
     <PackageReference Include="IronHive.Abstractions" />
     <PackageReference Include="IronHive.Core" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />

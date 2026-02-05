@@ -32,7 +32,8 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
            (YAML workflows, definitions)
                   /            \
 Ironbees.AgentFramework    Ironbees.Ironhive
-  (Azure OpenAI + MAF)      (IronHive multi-provider)
+  (Azure OpenAI + MAF)      (IronHive multi-provider,
+                             Multi-agent orchestration)
 
               Ironbees.Autonomous
         (Iterative execution, oracle verification)
@@ -40,7 +41,7 @@ Ironbees.AgentFramework    Ironbees.Ironhive
 
 Ironbees Core is **backend-agnostic**. Pick the adapter that fits your stack:
 
-- **Ironbees.Ironhive** - Multi-provider (OpenAI, Anthropic, Google, Ollama) via [IronHive](https://github.com/iyulab/ironhive)
+- **Ironbees.Ironhive** - Multi-provider (OpenAI, Anthropic, Google, Ollama) + **Multi-agent orchestration** via [IronHive](https://github.com/iyulab/ironhive)
 - **Ironbees.AgentFramework** - Azure OpenAI + Microsoft Agent Framework
 
 ## Installation
@@ -129,6 +130,53 @@ await foreach (var chunk in orchestrator.StreamAsync("Write a blog post"))
     Console.Write(chunk);
 }
 ```
+
+## Multi-Agent Orchestration
+
+Ironbees.Ironhive provides **declarative multi-agent orchestration** via YAML:
+
+```yaml
+# orchestration.yaml
+orchestrator:
+  type: Handoff          # Sequential, Parallel, HubSpoke, Handoff, GroupChat, Graph
+  initialAgent: triage
+  maxTransitions: 10
+  middleware:
+    retry:
+      maxRetries: 3
+    circuitBreaker:
+      failureThreshold: 5
+      breakDuration: 30s
+```
+
+**Graph-based workflows** for complex pipelines:
+
+```yaml
+orchestrator:
+  type: Graph
+  graph:
+    nodes:
+      - id: analyze
+        agent: code-analyzer
+      - id: review
+        agent: reviewer
+    edges:
+      - from: analyze
+        to: review
+        condition: "needs_review"
+    startNode: analyze
+    outputNode: review
+```
+
+**Available Orchestrator Types**:
+| Type | Use Case |
+|------|----------|
+| `Sequential` | Pipeline processing, output chains |
+| `Parallel` | Concurrent analysis, fan-out tasks |
+| `HubSpoke` | Central coordinator with specialists |
+| `Handoff` | Context-aware agent switching |
+| `GroupChat` | Multi-agent discussion with speaker selection |
+| `Graph` | DAG workflows with conditional routing |
 
 ## Token Tracking & Cost Estimation
 

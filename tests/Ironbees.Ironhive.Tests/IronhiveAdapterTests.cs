@@ -1,4 +1,5 @@
 using Ironbees.Core;
+using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
@@ -14,13 +15,19 @@ namespace Ironbees.Ironhive.Tests;
 public class IronhiveAdapterTests
 {
     private readonly Mock<IHiveService> _hiveServiceMock;
+    private readonly Mock<IIronhiveOrchestratorFactory> _orchestratorFactoryMock;
+    private readonly OrchestrationEventMapper _eventMapper;
     private readonly IronhiveAdapter _adapter;
 
     public IronhiveAdapterTests()
     {
         _hiveServiceMock = new Mock<IHiveService>();
+        _orchestratorFactoryMock = new Mock<IIronhiveOrchestratorFactory>();
+        _eventMapper = new OrchestrationEventMapper();
         _adapter = new IronhiveAdapter(
             _hiveServiceMock.Object,
+            _orchestratorFactoryMock.Object,
+            _eventMapper,
             NullLogger<IronhiveAdapter>.Instance);
     }
 
@@ -527,7 +534,11 @@ public class IronhiveAdapterTests
     {
         // Arrange
         var mockLogger = new Mock<ILogger<IronhiveAdapter>>();
-        var adapter = new IronhiveAdapter(_hiveServiceMock.Object, mockLogger.Object);
+        var adapter = new IronhiveAdapter(
+            _hiveServiceMock.Object,
+            _orchestratorFactoryMock.Object,
+            _eventMapper,
+            mockLogger.Object);
 
         var mockIronhiveAgent = new Mock<IronHiveAgent>();
         var response = new MessageResponse
@@ -575,7 +586,11 @@ public class IronhiveAdapterTests
     {
         // Arrange
         var mockLogger = new Mock<ILogger<IronhiveAdapter>>();
-        var adapter = new IronhiveAdapter(_hiveServiceMock.Object, mockLogger.Object);
+        var adapter = new IronhiveAdapter(
+            _hiveServiceMock.Object,
+            _orchestratorFactoryMock.Object,
+            _eventMapper,
+            mockLogger.Object);
 
         var mockIronhiveAgent = new Mock<IronHiveAgent>();
         var streamingResponses = new List<StreamingMessageResponse>

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Ironbees.Core.Orchestration;
 
 namespace Ironbees.AgentMode.Workflow;
 
@@ -38,6 +39,19 @@ public sealed record WorkflowDefinition
     /// Global workflow settings and defaults.
     /// </summary>
     public WorkflowSettings Settings { get; init; } = new();
+
+    /// <summary>
+    /// Orchestration settings for multi-agent coordination.
+    /// When specified, enables advanced orchestration patterns (Handoff, GroupChat, etc.).
+    /// </summary>
+    public OrchestratorSettings? Orchestrator { get; init; }
+
+    /// <summary>
+    /// Handoff target map defining which agents can hand off to which other agents.
+    /// Key is the source agent name, value is the list of valid handoff targets.
+    /// Required when using <see cref="OrchestratorType.Handoff"/> orchestration.
+    /// </summary>
+    public ImmutableDictionary<string, ImmutableList<HandoffTargetDefinition>>? HandoffMap { get; init; }
 }
 
 /// <summary>
@@ -254,4 +268,10 @@ public sealed record WorkflowSettings
     /// Directory for checkpoint storage.
     /// </summary>
     public string CheckpointDirectory { get; init; } = ".ironbees/checkpoints";
+
+    /// <summary>
+    /// List of agent names that require human approval before execution.
+    /// Used with HITL (Human-in-the-Loop) orchestration patterns.
+    /// </summary>
+    public ImmutableList<string>? RequireApprovalForAgents { get; init; }
 }

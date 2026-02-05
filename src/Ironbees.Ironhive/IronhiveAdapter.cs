@@ -1,11 +1,13 @@
 using System.Runtime.CompilerServices;
+using Ironbees.AgentMode.Goals;
 using Ironbees.Core;
+using Ironbees.Core.Orchestration;
+using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
-using IronHiveAgentConfig = IronHive.Abstractions.Agent.AgentConfig;
-using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
 using IronHive.Abstractions.Messages.Content;
 using IronHive.Abstractions.Messages.Roles;
+using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
@@ -18,11 +20,19 @@ namespace Ironbees.Ironhive;
 public class IronhiveAdapter : ILLMFrameworkAdapter
 {
     private readonly IHiveService _hiveService;
+    private readonly IIronhiveOrchestratorFactory _orchestratorFactory;
+    private readonly OrchestrationEventMapper _eventMapper;
     private readonly ILogger<IronhiveAdapter> _logger;
 
-    public IronhiveAdapter(IHiveService hiveService, ILogger<IronhiveAdapter> logger)
+    public IronhiveAdapter(
+        IHiveService hiveService,
+        IIronhiveOrchestratorFactory orchestratorFactory,
+        OrchestrationEventMapper eventMapper,
+        ILogger<IronhiveAdapter> logger)
     {
         _hiveService = hiveService ?? throw new ArgumentNullException(nameof(hiveService));
+        _orchestratorFactory = orchestratorFactory ?? throw new ArgumentNullException(nameof(orchestratorFactory));
+        _eventMapper = eventMapper ?? throw new ArgumentNullException(nameof(eventMapper));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -200,4 +210,145 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
         return string.Join("", textParts);
     }
 
+    /// <summary>
+    /// Creates an orchestrator for multi-agent coordination.
+    /// </summary>
+    /// <param name="settings">Orchestration settings defining the pattern and configuration.</param>
+    /// <param name="agentConfigs">Agent configurations to include in orchestration.</param>
+    /// <param name="handoffMap">Optional handoff target map for handoff orchestration.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A configured orchestrator.</returns>
+    public async Task<IMultiAgentOrchestrator> CreateOrchestratorAsync(
+        OrchestratorSettings settings,
+        IReadOnlyList<AgentConfig> agentConfigs,
+        IReadOnlyDictionary<string, IReadOnlyList<HandoffTargetDefinition>>? handoffMap = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(agentConfigs);
+
+        _logger.LogDebug(
+            "Creating orchestrator type {OrchestratorType} with {AgentCount} agents",
+            settings.Type, agentConfigs.Count);
+
+        // Create Ironbees agents from configs
+        var agents = new List<IAgent>();
+        foreach (var config in agentConfigs)
+        {
+            var agent = await CreateAgentAsync(config, cancellationToken);
+            agents.Add(agent);
+        }
+
+        return _orchestratorFactory.CreateOrchestrator(settings, agents, handoffMap);
+    }
+
+    /// <summary>
+    /// Runs an orchestration and streams goal execution events.
+    /// </summary>
+    /// <param name="orchestrator">The orchestrator to run.</param>
+    /// <param name="input">The input message to start orchestration.</param>
+    /// <param name="goalId">The goal ID for event tracking.</param>
+    /// <param name="executionId">The execution ID for this run.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of goal execution events.</returns>
+    public async IAsyncEnumerable<GoalExecutionEvent> RunOrchestrationAsync(
+        IMultiAgentOrchestrator orchestrator,
+        string input,
+        string goalId,
+        string executionId,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(orchestrator);
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(goalId);
+        ArgumentNullException.ThrowIfNull(executionId);
+
+        _logger.LogDebug(
+            "Starting orchestration for goal {GoalId}, execution {ExecutionId}",
+            goalId, executionId);
+
+        await foreach (var streamEvent in orchestrator.RunStreamingAsync(input, cancellationToken))
+        {
+            var mappedEvent = _eventMapper.Map(streamEvent, goalId, executionId);
+            if (mappedEvent is not null)
+            {
+                yield return mappedEvent;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Runs orchestration with approval callback for HITL patterns.
+    /// </summary>
+    /// <param name="orchestrator">The orchestrator to run.</param>
+    /// <param name="input">The input message to start orchestration.</param>
+    /// <param name="goalId">The goal ID for event tracking.</param>
+    /// <param name="executionId">The execution ID for this run.</param>
+    /// <param name="approvalHandler">Callback for handling approval requests.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of goal execution events.</returns>
+    public async IAsyncEnumerable<GoalExecutionEvent> RunOrchestrationWithApprovalAsync(
+        IMultiAgentOrchestrator orchestrator,
+        string input,
+        string goalId,
+        string executionId,
+        Func<HitlRequestDetails, Task<bool>> approvalHandler,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(orchestrator);
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(goalId);
+        ArgumentNullException.ThrowIfNull(executionId);
+        ArgumentNullException.ThrowIfNull(approvalHandler);
+
+        _logger.LogDebug(
+            "Starting orchestration with approval handler for goal {GoalId}, execution {ExecutionId}",
+            goalId, executionId);
+
+        await foreach (var streamEvent in orchestrator.RunStreamingAsync(input, cancellationToken))
+        {
+            var mappedEvent = _eventMapper.Map(streamEvent, goalId, executionId);
+            if (mappedEvent is null)
+            {
+                continue;
+            }
+
+            // Handle HITL approval requests
+            if (mappedEvent.Type == GoalExecutionEventType.HitlRequested && mappedEvent.HitlRequest is not null)
+            {
+                yield return mappedEvent;
+
+                var approved = await approvalHandler(mappedEvent.HitlRequest);
+
+                yield return new GoalExecutionEvent
+                {
+                    Type = GoalExecutionEventType.HitlResponseReceived,
+                    GoalId = goalId,
+                    ExecutionId = executionId,
+                    Content = approved ? "Approved" : "Rejected",
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["requestId"] = mappedEvent.HitlRequest.RequestId,
+                        ["approved"] = approved
+                    }
+                };
+
+                if (!approved)
+                {
+                    yield return new GoalExecutionEvent
+                    {
+                        Type = GoalExecutionEventType.GoalCancelled,
+                        GoalId = goalId,
+                        ExecutionId = executionId,
+                        Content = "Orchestration cancelled due to rejected approval"
+                    };
+                    yield break;
+                }
+            }
+            else
+            {
+                yield return mappedEvent;
+            }
+        }
+    }
 }

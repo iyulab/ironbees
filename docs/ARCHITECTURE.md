@@ -52,6 +52,10 @@ src/
 │   ├── Conversation/               # FileSystemConversationStore
 │   ├── Streaming/                  # StreamChunk types
 │   ├── AgentDirectory/             # Filesystem agent loading
+│   ├── Orchestration/              # Multi-agent orchestration models
+│   │   ├── OrchestratorSettings    # Declarative orchestrator config
+│   │   ├── GraphSettings           # DAG workflow configuration
+│   │   └── MiddlewareSettings      # Resilience middleware config
 │   └── Guardrails/                 # Content validation
 │       ├── IContentGuardrail       # Core interface
 │       ├── GuardrailPipeline       # Multi-guardrail orchestrator
@@ -67,6 +71,15 @@ src/
 │
 ├── Ironbees.AgentMode/             # YAML workflow definitions
 │   └── Workflow/                   # YamlDrivenOrchestrator
+│
+├── Ironbees.Ironhive/              # IronHive multi-provider integration
+│   ├── Orchestration/              # Multi-agent orchestration
+│   │   ├── IronhiveOrchestratorFactory   # Creates orchestrators from settings
+│   │   ├── IronhiveOrchestratorWrapper   # IronHive → Ironbees adapter
+│   │   ├── IronhiveEventAdapter          # Event type conversion
+│   │   └── IronhiveMiddlewareFactory     # Middleware from settings
+│   └── Checkpoint/                 # Checkpoint store adapter
+│       └── IronhiveCheckpointStoreAdapter
 │
 └── Ironbees.Autonomous/            # Autonomous execution SDK
     ├── Abstractions/               # Core interfaces
@@ -90,10 +103,12 @@ src/
 |-----------|---------|----------------|
 | `IAgentLoader` | Load agents from filesystem | `FileSystemAgentLoader` |
 | `IAgentSelector` | Route requests to agents | `KeywordAgentSelector`, `EmbeddingAgentSelector`, `HybridAgentSelector` |
-| `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `AgentFrameworkAdapter` |
+| `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `AgentFrameworkAdapter`, `IronhiveAdapter` |
+| `IMultiAgentOrchestrator` | Multi-agent orchestration | `IronhiveOrchestratorWrapper` |
+| `IIronhiveOrchestratorFactory` | Create orchestrators from settings | `IronhiveOrchestratorFactory` |
 | `IWorkflowOrchestrator<T>` | Execute YAML workflows | `YamlDrivenOrchestrator` |
 | `IWorkflowConverter` | YAML → MAF conversion | `MafWorkflowConverter` |
-| `ICheckpointStore` | Workflow persistence | `FileSystemCheckpointStore` |
+| `ICheckpointStore` | Workflow persistence | `FileSystemCheckpointStore`, `IronhiveCheckpointStoreAdapter` |
 | `IContentGuardrail` | Content validation | `RegexGuardrail`, `KeywordGuardrail`, `LengthGuardrail`, `AzureContentSafetyGuardrail`, `OpenAIModerationGuardrail` |
 | `IAuditLogger` | Compliance logging | `NullAuditLogger`, custom implementations |
 
@@ -121,6 +136,69 @@ model:
 capabilities: [code-generation, code-review]
 tags: [coding, development]
 ```
+
+## Multi-Agent Orchestration (IronHive)
+
+Ironbees.Ironhive provides declarative multi-agent orchestration via IronHive SDK:
+
+```
+OrchestratorSettings (YAML) → IronhiveOrchestratorFactory → IronHive Orchestrator → IronhiveOrchestratorWrapper
+```
+
+### Orchestrator Types
+
+| Type | Builder | Description |
+|------|---------|-------------|
+| `Sequential` | `SequentialOrchestrator` | Agents execute in order, output chains |
+| `Parallel` | `ParallelOrchestrator` | Concurrent execution, aggregated results |
+| `HubSpoke` | `HubSpokeOrchestrator` | Central hub coordinates specialists |
+| `Handoff` | `HandoffOrchestratorBuilder` | Context-aware agent switching |
+| `GroupChat` | `GroupChatOrchestratorBuilder` | Multi-agent discussion |
+| `Graph` | `GraphOrchestratorBuilder` | DAG with conditional edges |
+
+### Middleware Stack
+
+Resilience middleware applied to orchestrators (order matters):
+
+```
+Request → [Logging] → [RateLimit] → [Bulkhead] → [CircuitBreaker] → [Retry] → [Timeout] → Agent
+```
+
+**Configuration Example**:
+```yaml
+orchestrator:
+  type: Handoff
+  initialAgent: triage
+  middleware:
+    enableLogging: true
+    rateLimit:
+      maxRequests: 60
+      window: 1m
+    bulkhead:
+      maxConcurrency: 10
+    circuitBreaker:
+      failureThreshold: 5
+      breakDuration: 30s
+    retry:
+      maxRetries: 3
+    timeout:
+      duration: 30s
+```
+
+### Event Streaming
+
+IronHive events are converted to Ironbees events via `IronhiveEventAdapter`:
+
+| IronHive Event | Ironbees Event |
+|----------------|----------------|
+| `Started` | `OrchestrationStartedEvent` |
+| `AgentStarted` | `AgentStartedEvent` |
+| `MessageDelta` | `MessageDeltaEvent` |
+| `AgentCompleted` | `AgentCompletedEvent` |
+| `Completed` | `OrchestrationCompletedEvent` |
+| `Failed` | `OrchestrationFailedEvent` |
+| `Handoff` | `HandoffEvent` |
+| `SpeakerSelected` | `SpeakerSelectedEvent` |
 
 ## Middleware Pipeline
 
@@ -220,10 +298,17 @@ if (!result.IsAllowed)
 ## Dependencies
 
 ```xml
-<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.*" />
-<PackageReference Include="Microsoft.Extensions.AI" Version="10.0.1" />
+<!-- Core -->
+<PackageReference Include="Microsoft.Extensions.AI" Version="10.2.0" />
 <PackageReference Include="YamlDotNet" Version="16.3.0" />
 <PackageReference Include="Polly" Version="8.6.5" />
+
+<!-- IronHive (Multi-agent orchestration) -->
+<PackageReference Include="IronHive.Abstractions" Version="0.3.0" />
+<PackageReference Include="IronHive.Core" Version="0.3.0" />
+
+<!-- MAF (Workflow system) -->
+<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.*" />
 ```
 
 ## Workflow Decision Guide
