@@ -21,6 +21,11 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
     <PackageVersion Include="Microsoft.OpenApi" Version="3.3.1" />
   </ItemGroup>
+  <ItemGroup Label="IronHive">
+    <PackageVersion Include="IronHive.Abstractions" Version="0.2.2" />
+    <PackageVersion Include="IronHive.Core" Version="0.2.2" />
+    <PackageVersion Include="IronHive.Providers.OpenAI" Version="0.2.2" />
+  </ItemGroup>
   <ItemGroup Label="AI and Agent Framework">
     <!-- Azure AI Services -->
     <PackageVersion Include="Azure.AI.ContentSafety" Version="1.0.0" />

@@ -62,15 +62,8 @@ public static class ServiceCollectionExtensions
             });
         }
 
-        // Register LLM framework adapter based on configuration
-        if (options.UseMicrosoftAgentFramework)
-        {
-            services.AddSingleton<ILLMFrameworkAdapter, MicrosoftAgentFrameworkAdapter>();
-        }
-        else
-        {
-            services.AddSingleton<ILLMFrameworkAdapter, AgentFrameworkAdapter>();
-        }
+        // Register LLM framework adapter
+        services.AddSingleton<ILLMFrameworkAdapter, AgentFrameworkAdapter>();
 
         return services;
     }
@@ -106,8 +99,4 @@ public class IronbeesOptions
     /// </summary>
     public double? MinimumConfidenceThreshold { get; set; }
 
-    /// <summary>
-    /// Use Microsoft Agent Framework for agent execution (default: false, uses OpenAI ChatClient directly)
-    /// </summary>
-    public bool UseMicrosoftAgentFramework { get; set; } = false;
 }

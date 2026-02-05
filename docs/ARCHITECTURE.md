@@ -90,7 +90,7 @@ src/
 |-----------|---------|----------------|
 | `IAgentLoader` | Load agents from filesystem | `FileSystemAgentLoader` |
 | `IAgentSelector` | Route requests to agents | `KeywordAgentSelector`, `EmbeddingAgentSelector`, `HybridAgentSelector` |
-| `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `MicrosoftAgentFrameworkAdapter` |
+| `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `AgentFrameworkAdapter` |
 | `IWorkflowOrchestrator<T>` | Execute YAML workflows | `YamlDrivenOrchestrator` |
 | `IWorkflowConverter` | YAML → MAF conversion | `MafWorkflowConverter` |
 | `ICheckpointStore` | Workflow persistence | `FileSystemCheckpointStore` |

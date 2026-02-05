@@ -3,6 +3,7 @@ using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
 using IronHive.Abstractions.Messages.Roles;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -30,7 +31,7 @@ public class IronhiveAdapterTests
         var config = CreateTestConfig();
         var mockAgent = new Mock<IronHiveAgent>();
         _hiveServiceMock
-            .Setup(s => s.CreateAgentFromYaml(It.IsAny<string>()))
+            .Setup(s => s.CreateAgent(It.IsAny<Action<IronHive.Abstractions.Agent.AgentConfig>>()))
             .Returns(mockAgent.Object);
 
         // Act
@@ -41,7 +42,7 @@ public class IronhiveAdapterTests
         Assert.Equal("test-agent", result.Name);
         Assert.Equal("Test agent", result.Description);
         Assert.Same(config, result.Config);
-        _hiveServiceMock.Verify(s => s.CreateAgentFromYaml(It.IsAny<string>()), Times.Once);
+        _hiveServiceMock.Verify(s => s.CreateAgent(It.IsAny<Action<IronHive.Abstractions.Agent.AgentConfig>>()), Times.Once);
     }
 
     [Fact]
@@ -194,23 +195,34 @@ public class IronhiveAdapterTests
     }
 
     [Fact]
-    public void BuildAgentYaml_BasicConfig_ContainsRequiredFields()
+    public async Task CreateAgentAsync_BasicConfig_PassesConfigToBuilder()
     {
         // Arrange
         var config = CreateTestConfig();
+        IronHive.Abstractions.Agent.AgentConfig? capturedConfig = null;
+        var mockAgent = new Mock<IronHiveAgent>();
+        _hiveServiceMock
+            .Setup(s => s.CreateAgent(It.IsAny<Action<IronHive.Abstractions.Agent.AgentConfig>>()))
+            .Callback<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
+            {
+                capturedConfig = new IronHive.Abstractions.Agent.AgentConfig();
+                configure(capturedConfig);
+            })
+            .Returns(mockAgent.Object);
 
         // Act
-        var yaml = IronhiveAdapter.BuildAgentYaml(config);
+        await _adapter.CreateAgentAsync(config);
 
         // Assert
-        Assert.Contains("name: test-agent", yaml);
-        Assert.Contains("provider: openai", yaml);
-        Assert.Contains("model: gpt-4o", yaml);
-        Assert.Contains("instructions:", yaml);
+        Assert.NotNull(capturedConfig);
+        Assert.Equal("test-agent", capturedConfig!.Name);
+        Assert.Equal("openai", capturedConfig.Provider);
+        Assert.Equal("gpt-4o", capturedConfig.Model);
+        Assert.Equal("You are a helpful assistant.", capturedConfig.Instructions);
     }
 
     [Fact]
-    public void BuildAgentYaml_NoSystemPrompt_OmitsInstructions()
+    public async Task CreateAgentAsync_NoSystemPrompt_SetsNullInstructions()
     {
         // Arrange
         var config = new AgentConfig
@@ -221,16 +233,27 @@ public class IronhiveAdapterTests
             SystemPrompt = "",
             Model = new ModelConfig { Provider = "openai", Deployment = "gpt-4o" }
         };
+        IronHive.Abstractions.Agent.AgentConfig? capturedConfig = null;
+        var mockAgent = new Mock<IronHiveAgent>();
+        _hiveServiceMock
+            .Setup(s => s.CreateAgent(It.IsAny<Action<IronHive.Abstractions.Agent.AgentConfig>>()))
+            .Callback<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
+            {
+                capturedConfig = new IronHive.Abstractions.Agent.AgentConfig();
+                configure(capturedConfig);
+            })
+            .Returns(mockAgent.Object);
 
         // Act
-        var yaml = IronhiveAdapter.BuildAgentYaml(config);
+        await _adapter.CreateAgentAsync(config);
 
         // Assert
-        Assert.DoesNotContain("instructions:", yaml);
+        Assert.NotNull(capturedConfig);
+        Assert.Equal("", capturedConfig!.Instructions);
     }
 
     [Fact]
-    public void BuildAgentYaml_CustomParameters_IncludesParametersSection()
+    public async Task CreateAgentAsync_CustomParameters_SetsParametersConfig()
     {
         // Arrange
         var config = new AgentConfig
@@ -248,15 +271,26 @@ public class IronhiveAdapterTests
                 TopP = 0.9
             }
         };
+        IronHive.Abstractions.Agent.AgentConfig? capturedConfig = null;
+        var mockAgent = new Mock<IronHiveAgent>();
+        _hiveServiceMock
+            .Setup(s => s.CreateAgent(It.IsAny<Action<IronHive.Abstractions.Agent.AgentConfig>>()))
+            .Callback<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
+            {
+                capturedConfig = new IronHive.Abstractions.Agent.AgentConfig();
+                configure(capturedConfig);
+            })
+            .Returns(mockAgent.Object);
 
         // Act
-        var yaml = IronhiveAdapter.BuildAgentYaml(config);
+        await _adapter.CreateAgentAsync(config);
 
         // Assert
-        Assert.Contains("parameters:", yaml);
-        Assert.Contains("maxTokens: 8000", yaml);
-        Assert.Contains("temperature: 0.3", yaml);
-        Assert.Contains("topP: 0.9", yaml);
+        Assert.NotNull(capturedConfig);
+        Assert.NotNull(capturedConfig!.Parameters);
+        Assert.Equal(8000, capturedConfig.Parameters!.MaxTokens);
+        Assert.Equal(0.3f, capturedConfig.Parameters.Temperature);
+        Assert.Equal(0.9f, capturedConfig.Parameters.TopP);
     }
 
     private static AgentConfig CreateTestConfig()
@@ -273,6 +307,324 @@ public class IronhiveAdapterTests
                 Deployment = "gpt-4o"
             }
         };
+    }
+
+    [Fact]
+    public async Task RunAsync_WithHistory_PassesAllMessages()
+    {
+        // Arrange
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        IEnumerable<Message>? capturedMessages = null;
+        var response = new MessageResponse
+        {
+            Id = "resp-1",
+            Message = new AssistantMessage
+            {
+                Content = new List<MessageContent>
+                {
+                    new TextMessageContent { Value = "response" }
+                }
+            }
+        };
+        mockIronhiveAgent
+            .Setup(a => a.InvokeAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => capturedMessages = msgs.ToList())
+            .ReturnsAsync(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        var history = new List<ChatMessage>
+        {
+            new(ChatRole.User, "Hello"),
+            new(ChatRole.Assistant, "Hi there!"),
+            new(ChatRole.User, "How are you?"),
+            new(ChatRole.Assistant, "I'm fine!")
+        };
+
+        // Act
+        await _adapter.RunAsync(wrapper, "What's new?", history);
+
+        // Assert
+        Assert.NotNull(capturedMessages);
+        var messageList = capturedMessages!.ToList();
+        Assert.Equal(5, messageList.Count); // 4 history + 1 current
+
+        Assert.IsType<UserMessage>(messageList[0]);
+        Assert.IsType<AssistantMessage>(messageList[1]);
+        Assert.IsType<UserMessage>(messageList[2]);
+        Assert.IsType<AssistantMessage>(messageList[3]);
+        Assert.IsType<UserMessage>(messageList[4]);
+
+        var lastMsg = (UserMessage)messageList[4];
+        var lastText = lastMsg.Content.OfType<TextMessageContent>().First();
+        Assert.Equal("What's new?", lastText.Value);
+    }
+
+    [Fact]
+    public async Task RunAsync_WithNullHistory_WorksLikeBasic()
+    {
+        // Arrange
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        IEnumerable<Message>? capturedMessages = null;
+        var response = new MessageResponse
+        {
+            Id = "resp-1",
+            Message = new AssistantMessage
+            {
+                Content = new List<MessageContent>
+                {
+                    new TextMessageContent { Value = "response" }
+                }
+            }
+        };
+        mockIronhiveAgent
+            .Setup(a => a.InvokeAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => capturedMessages = msgs.ToList())
+            .ReturnsAsync(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        // Act
+        await _adapter.RunAsync(wrapper, "Hello", conversationHistory: null);
+
+        // Assert
+        Assert.NotNull(capturedMessages);
+        var messageList = capturedMessages!.ToList();
+        Assert.Single(messageList);
+        Assert.IsType<UserMessage>(messageList[0]);
+    }
+
+    [Fact]
+    public async Task RunAsync_WithEmptyHistory_WorksLikeBasic()
+    {
+        // Arrange
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        IEnumerable<Message>? capturedMessages = null;
+        var response = new MessageResponse
+        {
+            Id = "resp-1",
+            Message = new AssistantMessage
+            {
+                Content = new List<MessageContent>
+                {
+                    new TextMessageContent { Value = "response" }
+                }
+            }
+        };
+        mockIronhiveAgent
+            .Setup(a => a.InvokeAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => capturedMessages = msgs.ToList())
+            .ReturnsAsync(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        // Act
+        await _adapter.RunAsync(wrapper, "Hello", new List<ChatMessage>());
+
+        // Assert
+        Assert.NotNull(capturedMessages);
+        var messageList = capturedMessages!.ToList();
+        Assert.Single(messageList);
+        Assert.IsType<UserMessage>(messageList[0]);
+    }
+
+    [Fact]
+    public async Task StreamAsync_WithHistory_PassesAllMessages()
+    {
+        // Arrange
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        IEnumerable<Message>? capturedMessages = null;
+        var streamingResponses = new List<StreamingMessageResponse>
+        {
+            new StreamingContentDeltaResponse
+            {
+                Index = 0,
+                Delta = new TextDeltaContent { Value = "response" }
+            }
+        };
+        mockIronhiveAgent
+            .Setup(a => a.InvokeStreamingAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<Message>, CancellationToken>((msgs, _) => capturedMessages = msgs.ToList())
+            .Returns(streamingResponses.ToAsyncEnumerable());
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        var history = new List<ChatMessage>
+        {
+            new(ChatRole.User, "First message"),
+            new(ChatRole.Assistant, "First reply")
+        };
+
+        // Act
+        var chunks = new List<string>();
+        await foreach (var chunk in _adapter.StreamAsync(wrapper, "Second message", history))
+        {
+            chunks.Add(chunk);
+        }
+
+        // Assert
+        Assert.Single(chunks);
+        Assert.Equal("response", chunks[0]);
+
+        Assert.NotNull(capturedMessages);
+        var messageList = capturedMessages!.ToList();
+        Assert.Equal(3, messageList.Count); // 2 history + 1 current
+        Assert.IsType<UserMessage>(messageList[0]);
+        Assert.IsType<AssistantMessage>(messageList[1]);
+        Assert.IsType<UserMessage>(messageList[2]);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ErrorResponse_YieldsErrorAndStops()
+    {
+        // Arrange
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        var streamingResponses = new List<StreamingMessageResponse>
+        {
+            new StreamingContentDeltaResponse
+            {
+                Index = 0,
+                Delta = new TextDeltaContent { Value = "partial" }
+            },
+            new StreamingMessageErrorResponse
+            {
+                Code = 500,
+                Message = "Internal server error"
+            },
+            new StreamingContentDeltaResponse
+            {
+                Index = 0,
+                Delta = new TextDeltaContent { Value = "should not appear" }
+            }
+        };
+
+        mockIronhiveAgent
+            .Setup(a => a.InvokeStreamingAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .Returns(streamingResponses.ToAsyncEnumerable());
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        // Act
+        var chunks = new List<string>();
+        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test"))
+        {
+            chunks.Add(chunk);
+        }
+
+        // Assert
+        Assert.Equal(2, chunks.Count);
+        Assert.Equal("partial", chunks[0]);
+        Assert.Equal("[Error 500]: Internal server error", chunks[1]);
+    }
+
+    [Fact]
+    public async Task RunAsync_WithTokenUsage_LogsTokenUsage()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<IronhiveAdapter>>();
+        var adapter = new IronhiveAdapter(_hiveServiceMock.Object, mockLogger.Object);
+
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        var response = new MessageResponse
+        {
+            Id = "resp-1",
+            Message = new AssistantMessage
+            {
+                Content = new List<MessageContent>
+                {
+                    new TextMessageContent { Value = "response" }
+                }
+            },
+            TokenUsage = new MessageTokenUsage
+            {
+                InputTokens = 100,
+                OutputTokens = 50
+            }
+        };
+        mockIronhiveAgent
+            .Setup(a => a.InvokeAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        // Act
+        var result = await adapter.RunAsync(wrapper, "test");
+
+        // Assert
+        Assert.Equal("response", result);
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) =>
+                    o.ToString()!.Contains("100 input, 50 output") &&
+                    o.ToString()!.Contains("unknown")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamAsync_DoneWithTokenUsage_LogsTokenUsage()
+    {
+        // Arrange
+        var mockLogger = new Mock<ILogger<IronhiveAdapter>>();
+        var adapter = new IronhiveAdapter(_hiveServiceMock.Object, mockLogger.Object);
+
+        var mockIronhiveAgent = new Mock<IronHiveAgent>();
+        var streamingResponses = new List<StreamingMessageResponse>
+        {
+            new StreamingContentDeltaResponse
+            {
+                Index = 0,
+                Delta = new TextDeltaContent { Value = "text" }
+            },
+            new StreamingMessageDoneResponse
+            {
+                Id = "msg-1",
+                Model = "gpt-4o",
+                Timestamp = DateTime.UtcNow,
+                TokenUsage = new MessageTokenUsage
+                {
+                    InputTokens = 200,
+                    OutputTokens = 75
+                }
+            }
+        };
+
+        mockIronhiveAgent
+            .Setup(a => a.InvokeStreamingAsync(It.IsAny<IEnumerable<Message>>(), It.IsAny<CancellationToken>()))
+            .Returns(streamingResponses.ToAsyncEnumerable());
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+
+        // Act
+        var chunks = new List<string>();
+        await foreach (var chunk in adapter.StreamAsync(wrapper, "test"))
+        {
+            chunks.Add(chunk);
+        }
+
+        // Assert
+        Assert.Single(chunks);
+        Assert.Equal("text", chunks[0]);
+        mockLogger.Verify(
+            x => x.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((o, t) =>
+                    o.ToString()!.Contains("200 input, 75 output") &&
+                    o.ToString()!.Contains("gpt-4o")),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     private IronhiveAgentWrapper CreateWrappedAgent(string responseText)

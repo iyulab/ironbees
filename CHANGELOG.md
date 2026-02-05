@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed - MicrosoftAgentFrameworkAdapter Consolidation
+
+- **`MicrosoftAgentFrameworkAdapter`** and **`MicrosoftAgentWrapper`** removed
+  - `AgentFrameworkAdapter` (OpenAI ChatClient direct) is the sole `ILLMFrameworkAdapter` implementation
+  - MAF adapter added unnecessary `ChatClientAgent` wrapping layer and converted history to lossy text transcript
+  - `UseMicrosoftAgentFramework` configuration option removed from `IronbeesOptions`
+  - `Microsoft.Agents.AI.*` packages retained for Workflow system (`MafWorkflowConverter`, `MafWorkflowExecutor`)
+
 ## [0.4.1] - 2026-01-06
 
 ### ⚠️ Breaking Changes - Migration Required

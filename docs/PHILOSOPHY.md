@@ -217,8 +217,10 @@ public class MafWorkflowConverter
 // Ironbees provides the interface
 public interface ILLMFrameworkAdapter { }
 
-// User or Ironbees provides adapters
-public class MicrosoftAgentFrameworkAdapter : ILLMFrameworkAdapter { }
+// Ironbees provides the default adapter
+public class AgentFrameworkAdapter : ILLMFrameworkAdapter { }
+
+// Users can implement custom adapters
 public class SemanticKernelAdapter : ILLMFrameworkAdapter { }
 ```
 
