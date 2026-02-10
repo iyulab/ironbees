@@ -25,18 +25,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
 
     - name: Setup .NET ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
-
-    - name: Build local NuGet packages
-      run: |
-        mkdir -p local-packages
-        dotnet pack libs/TokenMeter/src/TokenMeter/ -o local-packages -c Release
 
     - name: Restore dependencies
       run: dotnet restore
