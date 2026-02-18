@@ -51,7 +51,7 @@ public class KeywordNormalizer
         return words.Select(Normalize).ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    private Dictionary<string, string> BuildSynonymMap()
+    private static Dictionary<string, string> BuildSynonymMap()
     {
         var synonyms = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -91,7 +91,7 @@ public class KeywordNormalizer
         return synonyms;
     }
 
-    private Dictionary<string, string> BuildStemmingMap()
+    private static Dictionary<string, string> BuildStemmingMap()
     {
         var stemming = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -179,7 +179,7 @@ public class KeywordNormalizer
         return stemming;
     }
 
-    private void AddSynonymGroup(Dictionary<string, string> map, string canonical, params string[] synonyms)
+    private static void AddSynonymGroup(Dictionary<string, string> map, string canonical, params string[] synonyms)
     {
         // Map all synonyms to the canonical form
         foreach (var synonym in synonyms)

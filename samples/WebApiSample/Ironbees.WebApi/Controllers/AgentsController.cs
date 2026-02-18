@@ -11,7 +11,7 @@ namespace Ironbees.WebApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class AgentsController : ControllerBase
+public partial class AgentsController : ControllerBase
 {
     private readonly IAgentOrchestrator _orchestrator;
     private readonly ILogger<AgentsController> _logger;
@@ -118,14 +118,17 @@ public class AgentsController : ControllerBase
             if (!string.IsNullOrWhiteSpace(request.AgentName))
             {
                 // Explicit agent selection
-                _logger.LogInformation("Processing with explicit agent: {AgentName}", request.AgentName);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    LogProcessingWithExplicitAgent(_logger, request.AgentName);
+                }
                 response = await _orchestrator.ProcessAsync(request.Message, request.AgentName);
                 agentUsed = request.AgentName;
             }
             else
             {
                 // Automatic agent selection
-                _logger.LogInformation("Processing with automatic agent selection");
+                LogProcessingWithAutoSelection(_logger);
                 var selection = await _orchestrator.SelectAgentAsync(request.Message);
 
                 if (selection.SelectedAgent == null)
@@ -137,10 +140,10 @@ public class AgentsController : ControllerBase
                 agentUsed = selection.SelectedAgent.Name;
                 confidence = selection.ConfidenceScore;
 
-                _logger.LogInformation(
-                    "Selected agent: {AgentName} (confidence: {Confidence:P0})",
-                    agentUsed,
-                    confidence);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    LogSelectedAgent(_logger, agentUsed, confidence);
+                }
             }
 
             sw.Stop();
@@ -155,12 +158,12 @@ public class AgentsController : ControllerBase
         }
         catch (AgentNotFoundException ex)
         {
-            _logger.LogError(ex, "Agent not found");
+            LogAgentNotFound(_logger, ex);
             return NotFound(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing chat request");
+            LogErrorProcessingChatRequest(_logger, ex);
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
@@ -201,10 +204,28 @@ public class AgentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error selecting agent");
+            LogErrorSelectingAgent(_logger, ex);
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processing with explicit agent: {AgentName}")]
+    private static partial void LogProcessingWithExplicitAgent(ILogger logger, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processing with automatic agent selection")]
+    private static partial void LogProcessingWithAutoSelection(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Selected agent: {AgentName} (confidence: {Confidence:P0})")]
+    private static partial void LogSelectedAgent(ILogger logger, string agentName, double? confidence);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Agent not found")]
+    private static partial void LogAgentNotFound(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error processing chat request")]
+    private static partial void LogErrorProcessingChatRequest(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error selecting agent")]
+    private static partial void LogErrorSelectingAgent(ILogger logger, Exception exception);
 
     /// <summary>
     /// Health check endpoint

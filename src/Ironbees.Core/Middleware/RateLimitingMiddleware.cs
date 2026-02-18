@@ -10,7 +10,7 @@ namespace Ironbees.Core.Middleware;
 /// Middleware that enforces rate limiting on LLM API calls.
 /// Supports requests per minute and tokens per minute limits.
 /// </summary>
-public sealed class RateLimitingMiddleware : DelegatingChatClient
+public sealed partial class RateLimitingMiddleware : DelegatingChatClient
 {
     private readonly RateLimitOptions _options;
     private readonly ILogger<RateLimitingMiddleware> _logger;
@@ -174,12 +174,7 @@ public sealed class RateLimitingMiddleware : DelegatingChatClient
         int limit,
         CancellationToken cancellationToken)
     {
-        _logger.LogWarning(
-            "Rate limit exceeded: {LimitType} ({Current}/{Limit}). Strategy: {Strategy}",
-            limitType,
-            current,
-            limit,
-            _options.Strategy);
+        LogRateLimitExceeded(_logger, limitType, current, limit, _options.Strategy);
 
         return _options.Strategy switch
         {
@@ -223,6 +218,9 @@ public sealed class RateLimitingMiddleware : DelegatingChatClient
     {
         _tokenUsage.Enqueue((DateTimeOffset.UtcNow, tokens));
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded: {LimitType} ({Current}/{Limit}). Strategy: {Strategy}")]
+    private static partial void LogRateLimitExceeded(ILogger logger, string limitType, int current, int limit, RateLimitStrategy strategy);
 
     private int EstimateTokens(string text)
     {

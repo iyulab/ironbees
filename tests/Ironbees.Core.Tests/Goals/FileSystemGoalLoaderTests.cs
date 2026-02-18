@@ -20,6 +20,7 @@ public class FileSystemGoalLoaderTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         _loader.Dispose();
         if (Directory.Exists(_testDirectory))
         {

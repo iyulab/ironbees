@@ -16,7 +16,7 @@ namespace Ironbees.Core.Middleware;
 /// This middleware helps handle transient failures, rate limiting, and service
 /// unavailability by implementing standard resilience patterns.
 /// </remarks>
-public sealed class ResilienceMiddleware : DelegatingChatClient
+public sealed partial class ResilienceMiddleware : DelegatingChatClient
 {
     private readonly ResiliencePipeline<ChatResponse> _pipeline;
     private readonly ILogger<ResilienceMiddleware> _logger;
@@ -77,9 +77,7 @@ public sealed class ResilienceMiddleware : DelegatingChatClient
                 Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds),
                 OnTimeout = args =>
                 {
-                    _logger.LogWarning(
-                        "Request timed out after {Timeout}s",
-                        args.Timeout.TotalSeconds);
+                    LogRequestTimedOut(_logger, args.Timeout.TotalSeconds);
                     return default;
                 }
             });
@@ -100,11 +98,7 @@ public sealed class ResilienceMiddleware : DelegatingChatClient
                     .HandleResult(r => IsTransientError(r)),
                 OnRetry = args =>
                 {
-                    _logger.LogWarning(
-                        "Retry attempt {AttemptNumber} after {Delay}ms due to: {Exception}",
-                        args.AttemptNumber,
-                        args.RetryDelay.TotalMilliseconds,
-                        args.Outcome.Exception?.Message ?? "Transient error");
+                    LogRetryAttempt(_logger, args.AttemptNumber, args.RetryDelay.TotalMilliseconds, args.Outcome.Exception?.Message ?? "Transient error");
                     return default;
                 }
             });
@@ -125,19 +119,17 @@ public sealed class ResilienceMiddleware : DelegatingChatClient
                     .HandleResult(r => IsTransientError(r)),
                 OnOpened = args =>
                 {
-                    _logger.LogWarning(
-                        "Circuit breaker opened for {Duration}s",
-                        args.BreakDuration.TotalSeconds);
+                    LogCircuitBreakerOpened(_logger, args.BreakDuration.TotalSeconds);
                     return default;
                 },
                 OnClosed = args =>
                 {
-                    _logger.LogInformation("Circuit breaker closed");
+                    LogCircuitBreakerClosed(_logger);
                     return default;
                 },
                 OnHalfOpened = args =>
                 {
-                    _logger.LogInformation("Circuit breaker half-opened");
+                    LogCircuitBreakerHalfOpened(_logger);
                     return default;
                 }
             });
@@ -145,6 +137,21 @@ public sealed class ResilienceMiddleware : DelegatingChatClient
 
         return builder.Build();
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Request timed out after {Timeout}s")]
+    private static partial void LogRequestTimedOut(ILogger logger, double timeout);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Retry attempt {AttemptNumber} after {Delay}ms due to: {Exception}")]
+    private static partial void LogRetryAttempt(ILogger logger, int attemptNumber, double delay, string exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Circuit breaker opened for {Duration}s")]
+    private static partial void LogCircuitBreakerOpened(ILogger logger, double duration);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Circuit breaker closed")]
+    private static partial void LogCircuitBreakerClosed(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Circuit breaker half-opened")]
+    private static partial void LogCircuitBreakerHalfOpened(ILogger logger);
 
     private static bool IsTransientError(ChatResponse response)
     {

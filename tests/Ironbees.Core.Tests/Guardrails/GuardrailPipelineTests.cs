@@ -2,7 +2,8 @@
 // Licensed under the MIT License.
 
 using Ironbees.Core.Guardrails;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace Ironbees.Core.Tests.Guardrails;
 
@@ -30,7 +31,7 @@ public class GuardrailPipelineTests
         var guardrail1 = CreateMockGuardrail("Guard1", true);
         var guardrail2 = CreateMockGuardrail("Guard2", true);
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail1.Object, guardrail2.Object]);
+            inputGuardrails: [guardrail1, guardrail2]);
 
         // Act
         var result = await pipeline.ValidateInputAsync("Test");
@@ -47,7 +48,7 @@ public class GuardrailPipelineTests
         var guardrail1 = CreateMockGuardrail("Guard1", true);
         var guardrail2 = CreateMockGuardrail("Guard2", false, "Blocked by Guard2");
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail1.Object, guardrail2.Object]);
+            inputGuardrails: [guardrail1, guardrail2]);
 
         // Act
         var result = await pipeline.ValidateInputAsync("Test");
@@ -63,7 +64,7 @@ public class GuardrailPipelineTests
         var guardrail1 = CreateMockGuardrail("Guard1", false, "First failure");
         var guardrail2 = CreateMockGuardrail("Guard2", false, "Second failure");
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail1.Object, guardrail2.Object],
+            inputGuardrails: [guardrail1, guardrail2],
             options: new GuardrailPipelineOptions { FailFast = true });
 
         // Act
@@ -72,7 +73,7 @@ public class GuardrailPipelineTests
         // Assert
         Assert.False(result.IsAllowed);
         Assert.Equal(1, result.GuardrailsExecuted);
-        guardrail2.Verify(g => g.ValidateInputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        await guardrail2.DidNotReceive().ValidateInputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -82,7 +83,7 @@ public class GuardrailPipelineTests
         var guardrail1 = CreateMockGuardrail("Guard1", false, "First failure");
         var guardrail2 = CreateMockGuardrail("Guard2", false, "Second failure");
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail1.Object, guardrail2.Object],
+            inputGuardrails: [guardrail1, guardrail2],
             options: new GuardrailPipelineOptions { FailFast = false });
 
         // Act
@@ -99,7 +100,7 @@ public class GuardrailPipelineTests
         // Arrange
         var guardrail = CreateMockGuardrail("Guard1", false, "Blocked");
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail.Object],
+            inputGuardrails: [guardrail],
             options: new GuardrailPipelineOptions { ThrowOnViolation = true });
 
         // Act & Assert
@@ -114,8 +115,8 @@ public class GuardrailPipelineTests
         var inputGuardrail = CreateMockGuardrail("Input", true);
         var outputGuardrail = CreateMockGuardrail("Output", false, "Output blocked");
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [inputGuardrail.Object],
-            outputGuardrails: [outputGuardrail.Object]);
+            inputGuardrails: [inputGuardrail],
+            outputGuardrails: [outputGuardrail]);
 
         // Act
         var inputResult = await pipeline.ValidateInputAsync("Test");
@@ -133,7 +134,7 @@ public class GuardrailPipelineTests
         var guardrail1 = CreateMockGuardrail("G1", true);
         var guardrail2 = CreateMockGuardrail("G2", true);
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail1.Object, guardrail2.Object]);
+            inputGuardrails: [guardrail1, guardrail2]);
 
         // Assert
         Assert.Equal(2, pipeline.InputGuardrailCount);
@@ -145,7 +146,7 @@ public class GuardrailPipelineTests
         // Arrange
         var guardrail1 = CreateMockGuardrail("G1", true);
         var pipeline = new GuardrailPipeline(
-            outputGuardrails: [guardrail1.Object]);
+            outputGuardrails: [guardrail1]);
 
         // Assert
         Assert.Equal(1, pipeline.OutputGuardrailCount);
@@ -158,7 +159,7 @@ public class GuardrailPipelineTests
         var guardrail1 = CreateMockGuardrailWithViolation("G1", "V1");
         var guardrail2 = CreateMockGuardrailWithViolation("G2", "V2");
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail1.Object, guardrail2.Object],
+            inputGuardrails: [guardrail1, guardrail2],
             options: new GuardrailPipelineOptions { FailFast = false });
 
         // Act
@@ -176,7 +177,7 @@ public class GuardrailPipelineTests
         cts.Cancel();
 
         var guardrail = CreateMockGuardrail("G1", true);
-        var pipeline = new GuardrailPipeline(inputGuardrails: [guardrail.Object]);
+        var pipeline = new GuardrailPipeline(inputGuardrails: [guardrail]);
 
         // Act & Assert
         await Assert.ThrowsAsync<OperationCanceledException>(
@@ -187,13 +188,13 @@ public class GuardrailPipelineTests
     public async Task ValidateInputAsync_GuardrailError_HandledGracefully()
     {
         // Arrange
-        var guardrail = new Mock<IContentGuardrail>();
-        guardrail.Setup(g => g.Name).Returns("ErrorGuard");
-        guardrail.Setup(g => g.ValidateInputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var guardrail = Substitute.For<IContentGuardrail>();
+        guardrail.Name.Returns("ErrorGuard");
+        guardrail.ValidateInputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Guardrail crashed"));
 
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail.Object],
+            inputGuardrails: [guardrail],
             options: new GuardrailPipelineOptions { ThrowOnGuardrailError = false });
 
         // Act
@@ -209,13 +210,13 @@ public class GuardrailPipelineTests
     public async Task ValidateInputAsync_GuardrailError_ThrowsWhenConfigured()
     {
         // Arrange
-        var guardrail = new Mock<IContentGuardrail>();
-        guardrail.Setup(g => g.Name).Returns("ErrorGuard");
-        guardrail.Setup(g => g.ValidateInputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var guardrail = Substitute.For<IContentGuardrail>();
+        guardrail.Name.Returns("ErrorGuard");
+        guardrail.ValidateInputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Guardrail crashed"));
 
         var pipeline = new GuardrailPipeline(
-            inputGuardrails: [guardrail.Object],
+            inputGuardrails: [guardrail],
             options: new GuardrailPipelineOptions { ThrowOnGuardrailError = true });
 
         // Act & Assert
@@ -223,35 +224,35 @@ public class GuardrailPipelineTests
             () => pipeline.ValidateInputAsync("Test"));
     }
 
-    private static Mock<IContentGuardrail> CreateMockGuardrail(string name, bool allowed, string? reason = null)
+    private static IContentGuardrail CreateMockGuardrail(string name, bool allowed, string? reason = null)
     {
-        var mock = new Mock<IContentGuardrail>();
-        mock.Setup(g => g.Name).Returns(name);
+        var mock = Substitute.For<IContentGuardrail>();
+        mock.Name.Returns(name);
 
         var result = allowed
             ? GuardrailResult.Allowed(name)
             : GuardrailResult.Blocked(name, reason ?? "Blocked");
 
-        mock.Setup(g => g.ValidateInputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(result);
-        mock.Setup(g => g.ValidateOutputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(result);
+        mock.ValidateInputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(result);
+        mock.ValidateOutputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(result);
 
         return mock;
     }
 
-    private static Mock<IContentGuardrail> CreateMockGuardrailWithViolation(string name, string violationType)
+    private static IContentGuardrail CreateMockGuardrailWithViolation(string name, string violationType)
     {
-        var mock = new Mock<IContentGuardrail>();
-        mock.Setup(g => g.Name).Returns(name);
+        var mock = Substitute.For<IContentGuardrail>();
+        mock.Name.Returns(name);
 
         var result = GuardrailResult.Blocked(name, "Blocked",
             GuardrailViolation.Create(violationType, "Violation"));
 
-        mock.Setup(g => g.ValidateInputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(result);
-        mock.Setup(g => g.ValidateOutputAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(result);
+        mock.ValidateInputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(result);
+        mock.ValidateOutputAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(result);
 
         return mock;
     }

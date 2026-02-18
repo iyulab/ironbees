@@ -1,25 +1,25 @@
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
 public class HybridAgentSelectorTests
 {
-    private readonly Mock<IEmbeddingProvider> _mockEmbeddingProvider;
+    private readonly IEmbeddingProvider _mockEmbeddingProvider;
 
     public HybridAgentSelectorTests()
     {
-        _mockEmbeddingProvider = new Mock<IEmbeddingProvider>();
-        _mockEmbeddingProvider.Setup(p => p.Dimensions).Returns(384);
-        _mockEmbeddingProvider.Setup(p => p.ModelName).Returns("test-model");
+        _mockEmbeddingProvider = Substitute.For<IEmbeddingProvider>();
+        _mockEmbeddingProvider.Dimensions.Returns(384);
+        _mockEmbeddingProvider.ModelName.Returns("test-model");
     }
 
-    private IAgent CreateTestAgent(
+    private static IAgent CreateTestAgent(
         string name,
         string description,
         List<string>? capabilities = null,
         List<string>? tags = null)
     {
-        var mockAgent = new Mock<IAgent>();
+        var mockAgent = Substitute.For<IAgent>();
         var config = new AgentConfig
         {
             Name = name,
@@ -36,11 +36,11 @@ public class HybridAgentSelectorTests
             Tags = tags ?? new List<string>()
         };
 
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns(description);
-        mockAgent.Setup(a => a.Config).Returns(config);
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns(description);
+        mockAgent.Config.Returns(config);
 
-        return mockAgent.Object;
+        return mockAgent;
     }
 
     private static float[] CreateNormalizedVector(params float[] values)
@@ -57,15 +57,15 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.9f, 0.1f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { codingEmbedding, writingEmbedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { codingEmbedding, writingEmbedding });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var codingAgent = CreateTestAgent(
@@ -100,15 +100,15 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.8f, 0.2f, 0.0f); // Closer to writing embedding
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { codingEmbedding, writingEmbedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { codingEmbedding, writingEmbedding });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Embedding-focused configuration (30/70)
         var hybridSelector = new HybridAgentSelector(
@@ -147,7 +147,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agents = new List<IAgent>();
@@ -166,7 +166,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agent = CreateTestAgent("single-agent", "The only agent");
@@ -187,7 +187,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agents = new List<IAgent>();
@@ -202,7 +202,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agents = new List<IAgent>();
@@ -217,7 +217,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         // Act & Assert
@@ -229,7 +229,7 @@ public class HybridAgentSelectorTests
     public void Constructor_NullKeywordSelector_ThrowsArgumentNullException()
     {
         // Arrange
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(
@@ -252,7 +252,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Act & Assert
         Assert.Throws<ArgumentException>(
@@ -264,7 +264,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Act & Assert
         Assert.Throws<ArgumentException>(
@@ -276,7 +276,7 @@ public class HybridAgentSelectorTests
     {
         // Arrange
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Act & Assert
         Assert.Throws<ArgumentException>(
@@ -293,15 +293,15 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.7f, 0.3f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding1, embedding2 });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding1, embedding2 });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
@@ -323,15 +323,15 @@ public class HybridAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding, CreateNormalizedVector(0.0f, 1.0f, 0.0f) });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding, CreateNormalizedVector(0.0f, 1.0f, 0.0f) });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agent1 = CreateTestAgent("agent-1", "Coding expert",
@@ -389,15 +389,15 @@ public class HybridAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding, embedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding, embedding });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var config = HybridSelectorConfig.KeywordFocused;
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector, config);
 
@@ -423,15 +423,15 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding1, embedding2 });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding1, embedding2 });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agent1 = CreateTestAgent("best-agent", "Best agent");
@@ -453,15 +453,15 @@ public class HybridAgentSelectorTests
         var embedding2 = CreateNormalizedVector(0.0f, 1.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding1);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding1);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding1, embedding2 });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding1, embedding2 });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
@@ -487,15 +487,15 @@ public class HybridAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding, embedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding, embedding });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Weights sum to 2.0, should be normalized to 0.5/0.5
         var hybridSelector = new HybridAgentSelector(

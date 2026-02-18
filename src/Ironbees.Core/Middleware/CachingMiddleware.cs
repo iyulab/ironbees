@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -19,7 +20,7 @@ namespace Ironbees.Core.Middleware;
 /// - Reducing latency for common requests
 /// Note: Streaming responses are not cached.
 /// </remarks>
-public sealed class CachingMiddleware : DelegatingChatClient
+public sealed partial class CachingMiddleware : DelegatingChatClient
 {
     private readonly IMemoryCache _cache;
     private readonly ILogger<CachingMiddleware> _logger;
@@ -61,7 +62,10 @@ public sealed class CachingMiddleware : DelegatingChatClient
         // Try to get from cache
         if (_cache.TryGetValue(cacheKey, out ChatResponse? cachedResponse) && cachedResponse != null)
         {
-            _logger.LogDebug("Cache hit for key: {CacheKey}", cacheKey[..Math.Min(32, cacheKey.Length)]);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogCacheHit(_logger, cacheKey[..Math.Min(32, cacheKey.Length)]);
+            }
             return cachedResponse;
         }
 
@@ -83,7 +87,10 @@ public sealed class CachingMiddleware : DelegatingChatClient
             }
 
             _cache.Set(cacheKey, response, cacheOptions);
-            _logger.LogDebug("Cached response for key: {CacheKey}", cacheKey[..Math.Min(32, cacheKey.Length)]);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogCachedResponse(_logger, cacheKey[..Math.Min(32, cacheKey.Length)]);
+            }
         }
 
         return response;
@@ -130,7 +137,7 @@ public sealed class CachingMiddleware : DelegatingChatClient
         return true;
     }
 
-    private string GenerateCacheKey(IEnumerable<ChatMessage> messages, ChatOptions? options)
+    private static string GenerateCacheKey(IEnumerable<ChatMessage> messages, ChatOptions? options)
     {
         var keyBuilder = new StringBuilder();
 
@@ -141,12 +148,12 @@ public sealed class CachingMiddleware : DelegatingChatClient
         // Include relevant options that affect output
         if (options?.Temperature.HasValue == true)
         {
-            keyBuilder.Append($"temp:{options.Temperature.Value}|");
+            keyBuilder.Append(CultureInfo.InvariantCulture, $"temp:{options.Temperature.Value}|");
         }
 
         if (options?.MaxOutputTokens.HasValue == true)
         {
-            keyBuilder.Append($"max:{options.MaxOutputTokens.Value}|");
+            keyBuilder.Append(CultureInfo.InvariantCulture, $"max:{options.MaxOutputTokens.Value}|");
         }
 
         // Include messages
@@ -163,6 +170,12 @@ public sealed class CachingMiddleware : DelegatingChatClient
         var hashBytes = SHA256.HashData(keyBytes);
         return Convert.ToHexStringLower(hashBytes);
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Cache hit for key: {CacheKey}")]
+    private static partial void LogCacheHit(ILogger logger, string cacheKey);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Cached response for key: {CacheKey}")]
+    private static partial void LogCachedResponse(ILogger logger, string cacheKey);
 
     private static long EstimateResponseSize(ChatResponse response)
     {
@@ -203,7 +216,7 @@ public sealed class CachingOptions
     /// <summary>
     /// Sliding expiration time in seconds. Set to 0 to disable. Default is 0.
     /// </summary>
-    public int SlidingExpirationSeconds { get; set; } = 0;
+    public int SlidingExpirationSeconds { get; set; }
 
     /// <summary>
     /// Only cache responses from deterministic requests (temperature = 0). Default is true.

@@ -1,18 +1,18 @@
 using Ironbees.Core;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
 [Trait("Category", "Integration")]
 public class KeywordAgentSelectorEnhancedTests
 {
-    private IAgent CreateTestAgent(
+    private static IAgent CreateTestAgent(
         string name,
         string description,
         List<string>? capabilities = null,
         List<string>? tags = null)
     {
-        var mockAgent = new Mock<IAgent>();
+        var mockAgent = Substitute.For<IAgent>();
         var config = new AgentConfig
         {
             Name = name,
@@ -29,11 +29,11 @@ public class KeywordAgentSelectorEnhancedTests
             Tags = tags ?? new List<string>()
         };
 
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns(description);
-        mockAgent.Setup(a => a.Config).Returns(config);
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns(description);
+        mockAgent.Config.Returns(config);
 
-        return mockAgent.Object;
+        return mockAgent;
     }
 
     [Fact]
@@ -219,12 +219,7 @@ public class KeywordAgentSelectorEnhancedTests
         Assert.Equal("security-agent", result3.SelectedAgent?.Name);
     }
 
-    // NOTE: Temporarily skipped after .NET 10 upgrade (2025-11-18)
-    // TODO: Complex query selects backend-agent instead of fullstack-agent
-    // Expected: fullstack-agent (has both C# and React skills)
-    // Actual: backend-agent (only has API skills)
-    // Investigate why TF-IDF/keyword matching favors narrower backend-agent
-    [Fact(Skip = "Skipped after .NET 10 upgrade - investigate agent selection logic for complex queries.")]
+    [Fact]
     public async Task SelectAgentAsync_ComplexQuery_UsesAllEnhancements()
     {
         // Arrange
@@ -249,10 +244,12 @@ public class KeywordAgentSelectorEnhancedTests
             "I'm developing a C# backend API and React frontend for my web application",
             agents);
 
-        // Assert - Should match fullstack-agent with high confidence
+        // Assert - Should match fullstack-agent with meaningful confidence
+        // Geometric mean scoring naturally produces lower absolute scores than simple coverage
+        // but correctly penalizes narrow agents (backend) vs broad agents (fullstack)
         Assert.NotNull(result.SelectedAgent);
         Assert.Equal("fullstack-agent", result.SelectedAgent.Name);
-        Assert.True(result.ConfidenceScore > 0.6);
+        Assert.True(result.ConfidenceScore > 0.4, $"Expected confidence > 0.4, actual: {result.ConfidenceScore:F4}");
     }
 
     [Fact]

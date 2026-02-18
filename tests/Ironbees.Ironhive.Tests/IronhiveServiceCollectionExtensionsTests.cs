@@ -3,7 +3,7 @@ using IronHive.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Ironhive.Tests;
 
@@ -14,14 +14,14 @@ public class IronhiveServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockHiveService = new Mock<IHiveService>();
+        var mockHiveService = Substitute.For<IHiveService>();
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         // Act
         services.AddIronbeesIronhive(options =>
         {
-            options.HiveService = mockHiveService.Object;
+            options.HiveService = mockHiveService;
             options.AgentsDirectory = "./agents";
         });
 
@@ -34,7 +34,7 @@ public class IronhiveServiceCollectionExtensionsTests
 
         // Assert - IHiveService registered
         var hiveService = provider.GetService<IHiveService>();
-        Assert.Same(mockHiveService.Object, hiveService);
+        Assert.Same(mockHiveService, hiveService);
 
         // Assert - ILLMFrameworkAdapter registered as IronhiveAdapter
         var adapter = provider.GetService<ILLMFrameworkAdapter>();
@@ -59,7 +59,7 @@ public class IronhiveServiceCollectionExtensionsTests
         Assert.Throws<ArgumentNullException>(() =>
             services.AddIronbeesIronhive(options =>
             {
-                options.HiveService = new Mock<IHiveService>().Object;
+                options.HiveService = Substitute.For<IHiveService>();
             }));
     }
 
@@ -77,12 +77,12 @@ public class IronhiveServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockHiveService = new Mock<IHiveService>();
+        var mockHiveService = Substitute.For<IHiveService>();
 
         // Act
         services.AddIronbeesIronhive(options =>
         {
-            options.HiveService = mockHiveService.Object;
+            options.HiveService = mockHiveService;
             options.MinimumConfidenceThreshold = 0.8;
         });
 
@@ -98,13 +98,13 @@ public class IronhiveServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockHiveService = new Mock<IHiveService>();
+        var mockHiveService = Substitute.For<IHiveService>();
         services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         services.AddIronbeesIronhive(options =>
         {
-            options.HiveService = mockHiveService.Object;
+            options.HiveService = mockHiveService;
         });
 
         var provider = services.BuildServiceProvider();

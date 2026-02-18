@@ -29,6 +29,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         if (Directory.Exists(_testDirectory))
         {
             Directory.Delete(_testDirectory, recursive: true);
@@ -41,7 +42,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         File.WriteAllText(path, content);
     }
 
-    private GoalDefinition CreateTestGoal(string id = "test-goal") => new()
+    private static GoalDefinition CreateTestGoal(string id = "test-goal") => new()
     {
         Id = id,
         Name = "Test Goal",

@@ -13,8 +13,13 @@ namespace Ironbees.AgentFramework.Workflow;
 /// This class bridges Ironbees' file-based workflow definitions with MAF's workflow execution engine,
 /// adhering to the Thin Wrapper philosophy by delegating execution to MAF.
 /// </summary>
-public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
+public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
 {
+    private static readonly JsonSerializerOptions s_compactJsonOptions = new()
+    {
+        WriteIndented = false
+    };
+
     private readonly IWorkflowConverter _converter;
     private readonly ILogger<MafWorkflowExecutor>? _logger;
 
@@ -42,7 +47,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         ArgumentNullException.ThrowIfNull(agentResolver);
 
-        _logger?.LogInformation("Starting workflow execution for '{WorkflowName}'", definition.Name);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogStartingWorkflowExecution(_logger, definition.Name);
+        }
 
         yield return new WorkflowExecutionEvent
         {
@@ -62,12 +70,15 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         try
         {
             mafWorkflow = await _converter.ConvertAsync(definition, agentResolver, cancellationToken);
-            _logger?.LogDebug("Workflow '{WorkflowName}' converted successfully", definition.Name);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+            {
+                LogWorkflowConverted(_logger, definition.Name);
+            }
         }
         catch (Exception ex)
         {
             conversionException = ex;
-            _logger?.LogError(ex, "Failed to convert workflow '{WorkflowName}'", definition.Name);
+            if (_logger is not null) { LogFailedToConvertWorkflow(_logger, ex, definition.Name); }
         }
 
         // Handle conversion error outside catch block (CS1631 fix)
@@ -102,7 +113,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         ArgumentNullException.ThrowIfNull(workflow);
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
 
-        _logger?.LogDebug("Executing MAF workflow with input length: {InputLength}", input.Length);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogExecutingMafWorkflow(_logger, input.Length);
+        }
 
         // Use a channel to safely yield values from async operations
         // This pattern avoids CS1626 (cannot yield in try block with catch)
@@ -139,7 +153,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                 cancellationToken: cancellationToken);
 
             // Process workflow events from the streaming run
-            await foreach (var evt in streamingRun.WatchStreamAsync().WithCancellation(cancellationToken))
+            await foreach (var evt in streamingRun.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
             {
                 var executionEvent = MapWorkflowEvent(evt);
                 if (executionEvent != null)
@@ -156,7 +170,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger?.LogInformation("Workflow execution was cancelled");
+            if (_logger is not null) { LogWorkflowExecutionCancelled(_logger); }
             await writer.WriteAsync(new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.Error,
@@ -170,7 +184,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error during workflow execution");
+            if (_logger is not null) { LogWorkflowExecutionError(_logger, ex); }
             await writer.WriteAsync(new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.Error,
@@ -192,7 +206,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
     /// Maps MAF WorkflowEvent to Ironbees WorkflowExecutionEvent.
     /// Note: AgentRunUpdateEvent was removed in MAF v1.0.0-preview.260128.1
     /// </summary>
-    private WorkflowExecutionEvent? MapWorkflowEvent(WorkflowEvent evt)
+    private static WorkflowExecutionEvent? MapWorkflowEvent(WorkflowEvent evt)
     {
         return evt switch
         {
@@ -262,9 +276,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         ArgumentNullException.ThrowIfNull(agentResolver);
         ArgumentNullException.ThrowIfNull(checkpointStore);
 
-        _logger?.LogInformation(
-            "Starting checkpointed workflow execution for '{WorkflowName}' with execution ID '{ExecutionId}'",
-            definition.Name, executionId);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogStartingCheckpointedWorkflow(_logger, definition.Name, executionId);
+        }
 
         yield return new WorkflowExecutionEvent
         {
@@ -286,12 +301,15 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         try
         {
             mafWorkflow = await _converter.ConvertAsync(definition, agentResolver, cancellationToken);
-            _logger?.LogDebug("Workflow '{WorkflowName}' converted successfully", definition.Name);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+            {
+                LogWorkflowConverted(_logger, definition.Name);
+            }
         }
         catch (Exception ex)
         {
             conversionException = ex;
-            _logger?.LogError(ex, "Failed to convert workflow '{WorkflowName}'", definition.Name);
+            if (_logger is not null) { LogFailedToConvertWorkflow(_logger, ex, definition.Name); }
         }
 
         if (conversionException != null)
@@ -348,7 +366,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                 cancellationToken: cancellationToken);
 
             // Process workflow events from the streaming run
-            await foreach (var evt in checkpointedRun.Run.WatchStreamAsync().WithCancellation(cancellationToken))
+            await foreach (var evt in checkpointedRun.Run.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
             {
                 var executionEvent = MapWorkflowEvent(evt);
                 if (executionEvent != null)
@@ -371,9 +389,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                     };
 
                     await checkpointStore.SaveAsync(checkpointData, cancellationToken);
-                    _logger?.LogDebug(
-                        "Saved checkpoint '{CheckpointId}' for execution '{ExecutionId}'",
-                        checkpointData.CheckpointId, executionId);
+                    if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                    {
+                        LogSavedCheckpoint(_logger, checkpointData.CheckpointId, executionId);
+                    }
                 }
             }
 
@@ -389,7 +408,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger?.LogInformation("Checkpointed workflow execution was cancelled for '{ExecutionId}'", executionId);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+            {
+                LogCheckpointedWorkflowCancelled(_logger, executionId);
+            }
             await writer.WriteAsync(new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.Error,
@@ -404,7 +426,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Error during checkpointed workflow execution for '{ExecutionId}'", executionId);
+            if (_logger is not null) { LogCheckpointedWorkflowError(_logger, ex, executionId); }
             await writer.WriteAsync(new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.Error,
@@ -441,9 +463,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                 nameof(checkpoint));
         }
 
-        _logger?.LogInformation(
-            "Resuming workflow '{WorkflowName}' from checkpoint '{CheckpointId}' for execution '{ExecutionId}'",
-            checkpoint.WorkflowName, checkpoint.CheckpointId, checkpoint.ExecutionId);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogResumingWorkflow(_logger, checkpoint.WorkflowName, checkpoint.CheckpointId, checkpoint.ExecutionId);
+        }
 
         yield return new WorkflowExecutionEvent
         {
@@ -498,7 +521,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                 cancellationToken: cancellationToken);
 
             // Process workflow events
-            await foreach (var evt in resumedRun.Run.WatchStreamAsync().WithCancellation(cancellationToken))
+            await foreach (var evt in resumedRun.Run.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
             {
                 var executionEvent = MapWorkflowEvent(evt);
                 if (executionEvent != null)
@@ -521,9 +544,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
                     };
 
                     await checkpointStore.SaveAsync(newCheckpointData, cancellationToken);
-                    _logger?.LogDebug(
-                        "Saved checkpoint '{CheckpointId}' during resumed execution",
-                        newCheckpointData.CheckpointId);
+                    if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                    {
+                        LogSavedCheckpointDuringResume(_logger, newCheckpointData.CheckpointId);
+                    }
                 }
             }
 
@@ -540,9 +564,10 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _logger?.LogInformation(
-                "Resumed workflow execution was cancelled for '{ExecutionId}'",
-                checkpoint.ExecutionId);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+            {
+                LogResumedWorkflowCancelled(_logger, checkpoint.ExecutionId);
+            }
             await writer.WriteAsync(new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.Error,
@@ -557,9 +582,7 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex,
-                "Error during resumed workflow execution for '{ExecutionId}'",
-                checkpoint.ExecutionId);
+            if (_logger is not null) { LogResumedWorkflowError(_logger, ex, checkpoint.ExecutionId); }
             await writer.WriteAsync(new WorkflowExecutionEvent
             {
                 Type = WorkflowExecutionEventType.Error,
@@ -578,15 +601,54 @@ public sealed class MafWorkflowExecutor : IMafWorkflowExecutor
         }
     }
 
+    [LoggerMessage(Level = LogLevel.Information, Message = "Starting workflow execution for '{WorkflowName}'")]
+    private static partial void LogStartingWorkflowExecution(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Workflow '{WorkflowName}' converted successfully")]
+    private static partial void LogWorkflowConverted(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to convert workflow '{WorkflowName}'")]
+    private static partial void LogFailedToConvertWorkflow(ILogger logger, Exception exception, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Executing MAF workflow with input length: {InputLength}")]
+    private static partial void LogExecutingMafWorkflow(ILogger logger, int inputLength);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Workflow execution was cancelled")]
+    private static partial void LogWorkflowExecutionCancelled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error during workflow execution")]
+    private static partial void LogWorkflowExecutionError(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Starting checkpointed workflow execution for '{WorkflowName}' with execution ID '{ExecutionId}'")]
+    private static partial void LogStartingCheckpointedWorkflow(ILogger logger, string workflowName, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Saved checkpoint '{CheckpointId}' for execution '{ExecutionId}'")]
+    private static partial void LogSavedCheckpoint(ILogger logger, string checkpointId, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Checkpointed workflow execution was cancelled for '{ExecutionId}'")]
+    private static partial void LogCheckpointedWorkflowCancelled(ILogger logger, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error during checkpointed workflow execution for '{ExecutionId}'")]
+    private static partial void LogCheckpointedWorkflowError(ILogger logger, Exception exception, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Resuming workflow '{WorkflowName}' from checkpoint '{CheckpointId}' for execution '{ExecutionId}'")]
+    private static partial void LogResumingWorkflow(ILogger logger, string workflowName, string checkpointId, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Saved checkpoint '{CheckpointId}' during resumed execution")]
+    private static partial void LogSavedCheckpointDuringResume(ILogger logger, string checkpointId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Resumed workflow execution was cancelled for '{ExecutionId}'")]
+    private static partial void LogResumedWorkflowCancelled(ILogger logger, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error during resumed workflow execution for '{ExecutionId}'")]
+    private static partial void LogResumedWorkflowError(ILogger logger, Exception exception, string executionId);
+
     /// <summary>
     /// Serializes a MAF CheckpointInfo to JSON.
     /// </summary>
     private static string SerializeCheckpoint(CheckpointInfo checkpointInfo)
     {
-        return JsonSerializer.Serialize(checkpointInfo, new JsonSerializerOptions
-        {
-            WriteIndented = false
-        });
+        return JsonSerializer.Serialize(checkpointInfo, s_compactJsonOptions);
     }
 
     /// <summary>

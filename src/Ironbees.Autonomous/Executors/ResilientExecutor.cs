@@ -116,6 +116,7 @@ public class ResilientExecutor<TRequest, TResult> : ITaskExecutor<TRequest, TRes
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _inner.DisposeAsync();
     }
 }

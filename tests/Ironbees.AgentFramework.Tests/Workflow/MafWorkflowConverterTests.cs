@@ -4,7 +4,7 @@ using Ironbees.AgentMode.Workflow;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.AgentFramework.Tests.Workflow;
 
@@ -15,13 +15,13 @@ namespace Ironbees.AgentFramework.Tests.Workflow;
 /// </summary>
 public class MafWorkflowConverterTests
 {
-    private readonly Mock<ILogger<MafWorkflowConverter>> _mockLogger;
+    private readonly ILogger<MafWorkflowConverter> _mockLogger;
     private readonly MafWorkflowConverter _converter;
 
     public MafWorkflowConverterTests()
     {
-        _mockLogger = new Mock<ILogger<MafWorkflowConverter>>();
-        _converter = new MafWorkflowConverter(_mockLogger.Object);
+        _mockLogger = Substitute.For<ILogger<MafWorkflowConverter>>();
+        _converter = new MafWorkflowConverter(_mockLogger);
     }
 
     #region Validation Error Tests (WFC001-WFC008)
@@ -566,10 +566,10 @@ public class MafWorkflowConverterTests
     public void Constructor_WithLogger_AcceptsLogger()
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<MafWorkflowConverter>>();
+        var mockLogger = Substitute.For<ILogger<MafWorkflowConverter>>();
 
         // Act
-        var converter = new MafWorkflowConverter(mockLogger.Object);
+        var converter = new MafWorkflowConverter(mockLogger);
 
         // Assert
         Assert.NotNull(converter);
@@ -799,15 +799,18 @@ public class MafWorkflowConverterTests
         };
     }
 
+    // CA1859 suppressed: Return type must remain AIAgent for Task.FromResult<AIAgent> covariance at call sites.
+#pragma warning disable CA1859
     private static AIAgent CreateMockAgent(string name)
+#pragma warning restore CA1859
     {
         // Create a real ChatClientAgent with a mock IChatClient
         // This is the recommended way to create AIAgent instances for testing
-        var mockChatClient = new Mock<IChatClient>();
+        var mockChatClient = Substitute.For<IChatClient>();
 
         // Create ChatClientAgent using constructor (MAF v1.0.0-preview.260128.1+)
         return new ChatClientAgent(
-            mockChatClient.Object,
+            mockChatClient,
             instructions: $"Test instructions for {name}",
             name: name);
     }

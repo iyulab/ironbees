@@ -3,6 +3,7 @@ using OpenAI;
 using OpenAI.Chat;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable CA1716 // Identifiers should not match keywords — "Shared" is the established project name
 namespace Ironbees.Samples.Shared;
 
 /// <summary>
@@ -85,7 +86,7 @@ public class GpuStackAdapter : ILLMFrameworkAdapter
 /// <summary>
 /// Wrapper for GPU-Stack-based agents
 /// </summary>
-internal class GpuStackAgentWrapper : IAgent
+internal sealed class GpuStackAgentWrapper : IAgent
 {
     private readonly AgentConfig _config;
     private readonly ChatClient _client;

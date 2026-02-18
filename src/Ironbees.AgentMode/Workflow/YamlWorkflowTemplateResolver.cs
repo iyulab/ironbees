@@ -1,6 +1,7 @@
 // Copyright (c) IYULab. All rights reserved.
 // Licensed under the MIT License.
 
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Ironbees.Core.Goals;
 
@@ -202,7 +203,7 @@ public partial class YamlWorkflowTemplateResolver : IWorkflowTemplateResolver
         return Path.Combine(_templatesDirectory, name);
     }
 
-    private Dictionary<string, object> BuildParametersFromGoal(GoalDefinition goal)
+    private static Dictionary<string, object> BuildParametersFromGoal(GoalDefinition goal)
     {
         var parameters = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
@@ -297,7 +298,7 @@ public partial class YamlWorkflowTemplateResolver : IWorkflowTemplateResolver
         {
             bool b => b.ToString().ToLowerInvariant(),
             DateTime dt => dt.ToString("O"),
-            TimeSpan ts => ts.TotalMinutes.ToString("F2"),
+            TimeSpan ts => ts.TotalMinutes.ToString("F2", CultureInfo.InvariantCulture),
             IEnumerable<string> list => string.Join(",", list),
             _ => value.ToString() ?? ""
         };
@@ -344,7 +345,7 @@ public class YamlWorkflowTemplateResolverOptions
     /// Use default value for missing parameters instead of keeping placeholder.
     /// Only applies when StrictMode is false.
     /// </summary>
-    public bool UseDefaultForMissing { get; set; } = false;
+    public bool UseDefaultForMissing { get; set; }
 
     /// <summary>
     /// Default value to use for missing parameters.

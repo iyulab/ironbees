@@ -17,7 +17,7 @@ namespace Ironbees.AgentFramework.Goals;
 /// Bridges goal definitions to MAF workflow execution.
 /// Implements the "Thin Wrapper" philosophy: declaration in Ironbees, execution delegated to MAF.
 /// </summary>
-public sealed class GoalExecutionBridge : IGoalExecutionBridge
+public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
 {
     private readonly IGoalLoader _goalLoader;
     private readonly IWorkflowTemplateResolver _templateResolver;
@@ -67,8 +67,10 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
         options ??= GoalExecutionOptions.Default;
         var executionId = options.ExecutionId ?? $"goal-exec-{Guid.NewGuid():N}";
 
-        _logger?.LogInformation("Starting goal execution for '{GoalId}' with execution ID '{ExecutionId}'",
-            goalId, executionId);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogStartingGoalExecution(_logger, goalId, executionId);
+        }
 
         // Load the goal
         GoalDefinition? goal = null;
@@ -85,12 +87,12 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
         }
         catch (GoalNotFoundException ex)
         {
-            _logger?.LogWarning(ex, "Goal '{GoalId}' not found", goalId);
+            if (_logger is not null) { LogGoalNotFound(_logger, ex, goalId); }
             loadError = CreateErrorEvent(goalId, executionId, "GOAL_NOT_FOUND", ex);
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Failed to load goal '{GoalId}'", goalId);
+            if (_logger is not null) { LogFailedToLoadGoal(_logger, ex, goalId); }
             loadError = CreateErrorEvent(goalId, executionId, "GOAL_LOAD_FAILED", ex);
         }
 
@@ -171,18 +173,19 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
                     goal,
                     cancellationToken);
 
-                _logger?.LogDebug("Resolved workflow template '{Template}' for goal '{GoalId}'",
-                    goal.WorkflowTemplate, goal.Id);
+                if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogResolvedWorkflowTemplate(_logger, goal.WorkflowTemplate, goal.Id);
+                }
             }
             catch (WorkflowTemplateNotFoundException ex)
             {
-                _logger?.LogError(ex, "Workflow template '{Template}' not found for goal '{GoalId}'",
-                    goal.WorkflowTemplate, goal.Id);
+                if (_logger is not null) { LogWorkflowTemplateNotFound(_logger, ex, goal.WorkflowTemplate, goal.Id); }
                 templateError = CreateErrorEvent(goal.Id, executionId, "TEMPLATE_NOT_FOUND", ex);
             }
             catch (WorkflowTemplateResolutionException ex)
             {
-                _logger?.LogError(ex, "Failed to resolve workflow template for goal '{GoalId}'", goal.Id);
+                if (_logger is not null) { LogWorkflowTemplateResolutionFailed(_logger, ex, goal.Id); }
                 templateError = CreateErrorEvent(goal.Id, executionId, "TEMPLATE_RESOLUTION_FAILED", ex);
             }
 
@@ -294,8 +297,10 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(executionId);
 
-        _logger?.LogInformation("Resuming goal execution '{ExecutionId}' from checkpoint '{CheckpointId}'",
-            executionId, checkpointId ?? "latest");
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogResumingGoalExecution(_logger, executionId, checkpointId ?? "latest");
+        }
 
         // Get checkpoint
         CheckpointData? checkpoint;
@@ -320,8 +325,7 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
         if (goal == null)
         {
             // Try to load by workflow name match
-            _logger?.LogWarning("Could not find goal for checkpoint workflow '{WorkflowName}'",
-                checkpoint.WorkflowName);
+            if (_logger is not null) { LogGoalNotFoundForCheckpoint(_logger, checkpoint.WorkflowName); }
             yield return CreateErrorEvent("unknown", executionId, "GOAL_NOT_FOUND",
                 $"Could not find goal for checkpoint workflow '{checkpoint.WorkflowName}'");
             yield break;
@@ -384,7 +388,10 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
 
         context.Status = GoalExecutionStatus.Cancelled;
         context.CancellationTokenSource.Cancel();
-        _logger?.LogInformation("Cancelled goal execution '{ExecutionId}'", executionId);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogCancelledGoalExecution(_logger, executionId);
+        }
 
         return Task.FromResult(true);
     }
@@ -469,7 +476,7 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
         }
     }
 
-    private GoalExecutionEvent MapWorkflowEvent(WorkflowExecutionEvent workflowEvent, string goalId, string executionId)
+    private static GoalExecutionEvent MapWorkflowEvent(WorkflowExecutionEvent workflowEvent, string goalId, string executionId)
     {
         var eventType = workflowEvent.Type switch
         {
@@ -541,7 +548,7 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
         };
     }
 
-    private static IDictionary<string, object> MergeParameters(GoalDefinition goal, GoalExecutionOptions options)
+    private static Dictionary<string, object> MergeParameters(GoalDefinition goal, GoalExecutionOptions options)
     {
         var parameters = new Dictionary<string, object>(goal.Parameters);
 
@@ -566,6 +573,33 @@ public sealed class GoalExecutionBridge : IGoalExecutionBridge
         var converter = new MafWorkflowConverter();
         return await converter.ConvertAsync(definition, _agentResolver, cancellationToken);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Starting goal execution for '{GoalId}' with execution ID '{ExecutionId}'")]
+    private static partial void LogStartingGoalExecution(ILogger logger, string goalId, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Goal '{GoalId}' not found")]
+    private static partial void LogGoalNotFound(ILogger logger, Exception exception, string goalId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load goal '{GoalId}'")]
+    private static partial void LogFailedToLoadGoal(ILogger logger, Exception exception, string goalId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Resolved workflow template '{Template}' for goal '{GoalId}'")]
+    private static partial void LogResolvedWorkflowTemplate(ILogger logger, string template, string goalId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Workflow template '{Template}' not found for goal '{GoalId}'")]
+    private static partial void LogWorkflowTemplateNotFound(ILogger logger, Exception exception, string template, string goalId);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to resolve workflow template for goal '{GoalId}'")]
+    private static partial void LogWorkflowTemplateResolutionFailed(ILogger logger, Exception exception, string goalId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Resuming goal execution '{ExecutionId}' from checkpoint '{CheckpointId}'")]
+    private static partial void LogResumingGoalExecution(ILogger logger, string executionId, string checkpointId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not find goal for checkpoint workflow '{WorkflowName}'")]
+    private static partial void LogGoalNotFoundForCheckpoint(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cancelled goal execution '{ExecutionId}'")]
+    private static partial void LogCancelledGoalExecution(ILogger logger, string executionId);
 
     private sealed class ExecutionContext
     {

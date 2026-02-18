@@ -11,7 +11,7 @@ namespace Ironbees.AgentFramework;
 /// <summary>
 /// Adapter for OpenAI-compatible ChatClient (supports both plain OpenAI and Azure OpenAI)
 /// </summary>
-public class AgentFrameworkAdapter : ILLMFrameworkAdapter
+public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
 {
     private readonly OpenAIClient _client;
     private readonly ILogger<AgentFrameworkAdapter> _logger;
@@ -31,22 +31,26 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        _logger.LogInformation("Creating agent '{AgentName}' with model '{Model}'",
-            config.Name,
-            config.Model.Deployment);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            LogCreatingAgent(_logger, config.Name, config.Model.Deployment);
+        }
 
         try
         {
             // Get ChatClient for the specified deployment
             var chatClient = _client.GetChatClient(config.Model.Deployment);
 
-            _logger.LogInformation("Successfully created agent '{AgentName}'", config.Name);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                LogAgentCreated(_logger, config.Name);
+            }
 
             return Task.FromResult<IAgent>(new AgentWrapper(chatClient, config));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create agent '{AgentName}'", config.Name);
+            LogFailedToCreateAgent(_logger, ex, config.Name);
             throw new AgentLoadException($"Failed to create agent '{config.Name}'", ex);
         }
     }
@@ -75,9 +79,10 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
             throw new ArgumentException("Agent must be created by AgentFrameworkAdapter", nameof(agent));
         }
 
-        _logger.LogDebug("Running agent '{AgentName}' with input length {InputLength}",
-            agent.Name,
-            input.Length);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogRunningAgent(_logger, agent.Name, input.Length);
+        }
 
         try
         {
@@ -92,13 +97,16 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
 
             var content = response.Value.Content[0].Text;
 
-            _logger.LogDebug("Agent '{AgentName}' completed successfully", agent.Name);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogAgentCompleted(_logger, agent.Name);
+            }
 
             return content;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error running agent '{AgentName}'", agent.Name);
+            LogErrorRunningAgent(_logger, ex, agent.Name);
             throw new AgentLoadException($"Failed to run agent '{agent.Name}'", ex);
         }
     }
@@ -127,9 +135,10 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
             throw new ArgumentException("Agent must be created by AgentFrameworkAdapter", nameof(agent));
         }
 
-        _logger.LogDebug("Streaming agent '{AgentName}' with input length {InputLength}",
-            agent.Name,
-            input.Length);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogStreamingAgent(_logger, agent.Name, input.Length);
+        }
 
         // Build messages with system prompt, optional history, and user input
         var messages = BuildMessages(wrapper.Config.SystemPrompt, input, conversationHistory);
@@ -151,7 +160,10 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
             }
         }
 
-        _logger.LogDebug("Agent '{AgentName}' streaming completed", agent.Name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogAgentStreamingCompleted(_logger, agent.Name);
+        }
     }
 
     /// <summary>
@@ -182,6 +194,30 @@ public class AgentFrameworkAdapter : ILLMFrameworkAdapter
         messages.Add(new UserChatMessage(input));
         return messages;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Creating agent '{AgentName}' with model '{Model}'")]
+    private static partial void LogCreatingAgent(ILogger logger, string agentName, string model);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Successfully created agent '{AgentName}'")]
+    private static partial void LogAgentCreated(ILogger logger, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to create agent '{AgentName}'")]
+    private static partial void LogFailedToCreateAgent(ILogger logger, Exception exception, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Running agent '{AgentName}' with input length {InputLength}")]
+    private static partial void LogRunningAgent(ILogger logger, string agentName, int inputLength);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Agent '{AgentName}' completed successfully")]
+    private static partial void LogAgentCompleted(ILogger logger, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Error running agent '{AgentName}'")]
+    private static partial void LogErrorRunningAgent(ILogger logger, Exception exception, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Streaming agent '{AgentName}' with input length {InputLength}")]
+    private static partial void LogStreamingAgent(ILogger logger, string agentName, int inputLength);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Agent '{AgentName}' streaming completed")]
+    private static partial void LogAgentStreamingCompleted(ILogger logger, string agentName);
 
     /// <summary>
     /// Builds ChatCompletionOptions from model configuration.

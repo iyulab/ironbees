@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ironbees.Autonomous.Abstractions;
 using Ironbees.Autonomous.Configuration;
 using Ironbees.Autonomous.Executors;
@@ -35,7 +36,7 @@ public class AiQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
         // Use SDK's PromptTemplateBuilder
         _systemPrompt = PromptTemplateBuilder.BuildAgentPrompt(agent, new Dictionary<string, string>
         {
-            ["max_questions"] = gameConfig.Rules.MaxQuestions.ToString(),
+            ["max_questions"] = gameConfig.Rules.MaxQuestions.ToString(CultureInfo.InvariantCulture),
             ["game_name"] = gameConfig.Name
         });
 
@@ -240,13 +241,17 @@ public class AiQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
     {
         RequestId = request.RequestId,
         Success = !isGuess, // Fallback questions are not "successful" LLM calls
-        Output = $@"{{""question"": ""{content}"", ""is_guess"": {isGuess.ToString().ToLower()}}}",
+        Output = $@"{{""question"": ""{content}"", ""is_guess"": {isGuess.ToString().ToLowerInvariant()}}}",
         Content = content,
         IsGuess = isGuess,
         Reasoning = isGuess ? "Fallback guess" : "Fallback question"
     };
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
+    }
 }
 
 /// <summary>
@@ -411,7 +416,7 @@ public class HumanQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
         var remaining = _config.Rules.MaxQuestions - request.QuestionNumber + 1;
 
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"\n{_config.Prompts.QuestionsRemaining.Replace("{remaining}", remaining.ToString())}");
+        Console.WriteLine($"\n{_config.Prompts.QuestionsRemaining.Replace("{remaining}", remaining.ToString(CultureInfo.InvariantCulture))}");
         Console.ResetColor();
 
         if (request.History.Count > 0)
@@ -449,7 +454,7 @@ public class HumanQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
                 break;
         }
 
-        if (!isGuess && !content.EndsWith("?"))
+        if (!isGuess && !content.EndsWith('?'))
             content += "?";
 
         onOutput?.Invoke(new TaskOutput { RequestId = request.RequestId, Type = TaskOutputType.Output, Content = content });
@@ -471,7 +476,7 @@ public class HumanQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
 
         foreach (var pattern in _config.Validation.InvalidPatterns.All)
         {
-            if (lower.StartsWith(pattern) || lower.Contains($" {pattern}"))
+            if (lower.StartsWith(pattern, StringComparison.Ordinal) || lower.Contains($" {pattern}", StringComparison.Ordinal))
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine($"⚠️  {_config.Validation.Messages.OpenEnded}");
@@ -484,7 +489,11 @@ public class HumanQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
         return true;
     }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
+    }
 }
 
 /// <summary>

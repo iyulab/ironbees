@@ -105,6 +105,7 @@ Console.WriteLine($"Total Iterations: {orchestrator.Status.CurrentIteration}");
 // ============================================================================
 // Simple Implementations
 // ============================================================================
+#pragma warning disable CA1050 // Declare types in namespaces — top-level statements sample file
 public record SimpleRequest(string RequestId, string Prompt) : ITaskRequest;
 
 public record SimpleResult(string RequestId, string Output, bool Success, string? ErrorOutput = null) : ITaskResult;
@@ -114,7 +115,7 @@ public record SimpleResult(string RequestId, string Output, bool Success, string
 /// </summary>
 public class SimpleExecutor : ITaskExecutor<SimpleRequest, SimpleResult>
 {
-    private static int _iteration = 0;
+    private static int _iteration;
 
     public async Task<SimpleResult> ExecuteAsync(
         SimpleRequest request,
@@ -145,7 +146,11 @@ public class SimpleExecutor : ITaskExecutor<SimpleRequest, SimpleResult>
             Success: true);
     }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
+    }
 }
 
 /// <summary>
@@ -156,7 +161,7 @@ public class SimpleOracle : IOracleVerifier
     public bool IsConfigured => true;
 
     public async Task<OracleVerdict> VerifyAsync(
-        string originalGoal,
+        string originalPrompt,
         string executionOutput,
         OracleConfig? config = null,
         CancellationToken cancellationToken = default)

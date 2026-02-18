@@ -15,7 +15,7 @@ namespace Ironbees.Core.Middleware;
 /// automatically track all token consumption for cost monitoring
 /// and optimization purposes.
 /// </remarks>
-public sealed class TokenTrackingMiddleware : DelegatingChatClient
+public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
 {
     private readonly ITokenUsageStore _store;
     private readonly ILogger<TokenTrackingMiddleware> _logger;
@@ -107,7 +107,7 @@ public sealed class TokenTrackingMiddleware : DelegatingChatClient
     {
         if (response.Usage == null)
         {
-            _logger.LogDebug("No usage information in response, skipping token tracking");
+            LogNoUsageInformation(_logger);
             return;
         }
 
@@ -180,17 +180,26 @@ public sealed class TokenTrackingMiddleware : DelegatingChatClient
 
             if (_options.LogUsage)
             {
-                _logger.LogInformation(
-                    "Token usage recorded: Model={ModelId}, Input={InputTokens}, Output={OutputTokens}, Total={TotalTokens}",
-                    usage.ModelId, usage.InputTokens, usage.OutputTokens, usage.TotalTokens);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    LogTokenUsageRecorded(_logger, usage.ModelId, usage.InputTokens, usage.OutputTokens, usage.TotalTokens);
+                }
             }
         }
         catch (Exception ex)
         {
             // Don't fail the request if recording fails
-            _logger.LogWarning(ex, "Failed to record token usage");
+            LogTokenUsageRecordingFailed(_logger, ex);
         }
     }
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No usage information in response, skipping token tracking")]
+    private static partial void LogNoUsageInformation(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Token usage recorded: Model={ModelId}, Input={InputTokens}, Output={OutputTokens}, Total={TotalTokens}")]
+    private static partial void LogTokenUsageRecorded(ILogger logger, string modelId, long inputTokens, long outputTokens, long totalTokens);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to record token usage")]
+    private static partial void LogTokenUsageRecordingFailed(ILogger logger, Exception exception);
 }
 
 /// <summary>
@@ -201,7 +210,7 @@ public sealed class TokenTrackingOptions
     /// <summary>
     /// Whether to log token usage information. Default is false.
     /// </summary>
-    public bool LogUsage { get; set; } = false;
+    public bool LogUsage { get; set; }
 
     /// <summary>
     /// Whether to include additional request metadata in usage records. Default is true.
@@ -212,5 +221,5 @@ public sealed class TokenTrackingOptions
     /// Whether to calculate and record estimated costs using TokenMeter. Default is false.
     /// Requires an <see cref="ICostCalculator"/> to be provided.
     /// </summary>
-    public bool EnableCostTracking { get; set; } = false;
+    public bool EnableCostTracking { get; set; }
 }

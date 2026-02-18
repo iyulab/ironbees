@@ -1,65 +1,68 @@
 using Ironbees.Core.Conversation;
 using Microsoft.Extensions.AI;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
 public class AgentOrchestratorConversationTests
 {
+    private static readonly string[] ExpectedStreamChunks = ["Hi", " there", "!"];
+
     private static AgentOrchestrator CreateOrchestrator(
-        Mock<IAgentRegistry>? registry = null,
-        Mock<ILLMFrameworkAdapter>? adapter = null,
-        Mock<IAgentSelector>? selector = null,
-        Mock<IConversationStore>? conversationStore = null)
+        IAgentRegistry? registry = null,
+        ILLMFrameworkAdapter? adapter = null,
+        IAgentSelector? selector = null,
+        IConversationStore? conversationStore = null)
     {
-        var mockLoader = new Mock<IAgentLoader>();
-        registry ??= new Mock<IAgentRegistry>();
-        adapter ??= new Mock<ILLMFrameworkAdapter>();
-        selector ??= new Mock<IAgentSelector>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        registry ??= Substitute.For<IAgentRegistry>();
+        adapter ??= Substitute.For<ILLMFrameworkAdapter>();
+        selector ??= Substitute.For<IAgentSelector>();
 
         return new AgentOrchestrator(
-            mockLoader.Object,
-            registry.Object,
-            adapter.Object,
-            selector.Object,
+            mockLoader,
+            registry,
+            adapter,
+            selector,
             agentsDirectory: null,
-            conversationStore: conversationStore?.Object);
+            conversationStore: conversationStore);
     }
 
-    private static Mock<IAgent> CreateMockAgent(string name = "test-agent")
+    private static IAgent CreateMockAgent(string name = "test-agent")
     {
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns($"Description for {name}");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns($"Description for {name}");
         return mockAgent;
     }
 
-    private static void SetupRegistryWithAgent(Mock<IAgentRegistry> registry, Mock<IAgent> agent)
+    private static void SetupRegistryWithAgent(IAgentRegistry registry, IAgent agent)
     {
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { agent.Object.Name });
-        registry.Setup(r => r.Get(agent.Object.Name)).Returns(agent.Object);
+        var agentName = agent.Name;
+        registry.ListAgents().Returns(new List<string> { agentName });
+        registry.GetAgent(agentName).Returns(agent);
     }
 
-    private static void SetupSelectorForAgent(Mock<IAgentSelector> selector, Mock<IAgent> agent, double score = 0.9)
+    private static void SetupSelectorForAgent(IAgentSelector selector, IAgent agent, double score = 0.9)
     {
-        selector.Setup(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        selector.SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
-                SelectedAgent = agent.Object,
+                SelectedAgent = agent,
                 ConfidenceScore = score,
                 SelectionReason = "Test selection"
             });
 
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = agent.Object, Score = score }
+                new() { Agent = agent, Score = score }
             });
     }
 
@@ -67,24 +70,24 @@ public class AgentOrchestratorConversationTests
     public async Task ProcessAsync_WithConversationId_SavesMessages()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
         var agent = CreateMockAgent();
 
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        adapter.Setup(a => a.RunAsync(
-            agent.Object,
+        adapter.RunAsync(
+            agent,
             "Hello",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Hi there!");
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Hi there!");
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversationState?)null);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns((ConversationState?)null);
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -94,8 +97,8 @@ public class AgentOrchestratorConversationTests
 
         // Assert
         Assert.Equal("Hi there!", result);
-        conversationStore.Verify(s => s.SaveAsync(
-            It.Is<ConversationState>(cs =>
+        await conversationStore.Received(1).SaveAsync(
+            Arg.Is<ConversationState>(cs =>
                 cs.ConversationId == "conv-1" &&
                 cs.AgentName == "test-agent" &&
                 cs.Messages.Count == 2 &&
@@ -103,18 +106,17 @@ public class AgentOrchestratorConversationTests
                 cs.Messages[0].Content == "Hello" &&
                 cs.Messages[1].Role == "assistant" &&
                 cs.Messages[1].Content == "Hi there!"),
-            It.IsAny<CancellationToken>()),
-            Times.Once);
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ProcessAsync_WithConversationId_LoadsHistory()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
         var agent = CreateMockAgent();
 
         SetupRegistryWithAgent(registry, agent);
@@ -131,18 +133,20 @@ public class AgentOrchestratorConversationTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
         IReadOnlyList<ChatMessage>? capturedHistory = null;
-        adapter.Setup(a => a.RunAsync(
-            agent.Object,
+        adapter.RunAsync(
+            agent,
             "Tell me more",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .Callback<IAgent, string, IReadOnlyList<ChatMessage>?, CancellationToken>(
-                (_, _, history, _) => capturedHistory = history)
-            .ReturnsAsync("C# supports OOP, generics, and more.");
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedHistory = callInfo.ArgAt<IReadOnlyList<ChatMessage>?>(2);
+                return "C# supports OOP, generics, and more.";
+            });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -164,21 +168,21 @@ public class AgentOrchestratorConversationTests
     public async Task ProcessAsync_WithoutConversationId_SkipsStore()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
         var agent = CreateMockAgent();
 
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        adapter.Setup(a => a.RunAsync(
-            agent.Object,
+        adapter.RunAsync(
+            agent,
             "Hello",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Hi!");
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Hi!");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions(); // No ConversationId
@@ -188,29 +192,29 @@ public class AgentOrchestratorConversationTests
 
         // Assert
         Assert.Equal("Hi!", result);
-        conversationStore.Verify(s => s.LoadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        conversationStore.Verify(s => s.SaveAsync(It.IsAny<ConversationState>(), It.IsAny<CancellationToken>()), Times.Never);
-        conversationStore.Verify(s => s.AppendMessageAsync(
-            It.IsAny<string>(), It.IsAny<ConversationMessage>(), It.IsAny<CancellationToken>()), Times.Never);
+        await conversationStore.DidNotReceive().LoadAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await conversationStore.DidNotReceive().SaveAsync(Arg.Any<ConversationState>(), Arg.Any<CancellationToken>());
+        await conversationStore.DidNotReceive().AppendMessageAsync(
+            Arg.Any<string>(), Arg.Any<ConversationMessage>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ProcessAsync_WithAgentName_UsesSpecifiedAgent()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
         var agent = CreateMockAgent("specific-agent");
 
-        registry.Setup(r => r.Get("specific-agent")).Returns(agent.Object);
+        registry.GetAgent("specific-agent").Returns(agent);
 
-        adapter.Setup(a => a.RunAsync(
-            agent.Object,
+        adapter.RunAsync(
+            agent,
             "Hello",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Response from specific agent");
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Response from specific agent");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
         var options = new ProcessOptions { AgentName = "specific-agent" };
@@ -221,20 +225,20 @@ public class AgentOrchestratorConversationTests
         // Assert
         Assert.Equal("Response from specific agent", result);
         // Selector should NOT be called when AgentName is provided
-        selector.Verify(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+        await selector.DidNotReceive().ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ProcessAsync_WithMaxHistoryTurns_LimitsHistory()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
         var agent = CreateMockAgent();
 
         SetupRegistryWithAgent(registry, agent);
@@ -255,18 +259,20 @@ public class AgentOrchestratorConversationTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
         IReadOnlyList<ChatMessage>? capturedHistory = null;
-        adapter.Setup(a => a.RunAsync(
-            agent.Object,
+        adapter.RunAsync(
+            agent,
             "Turn 4",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .Callback<IAgent, string, IReadOnlyList<ChatMessage>?, CancellationToken>(
-                (_, _, history, _) => capturedHistory = history)
-            .ReturnsAsync("Response 4");
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedHistory = callInfo.ArgAt<IReadOnlyList<ChatMessage>?>(2);
+                return "Response 4";
+            });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions
@@ -291,23 +297,23 @@ public class AgentOrchestratorConversationTests
     public async Task StreamAsync_WithConversationId_SavesMessages()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
         var agent = CreateMockAgent();
 
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversationState?)null);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns((ConversationState?)null);
 
-        adapter.Setup(a => a.StreamAsync(
-            agent.Object,
+        adapter.StreamAsync(
+            agent,
             "Hello",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
             .Returns(ToAsyncEnumerable("Hi", " there", "!"));
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
@@ -321,16 +327,15 @@ public class AgentOrchestratorConversationTests
         }
 
         // Assert
-        Assert.Equal(new[] { "Hi", " there", "!" }, chunks);
-        conversationStore.Verify(s => s.SaveAsync(
-            It.Is<ConversationState>(cs =>
+        Assert.Equal(ExpectedStreamChunks, chunks);
+        await conversationStore.Received(1).SaveAsync(
+            Arg.Is<ConversationState>(cs =>
                 cs.ConversationId == "conv-1" &&
                 cs.AgentName == "test-agent" &&
                 cs.Messages.Count == 2 &&
                 cs.Messages[0].Content == "Hello" &&
                 cs.Messages[1].Content == "Hi there!"),
-            It.IsAny<CancellationToken>()),
-            Times.Once);
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -346,20 +351,20 @@ public class AgentOrchestratorConversationTests
     public async Task ProcessAsync_WithConversationId_NoConversationStore_SkipsStore()
     {
         // Arrange — orchestrator created WITHOUT conversation store
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
         var agent = CreateMockAgent();
 
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        adapter.Setup(a => a.RunAsync(
-            agent.Object,
+        adapter.RunAsync(
+            agent,
             "Hello",
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Hi!");
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Hi!");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore: null);
         var options = new ProcessOptions { ConversationId = "conv-1" };

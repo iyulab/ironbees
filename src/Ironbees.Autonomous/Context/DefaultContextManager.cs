@@ -305,7 +305,7 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
         }
     }
 
-    private SaturationLevel GetLevel(float percentage) => percentage switch
+    private static SaturationLevel GetLevel(float percentage) => percentage switch
     {
         >= 95 => SaturationLevel.Overflow,
         >= 85 => SaturationLevel.Critical,

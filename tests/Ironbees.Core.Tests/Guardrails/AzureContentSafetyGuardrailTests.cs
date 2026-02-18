@@ -4,7 +4,8 @@
 using Azure;
 using Azure.AI.ContentSafety;
 using Ironbees.Core.Guardrails;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace Ironbees.Core.Tests.Guardrails;
 
@@ -22,8 +23,8 @@ public class AzureContentSafetyGuardrailTests
     public void Name_ReturnsConfiguredName()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object, new AzureContentSafetyGuardrailOptions
+        var mockClient = Substitute.For<ContentSafetyClient>();
+        var guardrail = new AzureContentSafetyGuardrail(mockClient, new AzureContentSafetyGuardrailOptions
         {
             Name = "CustomName"
         });
@@ -36,8 +37,8 @@ public class AzureContentSafetyGuardrailTests
     public void Name_DefaultOptions_ReturnsDefaultName()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object);
+        var mockClient = Substitute.For<ContentSafetyClient>();
+        var guardrail = new AzureContentSafetyGuardrail(mockClient);
 
         // Assert
         Assert.Equal("AzureContentSafety", guardrail.Name);
@@ -47,8 +48,8 @@ public class AzureContentSafetyGuardrailTests
     public async Task ValidateInputAsync_WhenValidateInputDisabled_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object, new AzureContentSafetyGuardrailOptions
+        var mockClient = Substitute.For<ContentSafetyClient>();
+        var guardrail = new AzureContentSafetyGuardrail(mockClient, new AzureContentSafetyGuardrailOptions
         {
             ValidateInput = false
         });
@@ -65,8 +66,8 @@ public class AzureContentSafetyGuardrailTests
     public async Task ValidateOutputAsync_WhenValidateOutputDisabled_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object, new AzureContentSafetyGuardrailOptions
+        var mockClient = Substitute.For<ContentSafetyClient>();
+        var guardrail = new AzureContentSafetyGuardrail(mockClient, new AzureContentSafetyGuardrailOptions
         {
             ValidateOutput = false
         });
@@ -82,8 +83,8 @@ public class AzureContentSafetyGuardrailTests
     public async Task ValidateInputAsync_EmptyContent_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object);
+        var mockClient = Substitute.For<ContentSafetyClient>();
+        var guardrail = new AzureContentSafetyGuardrail(mockClient);
 
         // Act
         var result = await guardrail.ValidateInputAsync("");
@@ -96,8 +97,8 @@ public class AzureContentSafetyGuardrailTests
     public async Task ValidateInputAsync_NullContent_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object);
+        var mockClient = Substitute.For<ContentSafetyClient>();
+        var guardrail = new AzureContentSafetyGuardrail(mockClient);
 
         // Act
         var result = await guardrail.ValidateInputAsync(null!);
@@ -110,12 +111,12 @@ public class AzureContentSafetyGuardrailTests
     public async Task ValidateInputAsync_ServiceError_FailOpenFalse_ReturnsBlocked()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
+        var mockClient = Substitute.For<ContentSafetyClient>();
         mockClient
-            .Setup(c => c.AnalyzeTextAsync(It.IsAny<AnalyzeTextOptions>(), It.IsAny<CancellationToken>()))
+            .AnalyzeTextAsync(Arg.Any<AnalyzeTextOptions>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new RequestFailedException("Service unavailable"));
 
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object, new AzureContentSafetyGuardrailOptions
+        var guardrail = new AzureContentSafetyGuardrail(mockClient, new AzureContentSafetyGuardrailOptions
         {
             FailOpen = false
         });
@@ -134,12 +135,12 @@ public class AzureContentSafetyGuardrailTests
     public async Task ValidateInputAsync_ServiceError_FailOpenTrue_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ContentSafetyClient>();
+        var mockClient = Substitute.For<ContentSafetyClient>();
         mockClient
-            .Setup(c => c.AnalyzeTextAsync(It.IsAny<AnalyzeTextOptions>(), It.IsAny<CancellationToken>()))
+            .AnalyzeTextAsync(Arg.Any<AnalyzeTextOptions>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new RequestFailedException("Service unavailable"));
 
-        var guardrail = new AzureContentSafetyGuardrail(mockClient.Object, new AzureContentSafetyGuardrailOptions
+        var guardrail = new AzureContentSafetyGuardrail(mockClient, new AzureContentSafetyGuardrailOptions
         {
             FailOpen = true
         });

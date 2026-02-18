@@ -83,7 +83,7 @@ public class IntegrationTests
 
         // Act
         registry.Register(config.Name, agent);
-        var retrieved = registry.Get("coding-agent");
+        var retrieved = registry.GetAgent("coding-agent");
 
         // Assert
         Assert.NotNull(retrieved);
@@ -107,7 +107,7 @@ public class IntegrationTests
         throw new InvalidOperationException("Could not find project root (Ironbees.sln or Ironbees.slnx)");
     }
 
-    private class TestAgent : IAgent
+    private sealed class TestAgent : IAgent
     {
         public TestAgent(AgentConfig config)
         {

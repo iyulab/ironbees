@@ -23,6 +23,7 @@ public class FileSystemMessageQueueTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         _queue.Dispose();
         if (System.IO.Directory.Exists(_testRoot))
         {

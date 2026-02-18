@@ -13,7 +13,7 @@ namespace Ironbees.Core.Conversation;
 ///     {conversationId}.json           (if no agent name)
 ///     {agentName}/{conversationId}.json  (if agent name specified)
 /// </summary>
-public sealed class FileSystemConversationStore : IConversationStore
+public sealed partial class FileSystemConversationStore : IConversationStore, IDisposable
 {
     private readonly string _baseDirectory;
     private readonly ILogger<FileSystemConversationStore> _logger;
@@ -68,7 +68,10 @@ public sealed class FileSystemConversationStore : IConversationStore
             var json = JsonSerializer.Serialize(state, _jsonOptions);
             await File.WriteAllTextAsync(filePath, json, cancellationToken);
 
-            _logger.LogDebug("Saved conversation {ConversationId} to {FilePath}", state.ConversationId, filePath);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogSavedConversation(_logger, state.ConversationId, filePath);
+            }
         }
         finally
         {
@@ -90,14 +93,20 @@ public sealed class FileSystemConversationStore : IConversationStore
 
             if (filePath == null || !File.Exists(filePath))
             {
-                _logger.LogDebug("Conversation {ConversationId} not found", conversationId);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogConversationNotFound(_logger, conversationId);
+                }
                 return null;
             }
 
             var json = await File.ReadAllTextAsync(filePath, cancellationToken);
             var state = JsonSerializer.Deserialize<ConversationState>(json, _jsonOptions);
 
-            _logger.LogDebug("Loaded conversation {ConversationId} from {FilePath}", conversationId, filePath);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogLoadedConversation(_logger, conversationId, filePath);
+            }
             return state;
         }
         finally
@@ -119,12 +128,18 @@ public sealed class FileSystemConversationStore : IConversationStore
 
             if (filePath == null || !File.Exists(filePath))
             {
-                _logger.LogDebug("Conversation {ConversationId} not found for deletion", conversationId);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogConversationNotFoundForDeletion(_logger, conversationId);
+                }
                 return false;
             }
 
             File.Delete(filePath);
-            _logger.LogDebug("Deleted conversation {ConversationId}", conversationId);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogDeletedConversation(_logger, conversationId);
+            }
             return true;
         }
         finally
@@ -156,7 +171,10 @@ public sealed class FileSystemConversationStore : IConversationStore
             .Where(id => !string.IsNullOrEmpty(id))
             .ToList();
 
-        _logger.LogDebug("Listed {Count} conversations for agent {AgentName}", conversationIds.Count, agentName ?? "all");
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogListedConversations(_logger, conversationIds.Count, agentName ?? "all");
+        }
         return Task.FromResult<IReadOnlyList<string>>(conversationIds);
     }
 
@@ -212,7 +230,10 @@ public sealed class FileSystemConversationStore : IConversationStore
             }
 
             await SaveInternalAsync(existing, cancellationToken);
-            _logger.LogDebug("Appended message to conversation {ConversationId}", conversationId);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogAppendedMessage(_logger, conversationId);
+            }
         }
         finally
         {
@@ -225,6 +246,14 @@ public sealed class FileSystemConversationStore : IConversationStore
     {
         var state = await LoadAsync(conversationId, cancellationToken);
         return state?.Messages.Count ?? 0;
+    }
+
+    /// <summary>
+    /// Disposes the lock semaphore.
+    /// </summary>
+    public void Dispose()
+    {
+        _lock.Dispose();
     }
 
     private string GetFilePath(string conversationId, string? agentName)
@@ -272,6 +301,27 @@ public sealed class FileSystemConversationStore : IConversationStore
         var json = await File.ReadAllTextAsync(filePath, cancellationToken);
         return JsonSerializer.Deserialize<ConversationState>(json, _jsonOptions);
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Saved conversation {ConversationId} to {FilePath}")]
+    private static partial void LogSavedConversation(ILogger logger, string conversationId, string filePath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Conversation {ConversationId} not found")]
+    private static partial void LogConversationNotFound(ILogger logger, string conversationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Loaded conversation {ConversationId} from {FilePath}")]
+    private static partial void LogLoadedConversation(ILogger logger, string conversationId, string filePath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Conversation {ConversationId} not found for deletion")]
+    private static partial void LogConversationNotFoundForDeletion(ILogger logger, string conversationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Deleted conversation {ConversationId}")]
+    private static partial void LogDeletedConversation(ILogger logger, string conversationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Listed {Count} conversations for agent {AgentName}")]
+    private static partial void LogListedConversations(ILogger logger, int count, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Appended message to conversation {ConversationId}")]
+    private static partial void LogAppendedMessage(ILogger logger, string conversationId);
 
     private async Task SaveInternalAsync(ConversationState state, CancellationToken cancellationToken)
     {

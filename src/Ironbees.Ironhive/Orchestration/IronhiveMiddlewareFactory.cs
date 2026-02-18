@@ -12,7 +12,7 @@ namespace Ironbees.Ironhive.Orchestration;
 /// Factory for creating IronHive middleware instances from Ironbees middleware settings.
 /// Bridges declarative middleware configuration to runtime middleware implementations.
 /// </summary>
-public class IronhiveMiddlewareFactory
+public partial class IronhiveMiddlewareFactory
 {
     private readonly ILogger<IronhiveMiddlewareFactory>? _logger;
 
@@ -46,14 +46,19 @@ public class IronhiveMiddlewareFactory
 
         if (settings.EnableLogging)
         {
-            _logger?.LogDebug("Adding Logging middleware");
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogAddingLoggingMiddleware(_logger);
+            }
             middlewares.Add(new LoggingMiddleware());
         }
 
         if (settings.RateLimit is not null)
         {
-            _logger?.LogDebug("Adding RateLimit middleware: {MaxRequests} requests per {Window}",
-                settings.RateLimit.MaxRequests, settings.RateLimit.Window);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogAddingRateLimitMiddleware(_logger, settings.RateLimit.MaxRequests, settings.RateLimit.Window);
+            }
 
             middlewares.Add(new RateLimitMiddleware(
                 settings.RateLimit.MaxRequests,
@@ -62,8 +67,10 @@ public class IronhiveMiddlewareFactory
 
         if (settings.Bulkhead is not null)
         {
-            _logger?.LogDebug("Adding Bulkhead middleware: MaxConcurrency={MaxConcurrency}, MaxQueue={MaxQueue}",
-                settings.Bulkhead.MaxConcurrency, settings.Bulkhead.MaxQueueSize);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogAddingBulkheadMiddleware(_logger, settings.Bulkhead.MaxConcurrency, settings.Bulkhead.MaxQueueSize);
+            }
 
             middlewares.Add(new BulkheadMiddleware(
                 settings.Bulkhead.MaxConcurrency,
@@ -72,8 +79,10 @@ public class IronhiveMiddlewareFactory
 
         if (settings.CircuitBreaker is not null)
         {
-            _logger?.LogDebug("Adding CircuitBreaker middleware: Threshold={Threshold}, BreakDuration={BreakDuration}",
-                settings.CircuitBreaker.FailureThreshold, settings.CircuitBreaker.BreakDuration);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogAddingCircuitBreakerMiddleware(_logger, settings.CircuitBreaker.FailureThreshold, settings.CircuitBreaker.BreakDuration);
+            }
 
             middlewares.Add(new CircuitBreakerMiddleware(
                 settings.CircuitBreaker.FailureThreshold,
@@ -82,21 +91,50 @@ public class IronhiveMiddlewareFactory
 
         if (settings.Retry is not null)
         {
-            _logger?.LogDebug("Adding Retry middleware: MaxRetries={MaxRetries}, InitialDelay={InitialDelay}",
-                settings.Retry.MaxRetries, settings.Retry.InitialDelay);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogAddingRetryMiddleware(_logger, settings.Retry.MaxRetries, settings.Retry.InitialDelay);
+            }
 
             middlewares.Add(new RetryMiddleware(settings.Retry.MaxRetries));
         }
 
         if (settings.Timeout is not null)
         {
-            _logger?.LogDebug("Adding Timeout middleware: {Timeout}", settings.Timeout.Duration);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogAddingTimeoutMiddleware(_logger, settings.Timeout.Duration);
+            }
 
             middlewares.Add(new TimeoutMiddleware(settings.Timeout.Duration));
         }
 
-        _logger?.LogInformation("Created {Count} middleware instances", middlewares.Count);
+        if (_logger?.IsEnabled(LogLevel.Information) == true)
+        {
+            LogCreatedMiddlewareInstances(_logger, middlewares.Count);
+        }
 
         return middlewares;
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Adding Logging middleware")]
+    private static partial void LogAddingLoggingMiddleware(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Adding RateLimit middleware: {MaxRequests} requests per {Window}")]
+    private static partial void LogAddingRateLimitMiddleware(ILogger logger, int maxRequests, TimeSpan window);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Adding Bulkhead middleware: MaxConcurrency={MaxConcurrency}, MaxQueue={MaxQueue}")]
+    private static partial void LogAddingBulkheadMiddleware(ILogger logger, int maxConcurrency, int maxQueue);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Adding CircuitBreaker middleware: Threshold={Threshold}, BreakDuration={BreakDuration}")]
+    private static partial void LogAddingCircuitBreakerMiddleware(ILogger logger, int threshold, TimeSpan breakDuration);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Adding Retry middleware: MaxRetries={MaxRetries}, InitialDelay={InitialDelay}")]
+    private static partial void LogAddingRetryMiddleware(ILogger logger, int maxRetries, TimeSpan initialDelay);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Adding Timeout middleware: {Timeout}")]
+    private static partial void LogAddingTimeoutMiddleware(ILogger logger, TimeSpan timeout);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Created {Count} middleware instances")]
+    private static partial void LogCreatedMiddlewareInstances(ILogger logger, int count);
 }

@@ -22,7 +22,7 @@ public class EventMapperTests
     public void Map_NullEvent_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            _mapper.Map(null!, GoalId, ExecutionId));
+            OrchestrationEventMapper.Map(null!, GoalId, ExecutionId));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class EventMapperTests
         };
 
         Assert.Throws<ArgumentNullException>(() =>
-            _mapper.Map(evt, null!, ExecutionId));
+            OrchestrationEventMapper.Map(evt, null!, ExecutionId));
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class EventMapperTests
         };
 
         Assert.Throws<ArgumentNullException>(() =>
-            _mapper.Map(evt, GoalId, null!));
+            OrchestrationEventMapper.Map(evt, GoalId, null!));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -81,7 +81,7 @@ public class EventMapperTests
         var evt = new AgentStartedEvent { AgentName = "test-agent" };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -101,7 +101,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -123,7 +123,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -149,7 +149,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -174,7 +174,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -200,7 +200,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -222,7 +222,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -245,7 +245,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);
@@ -271,7 +271,7 @@ public class EventMapperTests
         };
 
         // Act
-        var result = _mapper.Map(evt, GoalId, ExecutionId);
+        var result = OrchestrationEventMapper.Map(evt, GoalId, ExecutionId);
 
         // Assert
         Assert.NotNull(result);

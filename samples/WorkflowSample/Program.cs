@@ -12,7 +12,7 @@ namespace WorkflowSample;
 /// Sample demonstrating MAF Workflow execution with real OpenAI API.
 /// Tests the complete workflow pipeline: YAML -> Conversion -> MAF Execution.
 /// </summary>
-internal class Program
+internal sealed class Program
 {
     private static async Task Main(string[] args)
     {

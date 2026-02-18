@@ -27,7 +27,7 @@ public static class LlmResponseParser
         if (codeBlockStart >= 0)
         {
             var jsonStart = content.IndexOf('\n', codeBlockStart) + 1;
-            var codeBlockEnd = content.IndexOf("```", jsonStart);
+            var codeBlockEnd = content.IndexOf("```", jsonStart, StringComparison.Ordinal);
             if (codeBlockEnd > jsonStart)
             {
                 return content[jsonStart..codeBlockEnd].Trim();
@@ -156,7 +156,7 @@ public static class LlmResponseParser
     {
         var lower = content.ToLowerInvariant();
         return lower.Contains("\"yes\"") ||
-               lower.StartsWith("yes") ||
+               lower.StartsWith("yes", StringComparison.Ordinal) ||
                lower.Contains("\"answer\": \"yes\"") ||
                lower.Contains("\"answer\":\"yes\"");
     }
@@ -168,7 +168,7 @@ public static class LlmResponseParser
     {
         var lower = content.ToLowerInvariant();
         return lower.Contains("\"no\"") ||
-               lower.StartsWith("no") ||
+               lower.StartsWith("no", StringComparison.Ordinal) ||
                lower.Contains("\"answer\": \"no\"") ||
                lower.Contains("\"answer\":\"no\"");
     }

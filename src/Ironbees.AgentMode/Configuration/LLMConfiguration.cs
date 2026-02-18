@@ -37,7 +37,7 @@ public record LLMConfiguration
     /// Temperature for response generation (0.0 - 2.0).
     /// Default: 0.0 (deterministic)
     /// </summary>
-    public float Temperature { get; init; } = 0.0f;
+    public float Temperature { get; init; }
 
     /// <summary>
     /// Maximum output tokens.

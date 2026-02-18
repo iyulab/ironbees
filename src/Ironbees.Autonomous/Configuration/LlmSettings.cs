@@ -54,7 +54,7 @@ public record LlmSettings
     /// <summary>
     /// Enable debug output for API responses
     /// </summary>
-    public bool EnableDebugOutput { get; init; } = false;
+    public bool EnableDebugOutput { get; init; }
 
     /// <summary>
     /// Resolves the API key, expanding environment variable references
@@ -65,7 +65,7 @@ public record LlmSettings
             return string.Empty;
 
         // Support ${VAR_NAME} syntax
-        if (ApiKey.StartsWith("${") && ApiKey.EndsWith("}"))
+        if (ApiKey.StartsWith("${", StringComparison.Ordinal) && ApiKey.EndsWith('}'))
         {
             var varName = ApiKey[2..^1];
             return Environment.GetEnvironmentVariable(varName) ?? string.Empty;
@@ -83,7 +83,7 @@ public record LlmSettings
             return null;
 
         var resolved = Endpoint;
-        if (Endpoint.StartsWith("${") && Endpoint.EndsWith("}"))
+        if (Endpoint.StartsWith("${", StringComparison.Ordinal) && Endpoint.EndsWith('}'))
         {
             var varName = Endpoint[2..^1];
             resolved = Environment.GetEnvironmentVariable(varName) ?? Endpoint;
@@ -100,7 +100,7 @@ public record LlmSettings
         if (string.IsNullOrEmpty(Model))
             return string.Empty;
 
-        if (Model.StartsWith("${") && Model.EndsWith("}"))
+        if (Model.StartsWith("${", StringComparison.Ordinal) && Model.EndsWith('}'))
         {
             var varName = Model[2..^1];
             return Environment.GetEnvironmentVariable(varName) ?? Model;

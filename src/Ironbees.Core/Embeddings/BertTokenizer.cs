@@ -8,6 +8,8 @@ namespace Ironbees.Core.Embeddings;
 /// </summary>
 public class BertTokenizer
 {
+    private static readonly string[] SepTokenArray = ["[SEP]"];
+
     private readonly Dictionary<string, int> _vocab;
     private readonly Dictionary<int, string> _idToToken;
     private readonly int _clsTokenId;
@@ -72,7 +74,7 @@ public class BertTokenizer
         // Truncate if necessary
         if (wordPieceTokens.Count > _maxLength)
         {
-            wordPieceTokens = wordPieceTokens.Take(_maxLength - 1).Concat(new[] { "[SEP]" }).ToList();
+            wordPieceTokens = wordPieceTokens.Take(_maxLength - 1).Concat(SepTokenArray).ToList();
         }
 
         // Convert tokens to IDs
@@ -113,7 +115,7 @@ public class BertTokenizer
         return (inputIds, attentionMasks);
     }
 
-    private List<string> BasicTokenize(string text)
+    private static List<string> BasicTokenize(string text)
     {
         // Convert to lowercase and split by whitespace
         text = text.ToLowerInvariant();

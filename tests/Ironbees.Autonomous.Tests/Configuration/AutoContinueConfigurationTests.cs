@@ -141,16 +141,16 @@ public class AutoContinueConfigurationTests
 }
 
 // Test helpers
-file record MockRequest(string RequestId, string Prompt) : ITaskRequest;
+file sealed record MockRequest(string RequestId, string Prompt) : ITaskRequest;
 
-file record MockResult(string RequestId) : ITaskResult
+file sealed record MockResult(string RequestId) : ITaskResult
 {
     public bool Success => true;
     public string Output => "Test output";
     public string? ErrorOutput => null;
 }
 
-file class MockTaskExecutor : ITaskExecutor<MockRequest, MockResult>
+file sealed class MockTaskExecutor : ITaskExecutor<MockRequest, MockResult>
 {
     public Task<MockResult> ExecuteAsync(MockRequest request, Action<TaskOutput>? onOutput = null, CancellationToken cancellationToken = default)
     {
@@ -383,16 +383,16 @@ public class AutoContinueBehaviorTests
 }
 
 // Behavior test helpers
-file record BehaviorMockRequest(string RequestId, string Prompt) : ITaskRequest;
+file sealed record BehaviorMockRequest(string RequestId, string Prompt) : ITaskRequest;
 
-file record BehaviorMockResult(string RequestId) : ITaskResult
+file sealed record BehaviorMockResult(string RequestId) : ITaskResult
 {
     public bool Success => true;
     public string Output => "Execution output";
     public string? ErrorOutput => null;
 }
 
-file class BehaviorMockExecutor : ITaskExecutor<BehaviorMockRequest, BehaviorMockResult>
+file sealed class BehaviorMockExecutor : ITaskExecutor<BehaviorMockRequest, BehaviorMockResult>
 {
     public int ExecutionCount { get; private set; }
 
@@ -409,7 +409,7 @@ file class BehaviorMockExecutor : ITaskExecutor<BehaviorMockRequest, BehaviorMoc
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
-file class BehaviorMockOracle : IOracleVerifier
+file sealed class BehaviorMockOracle : IOracleVerifier
 {
     private readonly OracleVerdict[] _verdicts;
     private int _callIndex;

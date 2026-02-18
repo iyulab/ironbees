@@ -38,7 +38,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         // Load agent configurations
         var configs = await _loader.LoadAllConfigsAsync(_agentsDirectory, cancellationToken);
 
-        if (!configs.Any())
+        if (configs.Count == 0)
         {
             throw new AgentLoadException("No agents found to load");
         }
@@ -63,7 +63,7 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         // Check results
         var loadedAgents = _registry.ListAgents();
-        if (!loadedAgents.Any())
+        if (loadedAgents.Count == 0)
         {
             throw new AgentLoadException("Failed to load any agents", errors);
         }
@@ -86,7 +86,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         ArgumentException.ThrowIfNullOrWhiteSpace(agentName);
 
-        var agent = _registry.Get(agentName)
+        var agent = _registry.GetAgent(agentName)
             ?? throw new AgentNotFoundException(agentName);
 
         return await _frameworkAdapter.RunAsync(agent, input, cancellationToken);
@@ -160,7 +160,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
 
         var agentNames = _registry.ListAgents();
-        if (agentNames == null || !agentNames.Any())
+        if (agentNames == null || agentNames.Count == 0)
         {
             return new AgentSelectionResult
             {
@@ -173,7 +173,7 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         // Get all agents
         var agents = agentNames
-            .Select(name => _registry.Get(name))
+            .Select(name => _registry.GetAgent(name))
             .Where(agent => agent != null)
             .Cast<IAgent>()
             .ToList();
@@ -191,7 +191,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         ArgumentException.ThrowIfNullOrWhiteSpace(agentName);
 
-        var agent = _registry.Get(agentName)
+        var agent = _registry.GetAgent(agentName)
             ?? throw new AgentNotFoundException(agentName);
 
         return _frameworkAdapter.StreamAsync(agent, input, cancellationToken);
@@ -274,7 +274,7 @@ public class AgentOrchestrator : IAgentOrchestrator
     public IAgent? GetAgent(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        return _registry.Get(name);
+        return _registry.GetAgent(name);
     }
 
     /// <summary>
@@ -289,14 +289,14 @@ public class AgentOrchestrator : IAgentOrchestrator
         // If AgentName is explicitly provided, use it directly
         if (options.AgentName is not null)
         {
-            return _registry.Get(options.AgentName)
+            return _registry.GetAgent(options.AgentName)
                 ?? throw new AgentNotFoundException(options.AgentName);
         }
 
         // Get all agents for scoring
         var agentNames = _registry.ListAgents();
         var agents = agentNames
-            .Select(name => _registry.Get(name))
+            .Select(name => _registry.GetAgent(name))
             .Where(agent => agent != null)
             .Cast<IAgent>()
             .ToList();
@@ -308,7 +308,7 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         // Score all agents
         var scores = await _agentSelector.ScoreAgentsAsync(input, agents, cancellationToken);
-        var bestCandidate = scores.FirstOrDefault();
+        var bestCandidate = scores.Count > 0 ? scores[0] : null;
 
         if (bestCandidate == null)
         {
@@ -337,7 +337,7 @@ public class AgentOrchestrator : IAgentOrchestrator
     /// <summary>
     /// Builds ChatMessage history from conversation state with optional turn limit.
     /// </summary>
-    private static IReadOnlyList<ChatMessage>? BuildHistory(
+    private static List<ChatMessage>? BuildHistory(
         ConversationState? state,
         int? maxHistoryTurns)
     {

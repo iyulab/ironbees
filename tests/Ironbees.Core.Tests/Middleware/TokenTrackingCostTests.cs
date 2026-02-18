@@ -1,18 +1,18 @@
 using Ironbees.Core.Middleware;
 using Microsoft.Extensions.AI;
-using Moq;
+using NSubstitute;
 using TokenMeter;
 
 namespace Ironbees.Core.Tests.Middleware;
 
 public class TokenTrackingCostTests
 {
-    private readonly Mock<IChatClient> _mockInnerClient;
+    private readonly IChatClient _mockInnerClient;
     private readonly InMemoryTokenUsageStore _store;
 
     public TokenTrackingCostTests()
     {
-        _mockInnerClient = new Mock<IChatClient>();
+        _mockInnerClient = Substitute.For<IChatClient>();
         _store = new InMemoryTokenUsageStore();
     }
 
@@ -27,16 +27,16 @@ public class TokenTrackingCostTests
         };
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(
-                It.IsAny<IEnumerable<ChatMessage>>(),
-                It.IsAny<ChatOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .GetResponseAsync(
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<ChatOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(response);
 
         var costCalculator = CostCalculator.Default();
         var options = new TokenTrackingOptions { EnableCostTracking = true };
         var middleware = new TokenTrackingMiddleware(
-            _mockInnerClient.Object, _store, options, costCalculator);
+            _mockInnerClient, _store, options, costCalculator);
 
         // Act
         await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
@@ -63,13 +63,13 @@ public class TokenTrackingCostTests
         };
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(
-                It.IsAny<IEnumerable<ChatMessage>>(),
-                It.IsAny<ChatOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .GetResponseAsync(
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<ChatOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(response);
 
-        var middleware = new TokenTrackingMiddleware(_mockInnerClient.Object, _store);
+        var middleware = new TokenTrackingMiddleware(_mockInnerClient, _store);
 
         // Act
         await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
@@ -91,16 +91,16 @@ public class TokenTrackingCostTests
         };
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(
-                It.IsAny<IEnumerable<ChatMessage>>(),
-                It.IsAny<ChatOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .GetResponseAsync(
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<ChatOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(response);
 
         var costCalculator = CostCalculator.Default();
         var options = new TokenTrackingOptions { EnableCostTracking = false };
         var middleware = new TokenTrackingMiddleware(
-            _mockInnerClient.Object, _store, options, costCalculator);
+            _mockInnerClient, _store, options, costCalculator);
 
         // Act
         await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
@@ -118,7 +118,7 @@ public class TokenTrackingCostTests
         var costCalculator = CostCalculator.Default();
         var options = new TokenTrackingOptions { EnableCostTracking = true };
         var middleware = new TokenTrackingMiddleware(
-            _mockInnerClient.Object, _store, options, costCalculator);
+            _mockInnerClient, _store, options, costCalculator);
 
         for (int i = 0; i < 3; i++)
         {
@@ -129,11 +129,11 @@ public class TokenTrackingCostTests
             };
 
             _mockInnerClient
-                .Setup(c => c.GetResponseAsync(
-                    It.IsAny<IEnumerable<ChatMessage>>(),
-                    It.IsAny<ChatOptions?>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(response);
+                .GetResponseAsync(
+                    Arg.Any<IEnumerable<ChatMessage>>(),
+                    Arg.Any<ChatOptions?>(),
+                    Arg.Any<CancellationToken>())
+                .Returns(response);
 
             await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, $"Hi {i}")]);
         }
@@ -159,16 +159,16 @@ public class TokenTrackingCostTests
         };
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(
-                It.IsAny<IEnumerable<ChatMessage>>(),
-                It.IsAny<ChatOptions?>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
+            .GetResponseAsync(
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<ChatOptions?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(response);
 
         var costCalculator = CostCalculator.Default();
         var options = new TokenTrackingOptions { EnableCostTracking = true };
         var middleware = new TokenTrackingMiddleware(
-            _mockInnerClient.Object, _store, options, costCalculator);
+            _mockInnerClient, _store, options, costCalculator);
 
         // Act
         await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);

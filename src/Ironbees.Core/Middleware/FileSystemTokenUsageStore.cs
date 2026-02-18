@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Ironbees.Core.Middleware;
@@ -97,24 +98,24 @@ public sealed class FileSystemTokenUsageStore : ITokenUsageStore, IDisposable
     /// <inheritdoc/>
     public async Task<IReadOnlyList<TokenUsage>> GetUsageAsync(
         DateTimeOffset from,
-        DateTimeOffset to,
+        DateTimeOffset endTime,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        return await GetAllUsageInternalAsync(from, to, cancellationToken);
+        return await GetAllUsageInternalAsync(from, endTime, cancellationToken);
     }
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<TokenUsage>> GetUsageByAgentAsync(
         string agentName,
         DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? endTime = null,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentException.ThrowIfNullOrWhiteSpace(agentName);
 
-        var allUsage = await GetAllUsageInternalAsync(from, to, cancellationToken);
+        var allUsage = await GetAllUsageInternalAsync(from, endTime, cancellationToken);
         return allUsage
             .Where(u => string.Equals(u.AgentName, agentName, StringComparison.OrdinalIgnoreCase))
             .ToList();
@@ -137,12 +138,12 @@ public sealed class FileSystemTokenUsageStore : ITokenUsageStore, IDisposable
     /// <inheritdoc/>
     public async Task<TokenUsageStatistics> GetStatisticsAsync(
         DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? endTime = null,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var usages = await GetAllUsageInternalAsync(from, to, cancellationToken);
+        var usages = await GetAllUsageInternalAsync(from, endTime, cancellationToken);
 
         var byModel = usages
             .GroupBy(u => u.ModelId)
@@ -172,7 +173,7 @@ public sealed class FileSystemTokenUsageStore : ITokenUsageStore, IDisposable
             ByModel = byModel,
             ByAgent = byAgent,
             From = from,
-            To = to
+            To = endTime
         };
     }
 
@@ -207,7 +208,7 @@ public sealed class FileSystemTokenUsageStore : ITokenUsageStore, IDisposable
 
     /// <inheritdoc/>
     public async Task<int> ClearOlderThanAsync(
-        DateTimeOffset cutoff,
+        DateTimeOffset olderThan,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -217,12 +218,12 @@ public sealed class FileSystemTokenUsageStore : ITokenUsageStore, IDisposable
         await _writeLock.WaitAsync(cancellationToken);
         try
         {
-            var files = await GetUsageFilesAsync(null, cutoff, cancellationToken);
+            var files = await GetUsageFilesAsync(null, olderThan, cancellationToken);
 
             foreach (var file in files)
             {
                 var usage = await ReadUsageFileAsync(file, cancellationToken);
-                if (usage != null && usage.Timestamp < cutoff)
+                if (usage != null && usage.Timestamp < olderThan)
                 {
                     File.Delete(file);
                     _indexedFiles.TryRemove(file, out _);
@@ -280,9 +281,9 @@ public sealed class FileSystemTokenUsageStore : ITokenUsageStore, IDisposable
         var date = usage.Timestamp.UtcDateTime;
         return Path.Combine(
             _rootPath,
-            date.Year.ToString("D4"),
-            date.Month.ToString("D2"),
-            date.Day.ToString("D2"),
+            date.Year.ToString("D4", CultureInfo.InvariantCulture),
+            date.Month.ToString("D2", CultureInfo.InvariantCulture),
+            date.Day.ToString("D2", CultureInfo.InvariantCulture),
             $"{usage.Id}.json");
     }
 

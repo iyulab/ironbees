@@ -13,8 +13,14 @@ namespace TwentyQuestionsSample;
 /// Oracle verifier using OpenAI-compatible API (supports GPUStack, Ollama, vLLM, etc.)
 /// This is a sample implementation - users should implement IOracleVerifier for their specific needs.
 /// </summary>
-public class OpenAIOracleVerifier : IOracleVerifier
+public partial class OpenAIOracleVerifier : IOracleVerifier
 {
+    private static readonly JsonSerializerOptions s_camelCaseJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
     private readonly ChatClient _chatClient;
     private readonly ILogger _logger;
     private readonly OracleConfig _defaultConfig;
@@ -93,7 +99,7 @@ public class OpenAIOracleVerifier : IOracleVerifier
 
         var userPrompt = BuildVerificationPrompt(originalPrompt, executionOutput, config);
 
-        _logger.LogDebug("Sending verification request to oracle");
+        LogSendingVerificationRequest(_logger);
 
         try
         {
@@ -115,7 +121,10 @@ public class OpenAIOracleVerifier : IOracleVerifier
             var response = await _chatClient.CompleteChatAsync(messages, options, cts.Token);
             var content = response.Value.Content[0].Text;
 
-            _logger.LogDebug("Oracle response received: {Content}", content[..Math.Min(200, content.Length)]);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogOracleResponseReceived(_logger, content[..Math.Min(200, content.Length)]);
+            }
 
             var verdict = ParseVerdict(content);
 
@@ -136,12 +145,12 @@ public class OpenAIOracleVerifier : IOracleVerifier
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("Oracle verification timed out");
+            LogOracleVerificationTimedOut(_logger);
             return OracleVerdict.Error("Oracle verification timed out");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Oracle verification failed");
+            LogOracleVerificationFailed(_logger, ex);
             return OracleVerdict.Error($"Oracle error: {ex.Message}");
         }
     }
@@ -174,13 +183,7 @@ public class OpenAIOracleVerifier : IOracleVerifier
                 }
             }
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            var parsed = JsonSerializer.Deserialize<OracleVerdictDto>(json, options);
+            var parsed = JsonSerializer.Deserialize<OracleVerdictDto>(json, s_camelCaseJsonOptions);
             if (parsed == null)
             {
                 return OracleVerdict.Error("Failed to parse oracle response: null result");
@@ -200,6 +203,18 @@ public class OpenAIOracleVerifier : IOracleVerifier
             return OracleVerdict.Error($"Failed to parse oracle JSON response: {ex.Message}");
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Sending verification request to oracle")]
+    private static partial void LogSendingVerificationRequest(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Oracle response received: {Content}")]
+    private static partial void LogOracleResponseReceived(ILogger logger, string content);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Oracle verification timed out")]
+    private static partial void LogOracleVerificationTimedOut(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Oracle verification failed")]
+    private static partial void LogOracleVerificationFailed(ILogger logger, Exception exception);
 
     private sealed record OracleVerdictDto
     {

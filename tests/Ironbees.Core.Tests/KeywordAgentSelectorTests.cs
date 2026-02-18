@@ -1,17 +1,17 @@
 using Ironbees.Core;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
 public class KeywordAgentSelectorTests
 {
-    private IAgent CreateTestAgent(
+    private static IAgent CreateTestAgent(
         string name,
         string description,
         List<string>? capabilities = null,
         List<string>? tags = null)
     {
-        var mockAgent = new Mock<IAgent>();
+        var mockAgent = Substitute.For<IAgent>();
         var config = new AgentConfig
         {
             Name = name,
@@ -28,11 +28,11 @@ public class KeywordAgentSelectorTests
             Tags = tags ?? new List<string>()
         };
 
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns(description);
-        mockAgent.Setup(a => a.Config).Returns(config);
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns(description);
+        mockAgent.Config.Returns(config);
 
-        return mockAgent.Object;
+        return mockAgent;
     }
 
     [Fact]

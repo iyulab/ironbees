@@ -8,7 +8,7 @@ namespace Ironbees.Core.Embeddings;
 /// Downloads and manages ONNX embedding models from Hugging Face.
 /// Handles automatic model download, caching, and version management.
 /// </summary>
-public class ModelDownloader
+public partial class ModelDownloader
 {
     private readonly string _cacheDirectory;
     private readonly HttpClient _httpClient;
@@ -92,7 +92,7 @@ public class ModelDownloader
         }
     }
 
-    private bool IsModelCached(string modelPath)
+    private static bool IsModelCached(string modelPath)
     {
         if (!Directory.Exists(modelPath))
         {
@@ -106,7 +106,10 @@ public class ModelDownloader
 
     private async Task DownloadModelAsync(string modelName, string modelPath, CancellationToken cancellationToken)
     {
-        _logger?.LogInformation("Downloading model '{ModelName}' from Hugging Face...", modelName);
+        if (_logger?.IsEnabled(LogLevel.Information) == true)
+        {
+            LogDownloadingModel(_logger, modelName);
+        }
 
         // Create model directory
         Directory.CreateDirectory(modelPath);
@@ -121,7 +124,10 @@ public class ModelDownloader
             await DownloadFileAsync(repoId, "tokenizer.json", Path.Combine(modelPath, "tokenizer.json"), cancellationToken);
             await DownloadFileAsync(repoId, "config.json", Path.Combine(modelPath, "config.json"), cancellationToken);
 
-            _logger?.LogInformation("Model '{ModelName}' downloaded successfully to: {ModelPath}", modelName, modelPath);
+            if (_logger?.IsEnabled(LogLevel.Information) == true)
+            {
+                LogModelDownloaded(_logger, modelName, modelPath);
+            }
         }
         catch (Exception ex)
         {
@@ -138,7 +144,10 @@ public class ModelDownloader
     {
         var url = $"https://huggingface.co/{repoId}/resolve/main/{fileName}";
 
-        _logger?.LogDebug("Downloading {FileName}...", fileName);
+        if (_logger?.IsEnabled(LogLevel.Debug) == true)
+        {
+            LogDownloadingFile(_logger, fileName);
+        }
 
         using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -165,23 +174,43 @@ public class ModelDownloader
                 if (progress >= lastLoggedProgress + 25)
                 {
                     lastLoggedProgress = progress;
-                    _logger?.LogDebug("  {FileName}: {Progress}% ({DownloadedMB:F1} MB / {TotalMB:F1} MB)",
-                        fileName, progress, downloadedBytes / 1024.0 / 1024.0, totalBytes / 1024.0 / 1024.0);
+                    if (_logger?.IsEnabled(LogLevel.Debug) == true)
+                    {
+                        LogDownloadProgress(_logger, fileName, progress, downloadedBytes / 1024.0 / 1024.0, totalBytes / 1024.0 / 1024.0);
+                    }
                 }
             }
         }
 
-        _logger?.LogDebug("Completed downloading {FileName} ({SizeMB:F1} MB)", fileName, downloadedBytes / 1024.0 / 1024.0);
+        if (_logger?.IsEnabled(LogLevel.Debug) == true)
+        {
+            LogDownloadCompleted(_logger, fileName, downloadedBytes / 1024.0 / 1024.0);
+        }
     }
 
-    private string GetHuggingFaceRepoId(string modelName)
+    [LoggerMessage(Level = LogLevel.Information, Message = "Downloading model '{ModelName}' from Hugging Face...")]
+    private static partial void LogDownloadingModel(ILogger logger, string modelName);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Model '{ModelName}' downloaded successfully to: {ModelPath}")]
+    private static partial void LogModelDownloaded(ILogger logger, string modelName, string modelPath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Downloading {FileName}...")]
+    private static partial void LogDownloadingFile(ILogger logger, string fileName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "  {FileName}: {Progress}% ({DownloadedMB:F1} MB / {TotalMB:F1} MB)")]
+    private static partial void LogDownloadProgress(ILogger logger, string fileName, int progress, double downloadedMB, double totalMB);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Completed downloading {FileName} ({SizeMB:F1} MB)")]
+    private static partial void LogDownloadCompleted(ILogger logger, string fileName, double sizeMB);
+
+    private static string GetHuggingFaceRepoId(string modelName)
     {
         // Map model names to Hugging Face repository IDs
         return modelName switch
         {
             "all-MiniLM-L6-v2" => "sentence-transformers/all-MiniLM-L6-v2",
             "all-MiniLM-L12-v2" => "sentence-transformers/all-MiniLM-L12-v2",
-            _ => throw new ArgumentException($"Unknown model name: {modelName}. Supported models: all-MiniLM-L6-v2, all-MiniLM-L12-v2")
+            _ => throw new ArgumentException($"Unknown model name: {modelName}. Supported models: all-MiniLM-L6-v2, all-MiniLM-L12-v2", nameof(modelName))
         };
     }
 }

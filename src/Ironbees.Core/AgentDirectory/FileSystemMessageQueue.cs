@@ -13,7 +13,8 @@ namespace Ironbees.Core.AgentDirectory;
 /// Thread-safe implementation supporting concurrent access.
 /// Uses file locking for atomic operations where necessary.
 /// </remarks>
-public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix — "Queue" is the domain term
+public sealed partial class FileSystemMessageQueue : IMessageQueue, IDisposable
 {
     private const string ProcessedSubdir = ".processed";
     private const string FailedSubdir = ".failed";
@@ -145,7 +146,7 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
     }
 
     /// <inheritdoc />
-    public async Task<bool> FailAsync(string messageId, string? error = null, CancellationToken cancellationToken = default)
+    public async Task<bool> FailAsync(string messageId, string? errorMessage = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
 
@@ -160,9 +161,9 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
             ? new Dictionary<string, string>(message.Metadata)
             : new Dictionary<string, string>();
 
-        if (!string.IsNullOrEmpty(error))
+        if (!string.IsNullOrEmpty(errorMessage))
         {
-            metadata["error"] = error;
+            metadata["error"] = errorMessage;
             metadata["failedAt"] = DateTimeOffset.UtcNow.ToString("O");
         }
 
@@ -215,7 +216,10 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogDebug(ex, "Skipping invalid message file in outbox: {File}", file);
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        LogSkippingInvalidOutboxFile(_logger, ex, file);
+                    }
                 }
             }
         }
@@ -245,7 +249,10 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
             }
             catch (JsonException ex)
             {
-                _logger.LogDebug(ex, "Skipping invalid message file during cleanup: {File}", file);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogSkippingInvalidCleanupFile(_logger, ex, file);
+                }
             }
         }
 
@@ -303,7 +310,10 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
             }
             catch (JsonException ex)
             {
-                _logger.LogDebug(ex, "Skipping invalid message file in inbox: {File}", file);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogSkippingInvalidInboxFile(_logger, ex, file);
+                }
             }
         }
 
@@ -380,15 +390,30 @@ public sealed class FileSystemMessageQueue : IMessageQueue, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Message subscription handler threw an exception for file: {File}", e.FullPath);
+                    LogSubscriptionHandlerException(_logger, ex, e.FullPath);
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to process file watcher event for file: {File}", e.FullPath);
+            LogFileWatcherEventFailed(_logger, ex, e.FullPath);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Skipping invalid message file in outbox: {File}")]
+    private static partial void LogSkippingInvalidOutboxFile(ILogger logger, Exception exception, string file);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Skipping invalid message file during cleanup: {File}")]
+    private static partial void LogSkippingInvalidCleanupFile(ILogger logger, Exception exception, string file);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Skipping invalid message file in inbox: {File}")]
+    private static partial void LogSkippingInvalidInboxFile(ILogger logger, Exception exception, string file);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Message subscription handler threw an exception for file: {File}")]
+    private static partial void LogSubscriptionHandlerException(ILogger logger, Exception exception, string file);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to process file watcher event for file: {File}")]
+    private static partial void LogFileWatcherEventFailed(ILogger logger, Exception exception, string file);
 
     private sealed class Subscription : IDisposable
     {

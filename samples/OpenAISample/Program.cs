@@ -182,7 +182,7 @@ public int Calculate(int x, int y)
     foreach (var score in scoreResult.AllScores.OrderByDescending(s => s.Score))
     {
         Console.WriteLine($"  • {score.Agent.Name,-20} {score.Score:P0}");
-        if (score.Reasons.Any())
+        if (score.Reasons.Count > 0)
         {
             Console.WriteLine($"    Reasons: {string.Join(", ", score.Reasons)}");
         }

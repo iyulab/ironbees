@@ -22,7 +22,7 @@ namespace Ironbees.Core;
 /// - Hot reload support with FileSystemWatcher (when enabled)
 /// - Duplicate agent name detection
 /// </remarks>
-public class FileSystemAgentLoader : IAgentLoader, IDisposable
+public partial class FileSystemAgentLoader : IAgentLoader, IDisposable
 {
     private const string AgentConfigFileName = "agent.yaml";
     private const string SystemPromptFileName = "system-prompt.md";
@@ -136,9 +136,9 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
                     {
                         throw new AgentConfigurationException(agentPath, validationResult);
                     }
-                    else if (validationResult.Warnings.Count > 0 && _options.LogWarnings)
+                    else if (validationResult.Warnings.Count > 0 && _options.LogWarnings && _logger is not null)
                     {
-                        _logger?.LogWarning("Agent validation warnings: {Warnings}", validationResult.GetFormattedErrors());
+                        LogAgentValidationWarnings(_logger, validationResult.GetFormattedErrors());
                     }
                 }
             }
@@ -210,20 +210,20 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
                 {
                     throw new AgentConfigurationException(duplicateMessage);
                 }
-                else if (_options.LogWarnings)
+                else if (_options.LogWarnings && _logger is not null)
                 {
-                    _logger?.LogWarning("Duplicate agent names: {Message}", duplicateMessage);
+                    LogDuplicateAgentNames(_logger, duplicateMessage);
                 }
             }
         }
 
         // Log errors if enabled and errors occurred
-        if (errors.Count > 0 && _options.LogWarnings)
+        if (errors.Count > 0 && _options.LogWarnings && _logger is not null)
         {
-            _logger?.LogWarning("Failed to load {ErrorCount} agent(s)", errors.Count);
+            LogFailedToLoadAgents(_logger, errors.Count);
             foreach (var (path, error) in errors)
             {
-                _logger?.LogWarning("  - {AgentName}: {ErrorMessage}", Path.GetFileName(path), error.Message);
+                LogAgentLoadError(_logger, Path.GetFileName(path), error.Message);
             }
         }
 
@@ -375,8 +375,21 @@ public class FileSystemAgentLoader : IAgentLoader, IDisposable
         OnFileChanged(sender, e);
     }
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent validation warnings: {Warnings}")]
+    private static partial void LogAgentValidationWarnings(ILogger logger, string warnings);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Duplicate agent names: {Message}")]
+    private static partial void LogDuplicateAgentNames(ILogger logger, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to load {ErrorCount} agent(s)")]
+    private static partial void LogFailedToLoadAgents(ILogger logger, int errorCount);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "  - {AgentName}: {ErrorMessage}")]
+    private static partial void LogAgentLoadError(ILogger logger, string agentName, string errorMessage);
+
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         if (_fileWatcher != null)
         {
             _fileWatcher.EnableRaisingEvents = false;
@@ -408,12 +421,12 @@ public class FileSystemAgentLoaderOptions
     /// <summary>
     /// Stop loading on first error rather than continuing (default: false)
     /// </summary>
-    public bool StopOnFirstError { get; set; } = false;
+    public bool StopOnFirstError { get; set; }
 
     /// <summary>
     /// Enable strict validation that throws on warnings (default: false)
     /// </summary>
-    public bool StrictValidation { get; set; } = false;
+    public bool StrictValidation { get; set; }
 
     /// <summary>
     /// Log warnings to console (default: true)
@@ -423,7 +436,7 @@ public class FileSystemAgentLoaderOptions
     /// <summary>
     /// Enable hot reload with FileSystemWatcher (default: false)
     /// </summary>
-    public bool EnableHotReload { get; set; } = false;
+    public bool EnableHotReload { get; set; }
 }
 
 /// <summary>

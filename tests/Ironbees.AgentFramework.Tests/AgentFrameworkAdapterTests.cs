@@ -1,6 +1,6 @@
 using Ironbees.Core;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 using OpenAI;
 
 namespace Ironbees.AgentFramework.Tests;
@@ -11,10 +11,10 @@ public class AgentFrameworkAdapterTests
     public async Task CreateAgentAsync_ValidConfig_ReturnsAgentWrapper()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = new AgentConfig
         {
@@ -44,10 +44,10 @@ public class AgentFrameworkAdapterTests
     public async Task CreateAgentAsync_NullConfig_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
@@ -58,10 +58,10 @@ public class AgentFrameworkAdapterTests
     public async Task RunAsync_NullAgent_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
@@ -72,10 +72,10 @@ public class AgentFrameworkAdapterTests
     public async Task RunAsync_EmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = new AgentConfig
         {
@@ -102,10 +102,10 @@ public class AgentFrameworkAdapterTests
     public async Task StreamAsync_NullAgent_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
@@ -121,10 +121,10 @@ public class AgentFrameworkAdapterTests
     public async Task StreamAsync_EmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = new AgentConfig
         {
@@ -156,21 +156,21 @@ public class AgentFrameworkAdapterTests
     public void Constructor_NullClient_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(
-            () => new AgentFrameworkAdapter(null!, mockLogger.Object));
+            () => new AgentFrameworkAdapter(null!, mockLogger));
     }
 
     [Fact]
     public void Constructor_NullLogger_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(
-            () => new AgentFrameworkAdapter(mockClient.Object, null!));
+            () => new AgentFrameworkAdapter(mockClient, null!));
     }
 }

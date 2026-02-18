@@ -26,12 +26,12 @@ public static class VectorSimilarity
         if (vector1.Length != vector2.Length)
         {
             throw new ArgumentException(
-                $"Vectors must have the same dimensions. Got {vector1.Length} and {vector2.Length}");
+                $"Vectors must have the same dimensions. Got {vector1.Length} and {vector2.Length}", nameof(vector2));
         }
 
         if (vector1.Length == 0)
         {
-            throw new ArgumentException("Vectors must not be empty");
+            throw new ArgumentException("Vectors must not be empty", nameof(vector1));
         }
 
         double dotProduct = 0.0;
@@ -67,7 +67,7 @@ public static class VectorSimilarity
 
         if (vector.Length == 0)
         {
-            throw new ArgumentException("Vector must not be empty");
+            throw new ArgumentException("Vector must not be empty", nameof(vector));
         }
 
         double magnitude = 0.0;
@@ -108,7 +108,7 @@ public static class VectorSimilarity
         if (vector1.Length != vector2.Length)
         {
             throw new ArgumentException(
-                $"Vectors must have the same dimensions. Got {vector1.Length} and {vector2.Length}");
+                $"Vectors must have the same dimensions. Got {vector1.Length} and {vector2.Length}", nameof(vector2));
         }
 
         double sumSquaredDifferences = 0.0;
@@ -137,7 +137,7 @@ public static class VectorSimilarity
         if (vector1.Length != vector2.Length)
         {
             throw new ArgumentException(
-                $"Vectors must have the same dimensions. Got {vector1.Length} and {vector2.Length}");
+                $"Vectors must have the same dimensions. Got {vector1.Length} and {vector2.Length}", nameof(vector2));
         }
 
         double dotProduct = 0.0;

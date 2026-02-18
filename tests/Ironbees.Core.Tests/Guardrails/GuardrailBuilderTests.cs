@@ -5,7 +5,7 @@ using Azure;
 using Azure.AI.ContentSafety;
 using Ironbees.Core.Guardrails;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using NSubstitute;
 using OpenAI.Moderations;
 
 namespace Ironbees.Core.Tests.Guardrails;
@@ -319,11 +319,11 @@ public class GuardrailBuilderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockClient = new Mock<ContentSafetyClient>();
+        var mockClient = Substitute.For<ContentSafetyClient>();
 
         // Act
         services.AddGuardrails()
-            .AddAzureContentSafety(mockClient.Object)
+            .AddAzureContentSafety(mockClient)
             .Build();
 
         var provider = services.BuildServiceProvider();
@@ -338,11 +338,11 @@ public class GuardrailBuilderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockClient = new Mock<ContentSafetyClient>();
+        var mockClient = Substitute.For<ContentSafetyClient>();
 
         // Act
         services.AddGuardrails()
-            .AddAzureContentSafety(mockClient.Object, options =>
+            .AddAzureContentSafety(mockClient, options =>
             {
                 options.MaxAllowedSeverity = 4;
                 options.ValidateInput = true;
@@ -380,11 +380,11 @@ public class GuardrailBuilderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockClient = new Mock<ModerationClient>();
+        var mockClient = Substitute.For<ModerationClient>();
 
         // Act
         services.AddGuardrails()
-            .AddOpenAIModeration(mockClient.Object)
+            .AddOpenAIModeration(mockClient)
             .Build();
 
         var provider = services.BuildServiceProvider();
@@ -399,11 +399,11 @@ public class GuardrailBuilderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockClient = new Mock<ModerationClient>();
+        var mockClient = Substitute.For<ModerationClient>();
 
         // Act
         services.AddGuardrails()
-            .AddOpenAIModeration(mockClient.Object, options =>
+            .AddOpenAIModeration(mockClient, options =>
             {
                 options.ScoreThreshold = 0.9f;
                 options.ValidateInput = true;
@@ -436,16 +436,16 @@ public class GuardrailBuilderTests
     {
         // Arrange
         var services = new ServiceCollection();
-        var mockAzureClient = new Mock<ContentSafetyClient>();
-        var mockOpenAIClient = new Mock<ModerationClient>();
+        var mockAzureClient = Substitute.For<ContentSafetyClient>();
+        var mockOpenAIClient = Substitute.For<ModerationClient>();
 
         // Act
         services.AddGuardrails()
             .AddLengthGuardrail(maxInputLength: 1000)
             .AddKeywordGuardrail("forbidden")
             .AddRegexGuardrail(new PatternDefinition { Pattern = @"\d{9}", Name = "SSN" })
-            .AddAzureContentSafety(mockAzureClient.Object)
-            .AddOpenAIModeration(mockOpenAIClient.Object)
+            .AddAzureContentSafety(mockAzureClient)
+            .AddOpenAIModeration(mockOpenAIClient)
             .AddAuditLogger<TestAuditLogger>()
             .Build();
 
@@ -457,7 +457,7 @@ public class GuardrailBuilderTests
     }
 
     // Test helper classes
-    private class TestGuardrail : IContentGuardrail
+    private sealed class TestGuardrail : IContentGuardrail
     {
         public string Name => "TestGuardrail";
 
@@ -468,7 +468,7 @@ public class GuardrailBuilderTests
             => Task.FromResult(GuardrailResult.Allowed(Name));
     }
 
-    private class TestAuditLogger : IAuditLogger
+    private sealed class TestAuditLogger : IAuditLogger
     {
         public Task LogInputValidationAsync(GuardrailAuditEntry entry, CancellationToken cancellationToken = default)
             => Task.CompletedTask;

@@ -5,7 +5,7 @@ namespace Ironbees.AgentFramework.Tests;
 
 public class ServiceCollectionExtensionsTests
 {
-    [Fact(Skip = "Integration test requiring actual Azure OpenAI credentials")]
+    [Fact, Trait("Category", "Integration")]
     public void AddIronbees_ValidConfiguration_RegistersAllServices()
     {
         // Arrange
@@ -132,7 +132,7 @@ public class ServiceCollectionExtensionsTests
         Assert.Contains("AzureOpenAIKey", exception.Message);
     }
 
-    [Fact(Skip = "Integration test requiring actual Azure OpenAI credentials")]
+    [Fact, Trait("Category", "Integration")]
     public void AddIronbees_WithAgentsDirectory_PassesToOrchestrator()
     {
         // Arrange
@@ -154,7 +154,7 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(orchestrator);
     }
 
-    [Fact(Skip = "Integration test requiring actual Azure OpenAI credentials")]
+    [Fact, Trait("Category", "Integration")]
     public void AddIronbees_WithoutAgentsDirectory_UsesDefault()
     {
         // Arrange
@@ -175,7 +175,7 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(orchestrator);
     }
 
-    [Fact(Skip = "Integration test requiring actual Azure OpenAI credentials")]
+    [Fact, Trait("Category", "Integration")]
     public void AddIronbees_RegistersSingletons()
     {
         // Arrange

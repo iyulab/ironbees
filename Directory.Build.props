@@ -11,6 +11,9 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
   <PropertyGroup Label="Package Information">
@@ -41,6 +44,7 @@
   <PropertyGroup Label="Build Configuration">
     <!-- Documentation -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: missing XML doc comments -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- Package README -->

@@ -241,7 +241,7 @@ public class GpuStackAdapterTests
     }
 
     // Mock agent for testing invalid agent type
-    private class MockAgent : IAgent
+    private sealed class MockAgent : IAgent
     {
         public string Name => "mock-agent";
         public string Description => "Mock agent for testing";

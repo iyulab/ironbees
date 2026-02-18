@@ -12,7 +12,7 @@ namespace Ironbees.Ironhive.Tools;
 /// Registry for managing IronHive tools loaded from filesystem configuration.
 /// Supports loading tools from agents/{name}/tools/ directories.
 /// </summary>
-public class IronhiveToolRegistry
+public partial class IronhiveToolRegistry
 {
     private readonly Dictionary<string, ToolItem> _builtInTools = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<ToolItem>> _agentTools = new(StringComparer.OrdinalIgnoreCase);
@@ -39,7 +39,10 @@ public class IronhiveToolRegistry
         ArgumentNullException.ThrowIfNull(tool);
 
         _builtInTools[$"built-in/{name}"] = tool;
-        _logger.LogDebug("Registered built-in tool: {ToolName}", name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogRegisteredBuiltInTool(_logger, name);
+        }
     }
 
     /// <summary>
@@ -87,9 +90,10 @@ public class IronhiveToolRegistry
 
         _agentTools[agentName] = tools;
 
-        _logger.LogInformation(
-            "Loaded {ToolCount} tools for agent {AgentName}",
-            tools.Count, agentName);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            LogLoadedTools(_logger, tools.Count, agentName);
+        }
 
         return tools;
     }
@@ -122,7 +126,7 @@ public class IronhiveToolRegistry
             return tool;
         }
 
-        _logger.LogWarning("Tool reference not found: {Reference}", reference);
+        LogToolReferenceNotFound(_logger, reference);
         return null;
     }
 
@@ -153,7 +157,7 @@ public class IronhiveToolRegistry
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load tools from {YamlPath}", yamlPath);
+            LogFailedToLoadTools(_logger, ex, yamlPath);
         }
 
         return tools;
@@ -173,7 +177,10 @@ public class IronhiveToolRegistry
             // For MCP tools, create a placeholder that will be resolved at runtime
             if (definition.Ref.StartsWith("mcp/", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogDebug("MCP tool reference will be resolved at runtime: {Ref}", definition.Ref);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogMcpToolReferenceWillResolve(_logger, definition.Ref);
+                }
                 return CreateMcpToolPlaceholder(definition.Ref);
             }
 
@@ -186,7 +193,7 @@ public class IronhiveToolRegistry
             return CreateInlineTool(definition);
         }
 
-        _logger.LogWarning("Tool definition has neither ref nor name");
+        LogToolDefinitionInvalid(_logger);
         return null;
     }
 
@@ -202,9 +209,33 @@ public class IronhiveToolRegistry
         };
     }
 
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Registered built-in tool: {ToolName}")]
+    private static partial void LogRegisteredBuiltInTool(ILogger logger, string toolName);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded {ToolCount} tools for agent {AgentName}")]
+    private static partial void LogLoadedTools(ILogger logger, int toolCount, string agentName);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Tool reference not found: {Reference}")]
+    private static partial void LogToolReferenceNotFound(ILogger logger, string reference);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load tools from {YamlPath}")]
+    private static partial void LogFailedToLoadTools(ILogger logger, Exception exception, string yamlPath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "MCP tool reference will be resolved at runtime: {Ref}")]
+    private static partial void LogMcpToolReferenceWillResolve(ILogger logger, string @ref);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Tool definition has neither ref nor name")]
+    private static partial void LogToolDefinitionInvalid(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Creating inline tool: {ToolName}")]
+    private static partial void LogCreatingInlineTool(ILogger logger, string? toolName);
+
     private ToolItem CreateInlineTool(ToolDefinitionYaml definition)
     {
-        _logger.LogDebug("Creating inline tool: {ToolName}", definition.Name);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogCreatingInlineTool(_logger, definition.Name);
+        }
 
         return new ToolItem
         {

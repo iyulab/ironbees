@@ -79,7 +79,7 @@ public record OrchestrationSettings
     /// <summary>
     /// Continue processing queue on task failure
     /// </summary>
-    public bool ContinueOnFailure { get; init; } = false;
+    public bool ContinueOnFailure { get; init; }
 
     /// <summary>
     /// Oracle verification settings
@@ -152,7 +152,7 @@ public record HitlSettings
     /// <summary>
     /// Enable human-in-the-loop oversight
     /// </summary>
-    public bool Enabled { get; init; } = false;
+    public bool Enabled { get; init; }
 
     /// <summary>
     /// Auto-approve if human response timeout
@@ -162,7 +162,7 @@ public record HitlSettings
     /// <summary>
     /// Request feedback after task completion
     /// </summary>
-    public bool RequestFeedbackOnComplete { get; init; } = false;
+    public bool RequestFeedbackOnComplete { get; init; }
 
     /// <summary>
     /// Required approval points (BeforeExecution, AfterExecution, OnLowConfidence, BeforeRetry, BeforeFallback)
@@ -204,7 +204,7 @@ public record AutoContinueSettings
     /// <summary>
     /// Enable auto-continue when oracle returns CanContinue=true
     /// </summary>
-    public bool Enabled { get; init; } = false;
+    public bool Enabled { get; init; }
 
     /// <summary>
     /// Template for next iteration prompt.
@@ -221,7 +221,7 @@ public record RetrySettings
     /// <summary>
     /// Number of retry attempts on failure
     /// </summary>
-    public int Count { get; init; } = 0;
+    public int Count { get; init; }
 
     /// <summary>
     /// Delay between retries in milliseconds
@@ -231,7 +231,7 @@ public record RetrySettings
     /// <summary>
     /// Enable fallback strategy when all retries fail
     /// </summary>
-    public bool EnableFallback { get; init; } = false;
+    public bool EnableFallback { get; init; }
 }
 
 /// <summary>
@@ -242,20 +242,20 @@ public record DebugSettings
     /// <summary>
     /// Enable verbose debug output
     /// </summary>
-    public bool Enabled { get; init; } = false;
+    public bool Enabled { get; init; }
 
     /// <summary>
     /// Show full LLM responses
     /// </summary>
-    public bool ShowLlmResponses { get; init; } = false;
+    public bool ShowLlmResponses { get; init; }
 
     /// <summary>
     /// Show token usage
     /// </summary>
-    public bool ShowTokenUsage { get; init; } = false;
+    public bool ShowTokenUsage { get; init; }
 
     /// <summary>
     /// Show reasoning/thinking content if available
     /// </summary>
-    public bool ShowReasoning { get; init; } = false;
+    public bool ShowReasoning { get; init; }
 }

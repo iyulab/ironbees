@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using Ironbees.Autonomous.Abstractions;
 using Ironbees.Autonomous.Models;
 using Ironbees.Autonomous.Utilities;
@@ -13,7 +14,7 @@ namespace Ironbees.Autonomous;
 /// </summary>
 /// <typeparam name="TRequest">Task request type implementing ITaskRequest</typeparam>
 /// <typeparam name="TResult">Task result type implementing ITaskResult</typeparam>
-public class AutonomousOrchestrator<TRequest, TResult>
+public partial class AutonomousOrchestrator<TRequest, TResult>
     where TRequest : ITaskRequest
     where TResult : ITaskResult
 {
@@ -196,7 +197,7 @@ public class AutonomousOrchestrator<TRequest, TResult>
     {
         if (_state == AutonomousState.Running)
         {
-            _logger.LogWarning("Autonomous execution already running");
+            LogExecutionAlreadyRunning(_logger);
             return;
         }
 
@@ -763,7 +764,7 @@ public class AutonomousOrchestrator<TRequest, TResult>
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Oracle verification failed");
+                    LogOracleVerificationFailed(_logger, ex);
                     RaiseEvent(AutonomousEventType.OracleError, $"Oracle error: {ex.Message}");
                     break;
                 }
@@ -808,7 +809,7 @@ public class AutonomousOrchestrator<TRequest, TResult>
             : "";
 
         return template
-            .Replace("{iteration}", (_currentIteration + 1).ToString())
+            .Replace("{iteration}", (_currentIteration + 1).ToString(CultureInfo.InvariantCulture))
             .Replace("{previous_output}", lastOutput.Length > 200 ? lastOutput[..200] + "..." : lastOutput)
             .Replace("{oracle_analysis}", verdict.Analysis ?? "No analysis");
     }
@@ -896,7 +897,7 @@ public class AutonomousOrchestrator<TRequest, TResult>
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get human feedback");
+            LogHumanFeedbackFailed(_logger, ex);
         }
     }
 
@@ -973,8 +974,24 @@ public class AutonomousOrchestrator<TRequest, TResult>
         };
 
         OnEvent?.Invoke(evt);
-        _logger.LogDebug("Event: {Type} - {Message}", type, message);
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogAutonomousEvent(_logger, type, message);
+        }
     }
 
     private static int EstimateTokens(string? text) => TokenEstimator.EstimateTokens(text);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Autonomous execution already running")]
+    private static partial void LogExecutionAlreadyRunning(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Oracle verification failed")]
+    private static partial void LogOracleVerificationFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to get human feedback")]
+    private static partial void LogHumanFeedbackFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Event: {Type} - {Message}")]
+    private static partial void LogAutonomousEvent(ILogger logger, AutonomousEventType type, string? message);
 }

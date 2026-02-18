@@ -1,17 +1,17 @@
 using Ironbees.Core.Middleware;
 using Microsoft.Extensions.AI;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests.Middleware;
 
 public class RateLimitingMiddlewareTests
 {
-    private readonly Mock<IChatClient> _mockInnerClient;
+    private readonly IChatClient _mockInnerClient;
     private readonly ChatResponse _defaultResponse;
 
     public RateLimitingMiddlewareTests()
     {
-        _mockInnerClient = new Mock<IChatClient>();
+        _mockInnerClient = Substitute.For<IChatClient>();
         _defaultResponse = new ChatResponse(new ChatMessage(ChatRole.Assistant, "Test response"));
     }
 
@@ -20,11 +20,11 @@ public class RateLimitingMiddlewareTests
     {
         // Arrange
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_defaultResponse);
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(_defaultResponse);
 
         var options = new RateLimitOptions { RequestsPerMinute = 100, TokensPerMinute = 100000 };
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object, options);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient, options);
 
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
@@ -33,7 +33,7 @@ public class RateLimitingMiddlewareTests
 
         // Assert
         Assert.NotNull(response);
-        _mockInnerClient.Verify(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()), Times.Once);
+        await _mockInnerClient.Received(1).GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -41,8 +41,8 @@ public class RateLimitingMiddlewareTests
     {
         // Arrange
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_defaultResponse);
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(_defaultResponse);
 
         var options = new RateLimitOptions
         {
@@ -50,7 +50,7 @@ public class RateLimitingMiddlewareTests
             TokensPerMinute = 0, // Disable token limit
             Strategy = RateLimitStrategy.Reject
         };
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object, options);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient, options);
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Make initial requests to hit the limit
@@ -67,8 +67,8 @@ public class RateLimitingMiddlewareTests
     {
         // Arrange
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_defaultResponse);
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(_defaultResponse);
 
         var options = new RateLimitOptions
         {
@@ -76,7 +76,7 @@ public class RateLimitingMiddlewareTests
             TokensPerMinute = 0,
             Strategy = RateLimitStrategy.Queue
         };
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object, options);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient, options);
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Act - Multiple requests should succeed
@@ -103,8 +103,8 @@ public class RateLimitingMiddlewareTests
         var lockObj = new object();
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .Returns(async () =>
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(async _ =>
             {
                 lock (lockObj)
                 {
@@ -130,7 +130,7 @@ public class RateLimitingMiddlewareTests
             TokensPerMinute = 0,
             MaxConcurrentRequests = 3
         };
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object, options);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient, options);
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Act - Launch 10 concurrent requests
@@ -213,8 +213,8 @@ public class RateLimitingMiddlewareTests
         };
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(responseWithUsage);
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(responseWithUsage);
 
         var options = new RateLimitOptions
         {
@@ -222,7 +222,7 @@ public class RateLimitingMiddlewareTests
             TokensPerMinute = 90, // Low limit to test tracking (each request uses 30 tokens)
             Strategy = RateLimitStrategy.Reject
         };
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object, options);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient, options);
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Make requests until token limit is exceeded (each uses 30 tokens)
@@ -240,10 +240,10 @@ public class RateLimitingMiddlewareTests
     {
         // Arrange
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_defaultResponse);
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(_defaultResponse);
 
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient);
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Act
@@ -261,10 +261,10 @@ public class RateLimitingMiddlewareTests
         cts.Cancel();
 
         _mockInnerClient
-            .Setup(c => c.GetResponseAsync(It.IsAny<IEnumerable<ChatMessage>>(), It.IsAny<ChatOptions?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_defaultResponse);
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(_defaultResponse);
 
-        var middleware = new RateLimitingMiddleware(_mockInnerClient.Object);
+        var middleware = new RateLimitingMiddleware(_mockInnerClient);
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Act & Assert

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Ironbees.Autonomous.Utilities;
@@ -76,15 +77,15 @@ public class ConversationHistoryBuilder
         // Turns
         foreach (var turn in _turns)
         {
-            var inputLabel = _options.InputLabel.Replace("{n}", turn.Number.ToString());
-            var outputLabel = _options.OutputLabel.Replace("{n}", turn.Number.ToString());
+            var inputLabel = _options.InputLabel.Replace("{n}", turn.Number.ToString(CultureInfo.InvariantCulture));
+            var outputLabel = _options.OutputLabel.Replace("{n}", turn.Number.ToString(CultureInfo.InvariantCulture));
 
-            sb.AppendLine($"{inputLabel}: {turn.Input}");
-            sb.Append($"{outputLabel}: {turn.Output}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"{inputLabel}: {turn.Input}");
+            sb.Append(CultureInfo.InvariantCulture, $"{outputLabel}: {turn.Output}");
 
             if (!string.IsNullOrEmpty(turn.Metadata))
             {
-                sb.Append($" ({turn.Metadata})");
+                sb.Append(CultureInfo.InvariantCulture, $" ({turn.Metadata})");
             }
             sb.AppendLine();
             sb.AppendLine();
@@ -123,11 +124,11 @@ public class ConversationHistoryBuilder
 
         if (positiveOutputs.Count > 0)
         {
-            sb.AppendLine($"- Confirmed YES: {string.Join(", ", positiveOutputs)}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- Confirmed YES: {string.Join(", ", positiveOutputs)}");
         }
         if (negativeOutputs.Count > 0)
         {
-            sb.AppendLine($"- Confirmed NO: {string.Join(", ", negativeOutputs)}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- Confirmed NO: {string.Join(", ", negativeOutputs)}");
         }
 
         return sb.ToString();
@@ -154,7 +155,7 @@ public class ConversationHistoryBuilder
     protected virtual bool IsPositiveResponse(string output)
     {
         var lower = output.ToLowerInvariant();
-        return lower.StartsWith("yes") ||
+        return lower.StartsWith("yes", StringComparison.Ordinal) ||
                lower.Contains("\"yes\"") ||
                lower.Contains("\"answer\":\"yes\"") ||
                lower.Contains("\"answer\": \"yes\"");
@@ -166,7 +167,7 @@ public class ConversationHistoryBuilder
     protected virtual bool IsNegativeResponse(string output)
     {
         var lower = output.ToLowerInvariant();
-        return lower.StartsWith("no") ||
+        return lower.StartsWith("no", StringComparison.Ordinal) ||
                lower.Contains("\"no\"") ||
                lower.Contains("\"answer\":\"no\"") ||
                lower.Contains("\"answer\": \"no\"");

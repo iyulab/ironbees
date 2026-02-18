@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Ironbees.AgentMode.Exceptions;
 using Ironbees.AgentMode.Models;
 using Ironbees.AgentMode.Workflow.Triggers;
+using Ironbees.Core.Orchestration;
 
 namespace Ironbees.AgentMode.Workflow;
 
@@ -17,23 +19,33 @@ namespace Ironbees.AgentMode.Workflow;
 /// - Resolving agent references from filesystem conventions
 /// - Evaluating custom triggers (file_exists, dir_not_empty)
 /// - Delegating actual agent execution to MS Agent Framework
+/// - Checkpoint persistence and resumption via ICheckpointStore
 /// </remarks>
 public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRuntimeState>
 {
     private readonly IWorkflowLoader _workflowLoader;
     private readonly ITriggerEvaluatorFactory _triggerEvaluatorFactory;
     private readonly IAgentExecutorFactory _agentExecutorFactory;
+    private readonly ICheckpointStore? _checkpointStore;
 
     private readonly ConcurrentDictionary<string, WorkflowExecution> _executions = new();
+
+    private static readonly JsonSerializerOptions s_jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
 
     public YamlDrivenOrchestrator(
         IWorkflowLoader workflowLoader,
         ITriggerEvaluatorFactory triggerEvaluatorFactory,
-        IAgentExecutorFactory agentExecutorFactory)
+        IAgentExecutorFactory agentExecutorFactory,
+        ICheckpointStore? checkpointStore = null)
     {
         _workflowLoader = workflowLoader ?? throw new ArgumentNullException(nameof(workflowLoader));
         _triggerEvaluatorFactory = triggerEvaluatorFactory ?? throw new ArgumentNullException(nameof(triggerEvaluatorFactory));
         _agentExecutorFactory = agentExecutorFactory ?? throw new ArgumentNullException(nameof(agentExecutorFactory));
+        _checkpointStore = checkpointStore;
     }
 
     public async IAsyncEnumerable<WorkflowRuntimeState> ExecuteAsync(
@@ -81,115 +93,95 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
 
         yield return state;
 
-        // Execute workflow states
-        while (!IsTerminalState(workflow, state.CurrentStateId) && !cancellationToken.IsCancellationRequested)
+        // Execute state machine and yield all subsequent states
+        await foreach (var nextState in RunStateMachineAsync(
+            workflow, execution, state, cancellationToken))
         {
-            var currentStateDef = workflow.States.FirstOrDefault(s => s.Id == state.CurrentStateId);
-            if (currentStateDef == null)
-            {
-                state = state with
-                {
-                    Status = WorkflowExecutionStatus.Failed,
-                    ErrorMessage = $"State not found: {state.CurrentStateId}",
-                    LastUpdatedAt = DateTimeOffset.UtcNow
-                };
-                yield return state;
-                break;
-            }
-
-            // Evaluate trigger if present
-            if (currentStateDef.Trigger != null)
-            {
-                var triggerSatisfied = await EvaluateTriggerAsync(
-                    currentStateDef.Trigger,
-                    execution.Context,
-                    cancellationToken);
-
-                if (!triggerSatisfied)
-                {
-                    state = state with
-                    {
-                        Status = WorkflowExecutionStatus.WaitingForTrigger,
-                        LastUpdatedAt = DateTimeOffset.UtcNow
-                    };
-                    yield return state;
-
-                    // Wait and retry trigger evaluation
-                    await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-                    continue;
-                }
-            }
-
-            // Execute state based on type
-            WorkflowRuntimeState? newState = null;
-            try
-            {
-                newState = currentStateDef.Type switch
-                {
-                    WorkflowStateType.Start => await ExecuteStartStateAsync(state, currentStateDef, cancellationToken),
-                    WorkflowStateType.Agent => await ExecuteAgentStateAsync(state, currentStateDef, execution, cancellationToken),
-                    WorkflowStateType.Parallel => await ExecuteParallelStateAsync(state, currentStateDef, execution, cancellationToken),
-                    WorkflowStateType.HumanGate => await ExecuteHumanGateAsync(state, currentStateDef, execution, cancellationToken),
-                    WorkflowStateType.Escalation => await ExecuteEscalationAsync(state, currentStateDef, cancellationToken),
-                    WorkflowStateType.Terminal => state with { Status = WorkflowExecutionStatus.Completed },
-                    _ => throw new OrchestratorException($"Unknown state type: {currentStateDef.Type}", execution.ExecutionId, currentStateDef.Id)
-                };
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                newState = state with
-                {
-                    Status = WorkflowExecutionStatus.Failed,
-                    ErrorMessage = ex.Message,
-                    LastUpdatedAt = DateTimeOffset.UtcNow
-                };
-            }
-
-            if (newState != null)
-            {
-                state = newState;
-                execution.CurrentState = state;
-                yield return state;
-            }
-
-            // Determine next state
-            if (state.Status == WorkflowExecutionStatus.Running)
-            {
-                var nextStateId = DetermineNextState(currentStateDef, state);
-                if (nextStateId != null)
-                {
-                    state = state with
-                    {
-                        CurrentStateId = nextStateId,
-                        LastUpdatedAt = DateTimeOffset.UtcNow
-                    };
-                }
-            }
+            yield return nextState;
         }
-
-        // Mark as completed if reached terminal
-        if (IsTerminalState(workflow, state.CurrentStateId) && state.Status == WorkflowExecutionStatus.Running)
-        {
-            state = state with
-            {
-                Status = WorkflowExecutionStatus.Completed,
-                CompletedAt = DateTimeOffset.UtcNow,
-                LastUpdatedAt = DateTimeOffset.UtcNow
-            };
-            yield return state;
-        }
-
-        // Cleanup
-        _executions.TryRemove(execution.ExecutionId, out _);
     }
 
-    public IAsyncEnumerable<WorkflowRuntimeState> ResumeFromCheckpointAsync(
+    /// <summary>
+    /// Resumes a workflow execution from a previously saved checkpoint.
+    /// The <paramref name="checkpointId"/> is treated as the execution ID;
+    /// the latest checkpoint for that execution is loaded.
+    /// </summary>
+    public async IAsyncEnumerable<WorkflowRuntimeState> ResumeFromCheckpointAsync(
         string checkpointId,
-        CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // TODO: Implement checkpoint loading and resumption
-        // This will use MS Agent Framework's checkpoint capabilities
-        throw new NotImplementedException("Checkpoint resumption not yet implemented.");
+        ArgumentException.ThrowIfNullOrWhiteSpace(checkpointId);
+
+        if (_checkpointStore == null)
+        {
+            throw new InvalidOperationException(
+                "Cannot resume from checkpoint: no ICheckpointStore was configured. " +
+                "Provide an ICheckpointStore in the constructor to enable checkpoint resumption.");
+        }
+
+        // Load the latest checkpoint for this execution
+        var checkpoint = await _checkpointStore.LoadCheckpointAsync(
+            checkpointId, null, cancellationToken);
+        if (checkpoint == null)
+        {
+            throw new InvalidOperationException(
+                $"No checkpoint found for execution '{checkpointId}'.");
+        }
+
+        if (string.IsNullOrWhiteSpace(checkpoint.SerializedState))
+        {
+            throw new InvalidOperationException(
+                $"Checkpoint for execution '{checkpointId}' does not contain serialized state.");
+        }
+
+        // Deserialize the resume context
+        var resumeContext = JsonSerializer.Deserialize<WorkflowResumeContext>(
+            checkpoint.SerializedState, s_jsonOptions);
+        if (resumeContext?.Workflow == null)
+        {
+            throw new InvalidOperationException(
+                $"Failed to deserialize checkpoint state for execution '{checkpointId}'.");
+        }
+
+        var workflow = resumeContext.Workflow;
+
+        // Reconstruct execution
+        var execution = new WorkflowExecution
+        {
+            ExecutionId = resumeContext.ExecutionId,
+            Workflow = workflow,
+            Input = resumeContext.Input,
+            Context = new WorkflowExecutionContext
+            {
+                WorkingDirectory = resumeContext.WorkingDirectory ?? Directory.GetCurrentDirectory()
+            },
+            StartedAt = resumeContext.StartedAt
+        };
+
+        _executions[execution.ExecutionId] = execution;
+
+        // Reconstruct state from checkpoint
+        var state = new WorkflowRuntimeState
+        {
+            ExecutionId = resumeContext.ExecutionId,
+            WorkflowName = workflow.Name,
+            CurrentStateId = resumeContext.CurrentStateId,
+            Status = WorkflowExecutionStatus.Running,
+            Input = resumeContext.Input,
+            StartedAt = resumeContext.StartedAt,
+            IterationCount = resumeContext.IterationCount,
+            OutputData = resumeContext.OutputData ?? new Dictionary<string, object>(),
+            LastUpdatedAt = DateTimeOffset.UtcNow
+        };
+
+        yield return state;
+
+        // Continue state machine from checkpointed state
+        await foreach (var nextState in RunStateMachineAsync(
+            workflow, execution, state, cancellationToken))
+        {
+            yield return nextState;
+        }
     }
 
     public Task ApproveAsync(string executionId, ApprovalDecision decision)
@@ -262,9 +254,132 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         return Task.FromResult<IReadOnlyList<WorkflowExecutionSummary>>(summaries);
     }
 
+    #region State Machine
+
+    /// <summary>
+    /// Core state machine loop shared by ExecuteAsync and ResumeFromCheckpointAsync.
+    /// Executes workflow states, saves checkpoints, and handles terminal transitions.
+    /// </summary>
+    private async IAsyncEnumerable<WorkflowRuntimeState> RunStateMachineAsync(
+        WorkflowDefinition workflow,
+        WorkflowExecution execution,
+        WorkflowRuntimeState state,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        while (!IsTerminalState(workflow, state.CurrentStateId)
+            && state.Status == WorkflowExecutionStatus.Running
+            && !cancellationToken.IsCancellationRequested)
+        {
+            var currentStateDef = workflow.States.FirstOrDefault(s => s.Id == state.CurrentStateId);
+            if (currentStateDef == null)
+            {
+                state = state with
+                {
+                    Status = WorkflowExecutionStatus.Failed,
+                    ErrorMessage = $"State not found: {state.CurrentStateId}",
+                    LastUpdatedAt = DateTimeOffset.UtcNow
+                };
+                yield return state;
+                break;
+            }
+
+            // Evaluate trigger if present
+            if (currentStateDef.Trigger != null)
+            {
+                var triggerSatisfied = await EvaluateTriggerAsync(
+                    currentStateDef.Trigger,
+                    execution.Context,
+                    cancellationToken);
+
+                if (!triggerSatisfied)
+                {
+                    state = state with
+                    {
+                        Status = WorkflowExecutionStatus.WaitingForTrigger,
+                        LastUpdatedAt = DateTimeOffset.UtcNow
+                    };
+                    yield return state;
+
+                    // Wait and retry trigger evaluation
+                    await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                    continue;
+                }
+            }
+
+            // Execute state based on type
+            WorkflowRuntimeState? newState = null;
+            try
+            {
+                newState = currentStateDef.Type switch
+                {
+                    WorkflowStateType.Start => await ExecuteStartStateAsync(state, currentStateDef, cancellationToken),
+                    WorkflowStateType.Agent => await ExecuteAgentStateAsync(state, currentStateDef, execution, cancellationToken),
+                    WorkflowStateType.Parallel => await ExecuteParallelStateAsync(state, currentStateDef, execution, cancellationToken),
+                    WorkflowStateType.HumanGate => await ExecuteHumanGateAsync(state, currentStateDef, execution, cancellationToken),
+                    WorkflowStateType.Escalation => await ExecuteEscalationAsync(state, currentStateDef, cancellationToken),
+                    WorkflowStateType.Terminal => state with { Status = WorkflowExecutionStatus.Completed },
+                    _ => throw new OrchestratorException($"Unknown state type: {currentStateDef.Type}", execution.ExecutionId, currentStateDef.Id)
+                };
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                newState = state with
+                {
+                    Status = WorkflowExecutionStatus.Failed,
+                    ErrorMessage = ex.Message,
+                    LastUpdatedAt = DateTimeOffset.UtcNow
+                };
+            }
+
+            if (newState != null)
+            {
+                state = newState;
+                execution.CurrentState = state;
+                yield return state;
+
+                // Save checkpoint after each state transition (when store available)
+                if (_checkpointStore != null && state.Status == WorkflowExecutionStatus.Running)
+                {
+                    await SaveCheckpointAsync(execution, state, workflow, cancellationToken);
+                }
+            }
+
+            // Determine next state
+            if (state.Status == WorkflowExecutionStatus.Running)
+            {
+                var nextStateId = DetermineNextState(currentStateDef, state);
+                if (nextStateId != null)
+                {
+                    state = state with
+                    {
+                        CurrentStateId = nextStateId,
+                        LastUpdatedAt = DateTimeOffset.UtcNow
+                    };
+                }
+            }
+        }
+
+        // Mark as completed if reached terminal
+        if (IsTerminalState(workflow, state.CurrentStateId) && state.Status == WorkflowExecutionStatus.Running)
+        {
+            state = state with
+            {
+                Status = WorkflowExecutionStatus.Completed,
+                CompletedAt = DateTimeOffset.UtcNow,
+                LastUpdatedAt = DateTimeOffset.UtcNow
+            };
+            yield return state;
+        }
+
+        // Cleanup
+        _executions.TryRemove(execution.ExecutionId, out _);
+    }
+
+    #endregion
+
     #region State Execution Methods
 
-    private Task<WorkflowRuntimeState> ExecuteStartStateAsync(
+    private static Task<WorkflowRuntimeState> ExecuteStartStateAsync(
         WorkflowRuntimeState state,
         WorkflowStateDefinition stateDef,
         CancellationToken cancellationToken)
@@ -365,7 +480,7 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         };
     }
 
-    private async Task<WorkflowRuntimeState> ExecuteHumanGateAsync(
+    private static async Task<WorkflowRuntimeState> ExecuteHumanGateAsync(
         WorkflowRuntimeState state,
         WorkflowStateDefinition stateDef,
         WorkflowExecution execution,
@@ -432,7 +547,7 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         }
     }
 
-    private Task<WorkflowRuntimeState> ExecuteEscalationAsync(
+    private static Task<WorkflowRuntimeState> ExecuteEscalationAsync(
         WorkflowRuntimeState state,
         WorkflowStateDefinition stateDef,
         CancellationToken cancellationToken)
@@ -444,6 +559,44 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
             ErrorMessage = $"Escalation triggered at state '{stateDef.Id}'",
             LastUpdatedAt = DateTimeOffset.UtcNow
         });
+    }
+
+    #endregion
+
+    #region Checkpoint Methods
+
+    /// <summary>
+    /// Saves a checkpoint for the current execution state.
+    /// </summary>
+    private async Task SaveCheckpointAsync(
+        WorkflowExecution execution,
+        WorkflowRuntimeState state,
+        WorkflowDefinition workflow,
+        CancellationToken cancellationToken)
+    {
+        var resumeContext = new WorkflowResumeContext
+        {
+            Workflow = workflow,
+            CurrentStateId = state.CurrentStateId,
+            Input = state.Input,
+            ExecutionId = execution.ExecutionId,
+            StartedAt = state.StartedAt,
+            IterationCount = state.IterationCount,
+            OutputData = state.OutputData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+            WorkingDirectory = execution.Context.WorkingDirectory
+        };
+
+        var checkpoint = new OrchestrationCheckpoint
+        {
+            CheckpointId = Guid.NewGuid().ToString(),
+            OrchestrationId = execution.ExecutionId,
+            CurrentState = state.CurrentStateId,
+            CurrentAgent = null,
+            SerializedState = JsonSerializer.Serialize(resumeContext, s_jsonOptions)
+        };
+
+        await _checkpointStore!.SaveCheckpointAsync(
+            execution.ExecutionId, checkpoint, cancellationToken);
     }
 
     #endregion
@@ -507,48 +660,8 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         return currentState.Next;
     }
 
-    private static bool EvaluateCondition(string? condition, WorkflowRuntimeState state)
-    {
-        if (string.IsNullOrWhiteSpace(condition))
-        {
-            return true;
-        }
-
-        // Simple condition evaluation
-        // TODO: Implement full expression parsing
-        return condition.ToLowerInvariant() switch
-        {
-            "success" => state.Status == WorkflowExecutionStatus.Running,
-            "failure" => state.Status == WorkflowExecutionStatus.Failed,
-            "build.success" => state.OutputData.TryGetValue("build_success", out var bs) && bs is true,
-            "test.success" => state.OutputData.TryGetValue("test_success", out var ts) && ts is true,
-            _ when condition.StartsWith("iteration_count") => EvaluateIterationCondition(condition, state),
-            _ => true // Unknown conditions pass by default
-        };
-    }
-
-    private static bool EvaluateIterationCondition(string condition, WorkflowRuntimeState state)
-    {
-        // Parse "iteration_count >= 5" style conditions
-        var parts = condition.Split(new[] { ">=", "<=", ">", "<", "==" }, StringSplitOptions.TrimEntries);
-        if (parts.Length != 2 || !int.TryParse(parts[1], out var threshold))
-        {
-            return true;
-        }
-
-        if (condition.Contains(">="))
-            return state.IterationCount >= threshold;
-        if (condition.Contains("<="))
-            return state.IterationCount <= threshold;
-        if (condition.Contains(">"))
-            return state.IterationCount > threshold;
-        if (condition.Contains("<"))
-            return state.IterationCount < threshold;
-        if (condition.Contains("=="))
-            return state.IterationCount == threshold;
-
-        return true;
-    }
+    private static bool EvaluateCondition(string? condition, WorkflowRuntimeState state) =>
+        WorkflowExpressionEvaluator.Evaluate(condition, state);
 
     #endregion
 
@@ -565,6 +678,22 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         public TaskCompletionSource<ApprovalDecision>? ApprovalGate { get; set; }
         public ApprovalDecision? ApprovalDecision { get; set; }
         public CancellationTokenSource? CancellationSource { get; set; }
+    }
+
+    /// <summary>
+    /// Serializable context for checkpoint resumption.
+    /// Contains everything needed to reconstruct and resume a workflow execution.
+    /// </summary>
+    private sealed class WorkflowResumeContext
+    {
+        public required WorkflowDefinition Workflow { get; set; }
+        public required string CurrentStateId { get; set; }
+        public required string Input { get; set; }
+        public required string ExecutionId { get; set; }
+        public DateTimeOffset StartedAt { get; set; }
+        public int IterationCount { get; set; }
+        public Dictionary<string, object>? OutputData { get; set; }
+        public string? WorkingDirectory { get; set; }
     }
 
     #endregion

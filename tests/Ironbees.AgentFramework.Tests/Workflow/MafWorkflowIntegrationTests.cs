@@ -3,7 +3,7 @@ using Ironbees.AgentMode.Workflow;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.AgentFramework.Tests.Workflow;
 
@@ -14,13 +14,13 @@ namespace Ironbees.AgentFramework.Tests.Workflow;
 /// </summary>
 public class MafWorkflowIntegrationTests
 {
-    private readonly Mock<ILogger<MafWorkflowConverter>> _mockLogger;
+    private readonly ILogger<MafWorkflowConverter> _mockLogger;
     private readonly MafWorkflowConverter _converter;
 
     public MafWorkflowIntegrationTests()
     {
-        _mockLogger = new Mock<ILogger<MafWorkflowConverter>>();
-        _converter = new MafWorkflowConverter(_mockLogger.Object);
+        _mockLogger = Substitute.For<ILogger<MafWorkflowConverter>>();
+        _converter = new MafWorkflowConverter(_mockLogger);
     }
 
     #region Migration Compatibility Tests
@@ -354,9 +354,9 @@ public class MafWorkflowIntegrationTests
     {
         return (name, _) =>
         {
-            var mockChatClient = new Mock<IChatClient>();
+            var mockChatClient = Substitute.For<IChatClient>();
             AIAgent agent = new ChatClientAgent(
-                mockChatClient.Object,
+                mockChatClient,
                 instructions: $"Test agent: {name}",
                 name: name);
             return Task.FromResult(agent);

@@ -69,7 +69,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent ConvertStarted(IronHiveOrchestrationStreamEvent evt)
+    private IronbeesOrchestrationStartedEvent ConvertStarted(IronHiveOrchestrationStreamEvent evt)
     {
         return new IronbeesOrchestrationStartedEvent
         {
@@ -78,7 +78,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertAgentStarted(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesAgentStartedEvent? ConvertAgentStarted(IronHiveOrchestrationStreamEvent evt)
     {
         if (string.IsNullOrEmpty(evt.AgentName))
         {
@@ -91,7 +91,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertMessageDelta(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesMessageDeltaEvent? ConvertMessageDelta(IronHiveOrchestrationStreamEvent evt)
     {
         if (string.IsNullOrEmpty(evt.AgentName) || evt.StreamingResponse is null)
         {
@@ -112,7 +112,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertAgentCompleted(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesAgentCompletedEvent? ConvertAgentCompleted(IronHiveOrchestrationStreamEvent evt)
     {
         if (string.IsNullOrEmpty(evt.AgentName))
         {
@@ -145,7 +145,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertAgentFailed(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesAgentCompletedEvent? ConvertAgentFailed(IronHiveOrchestrationStreamEvent evt)
     {
         if (string.IsNullOrEmpty(evt.AgentName))
         {
@@ -160,7 +160,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent ConvertCompleted(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesOrchestrationCompletedEvent ConvertCompleted(IronHiveOrchestrationStreamEvent evt)
     {
         var result = evt.Result;
         string? finalResult = null;
@@ -196,7 +196,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent ConvertFailed(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesOrchestrationFailedEvent ConvertFailed(IronHiveOrchestrationStreamEvent evt)
     {
         return new IronbeesOrchestrationFailedEvent
         {
@@ -206,7 +206,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertApprovalRequired(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesApprovalRequiredEvent? ConvertApprovalRequired(IronHiveOrchestrationStreamEvent evt)
     {
         if (string.IsNullOrEmpty(evt.AgentName))
         {
@@ -220,7 +220,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertHandoff(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesHandoffEvent? ConvertHandoff(IronHiveOrchestrationStreamEvent evt)
     {
         // Handoff events need to track from/to agents
         // IronHive sends HandoffEvent with the target agent in AgentName
@@ -238,7 +238,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent? ConvertSpeakerSelected(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesSpeakerSelectedEvent? ConvertSpeakerSelected(IronHiveOrchestrationStreamEvent evt)
     {
         if (string.IsNullOrEmpty(evt.AgentName))
         {
@@ -253,7 +253,7 @@ public class IronhiveEventAdapter
         };
     }
 
-    private IronbeesOrchestrationStreamEvent ConvertHumanInputRequired(IronHiveOrchestrationStreamEvent evt)
+    private static IronbeesHumanInputRequiredEvent ConvertHumanInputRequired(IronHiveOrchestrationStreamEvent evt)
     {
         return new IronbeesHumanInputRequiredEvent
         {

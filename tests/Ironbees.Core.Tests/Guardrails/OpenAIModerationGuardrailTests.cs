@@ -3,7 +3,8 @@
 
 using System.ClientModel;
 using Ironbees.Core.Guardrails;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using OpenAI.Moderations;
 
 namespace Ironbees.Core.Tests.Guardrails;
@@ -22,8 +23,8 @@ public class OpenAIModerationGuardrailTests
     public void Name_ReturnsConfiguredName()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object, new OpenAIModerationGuardrailOptions
+        var mockClient = Substitute.For<ModerationClient>();
+        var guardrail = new OpenAIModerationGuardrail(mockClient, new OpenAIModerationGuardrailOptions
         {
             Name = "CustomModeration"
         });
@@ -36,8 +37,8 @@ public class OpenAIModerationGuardrailTests
     public void Name_DefaultOptions_ReturnsDefaultName()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object);
+        var mockClient = Substitute.For<ModerationClient>();
+        var guardrail = new OpenAIModerationGuardrail(mockClient);
 
         // Assert
         Assert.Equal("OpenAIModeration", guardrail.Name);
@@ -47,8 +48,8 @@ public class OpenAIModerationGuardrailTests
     public async Task ValidateInputAsync_WhenValidateInputDisabled_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object, new OpenAIModerationGuardrailOptions
+        var mockClient = Substitute.For<ModerationClient>();
+        var guardrail = new OpenAIModerationGuardrail(mockClient, new OpenAIModerationGuardrailOptions
         {
             ValidateInput = false
         });
@@ -65,8 +66,8 @@ public class OpenAIModerationGuardrailTests
     public async Task ValidateOutputAsync_WhenValidateOutputDisabled_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object, new OpenAIModerationGuardrailOptions
+        var mockClient = Substitute.For<ModerationClient>();
+        var guardrail = new OpenAIModerationGuardrail(mockClient, new OpenAIModerationGuardrailOptions
         {
             ValidateOutput = false
         });
@@ -82,8 +83,8 @@ public class OpenAIModerationGuardrailTests
     public async Task ValidateInputAsync_EmptyContent_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object);
+        var mockClient = Substitute.For<ModerationClient>();
+        var guardrail = new OpenAIModerationGuardrail(mockClient);
 
         // Act
         var result = await guardrail.ValidateInputAsync("");
@@ -96,8 +97,8 @@ public class OpenAIModerationGuardrailTests
     public async Task ValidateInputAsync_NullContent_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object);
+        var mockClient = Substitute.For<ModerationClient>();
+        var guardrail = new OpenAIModerationGuardrail(mockClient);
 
         // Act
         var result = await guardrail.ValidateInputAsync(null!);
@@ -110,12 +111,12 @@ public class OpenAIModerationGuardrailTests
     public async Task ValidateInputAsync_ServiceError_FailOpenFalse_ReturnsBlocked()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
+        var mockClient = Substitute.For<ModerationClient>();
         mockClient
-            .Setup(c => c.ClassifyTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ClassifyTextAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new ClientResultException("API error"));
 
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object, new OpenAIModerationGuardrailOptions
+        var guardrail = new OpenAIModerationGuardrail(mockClient, new OpenAIModerationGuardrailOptions
         {
             FailOpen = false
         });
@@ -134,12 +135,12 @@ public class OpenAIModerationGuardrailTests
     public async Task ValidateInputAsync_ServiceError_FailOpenTrue_ReturnsAllowed()
     {
         // Arrange
-        var mockClient = new Mock<ModerationClient>();
+        var mockClient = Substitute.For<ModerationClient>();
         mockClient
-            .Setup(c => c.ClassifyTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ClassifyTextAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new ClientResultException("API error"));
 
-        var guardrail = new OpenAIModerationGuardrail(mockClient.Object, new OpenAIModerationGuardrailOptions
+        var guardrail = new OpenAIModerationGuardrail(mockClient, new OpenAIModerationGuardrailOptions
         {
             FailOpen = true
         });

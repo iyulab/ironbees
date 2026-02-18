@@ -17,7 +17,7 @@ public interface IAgentRegistry
     /// </summary>
     /// <param name="name">Agent name</param>
     /// <returns>Agent instance or null if not found</returns>
-    IAgent? Get(string name);
+    IAgent? GetAgent(string name);
 
     /// <summary>
     /// Try to get an agent by name

@@ -116,7 +116,7 @@ public sealed record BulkheadSettings
     /// <summary>
     /// Maximum number of requests that can wait in queue when at capacity. Default is 0 (no queue).
     /// </summary>
-    public int MaxQueueSize { get; init; } = 0;
+    public int MaxQueueSize { get; init; }
 }
 
 /// <summary>

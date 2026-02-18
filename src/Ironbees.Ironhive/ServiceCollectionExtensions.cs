@@ -52,7 +52,7 @@ public static class ServiceCollectionExtensions
         {
             throw new ArgumentException(
                 "Either ConfigureHive or HiveService must be provided.",
-                nameof(options));
+                nameof(configure));
         }
 
         // Register orchestration services

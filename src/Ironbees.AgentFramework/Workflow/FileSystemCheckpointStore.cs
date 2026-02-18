@@ -12,7 +12,7 @@ namespace Ironbees.AgentFramework.Workflow;
 /// This follows Ironbees' "File System = Single Source of Truth" philosophy,
 /// enabling checkpoint data to be inspected with standard file tools.
 /// </remarks>
-public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
+public sealed partial class FileSystemCheckpointStore : ICheckpointStore, IDisposable
 {
     private readonly string _rootPath;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -61,9 +61,10 @@ public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
             var json = JsonSerializer.Serialize(checkpoint, _jsonOptions);
             await File.WriteAllTextAsync(filePath, json, cancellationToken);
 
-            _logger?.LogDebug(
-                "Saved checkpoint '{CheckpointId}' for execution '{ExecutionId}' to {FilePath}",
-                checkpoint.CheckpointId, checkpoint.ExecutionId, filePath);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+            {
+                LogSavedCheckpoint(_logger, checkpoint.CheckpointId, checkpoint.ExecutionId, filePath);
+            }
         }
         finally
         {
@@ -154,8 +155,10 @@ public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
             {
                 File.Delete(filePath);
 
-                _logger?.LogDebug("Deleted checkpoint '{CheckpointId}' from {FilePath}",
-                    checkpointId, filePath);
+                if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogDeletedCheckpoint(_logger, checkpointId, filePath);
+                }
 
                 // Clean up empty execution directory
                 CleanupEmptyDirectory(Path.GetDirectoryName(filePath)!);
@@ -194,9 +197,10 @@ public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
             // Remove the execution directory
             CleanupEmptyDirectory(executionPath);
 
-            _logger?.LogDebug(
-                "Deleted {Count} checkpoints for execution '{ExecutionId}'",
-                files.Length, executionId);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+            {
+                LogDeletedAllCheckpoints(_logger, files.Length, executionId);
+            }
 
             return files.Length;
         }
@@ -237,9 +241,10 @@ public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
                 CleanupEmptyDirectory(executionDir);
             }
 
-            _logger?.LogInformation(
-                "Cleaned up {Count} checkpoints older than {OlderThan}",
-                deletedCount, olderThan);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+            {
+                LogCleanedUpCheckpoints(_logger, deletedCount, olderThan);
+            }
 
             return deletedCount;
         }
@@ -321,7 +326,7 @@ public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Failed to read checkpoint from {FilePath}", filePath);
+            if (_logger is not null) { LogFailedToReadCheckpoint(_logger, ex, filePath); }
             return null;
         }
     }
@@ -343,6 +348,21 @@ public sealed class FileSystemCheckpointStore : ICheckpointStore, IDisposable
             // Ignore cleanup errors
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Saved checkpoint '{CheckpointId}' for execution '{ExecutionId}' to {FilePath}")]
+    private static partial void LogSavedCheckpoint(ILogger logger, string checkpointId, string executionId, string filePath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Deleted checkpoint '{CheckpointId}' from {FilePath}")]
+    private static partial void LogDeletedCheckpoint(ILogger logger, string checkpointId, string filePath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Deleted {Count} checkpoints for execution '{ExecutionId}'")]
+    private static partial void LogDeletedAllCheckpoints(ILogger logger, int count, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cleaned up {Count} checkpoints older than {OlderThan}")]
+    private static partial void LogCleanedUpCheckpoints(ILogger logger, int count, DateTimeOffset olderThan);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to read checkpoint from {FilePath}")]
+    private static partial void LogFailedToReadCheckpoint(ILogger logger, Exception exception, string filePath);
 
     /// <summary>
     /// Disposes resources used by this store.

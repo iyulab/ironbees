@@ -1,3 +1,4 @@
+using System.Globalization;
 using DotNetEnv;
 using Ironbees.Autonomous;
 using Ironbees.Autonomous.Abstractions;
@@ -222,7 +223,7 @@ string ExtractQuestion(string output)
     // Try JSON extraction
     if (output.Contains("\"question\""))
     {
-        var start = output.IndexOf("\"question\"");
+        var start = output.IndexOf("\"question\"", StringComparison.Ordinal);
         var colonIdx = output.IndexOf(':', start);
         var quoteStart = output.IndexOf('"', colonIdx + 1) + 1;
         var quoteEnd = output.IndexOf('"', quoteStart);
@@ -255,7 +256,7 @@ void ShowResults(GameDefinition gameConfig, GameState state, AutonomousOrchestra
 
     Console.ForegroundColor = state.IsWin ? ConsoleColor.Green : ConsoleColor.Yellow;
     var msg = state.IsWin
-        ? (gameConfig.Messages.AiWins ?? "🎉 Correct!").Replace("{questions}", state.History.Count.ToString())
+        ? (gameConfig.Messages.AiWins ?? "🎉 Correct!").Replace("{questions}", state.History.Count.ToString(CultureInfo.InvariantCulture))
         : (gameConfig.Messages.HumanWins ?? gameConfig.Messages.Timeout ?? "Game Over!");
     Console.WriteLine($"\n{msg}");
     Console.ResetColor();

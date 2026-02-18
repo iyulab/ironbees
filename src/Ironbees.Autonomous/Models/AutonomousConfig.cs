@@ -40,7 +40,7 @@ public record AutonomousConfig
     /// <summary>
     /// Continue processing queue on task failure
     /// </summary>
-    public bool ContinueOnFailure { get; init; } = false;
+    public bool ContinueOnFailure { get; init; }
 
     /// <summary>
     /// Minimum confidence threshold to consider goal complete
@@ -54,7 +54,7 @@ public record AutonomousConfig
     /// <summary>
     /// Enable human-in-the-loop oversight
     /// </summary>
-    public bool EnableHumanInTheLoop { get; init; } = false;
+    public bool EnableHumanInTheLoop { get; init; }
 
     /// <summary>
     /// Intervention points requiring human approval
@@ -69,7 +69,7 @@ public record AutonomousConfig
     /// <summary>
     /// Request feedback after task completion
     /// </summary>
-    public bool RequestFeedbackOnComplete { get; init; } = false;
+    public bool RequestFeedbackOnComplete { get; init; }
 
     /// <summary>
     /// Confidence threshold below which human review is requested
@@ -108,7 +108,7 @@ public record AutonomousConfig
     /// Automatically enqueue next iteration when oracle returns CanContinue=true.
     /// Eliminates need for manual event handling to continue iterative workflows.
     /// </summary>
-    public bool AutoContinueOnOracle { get; init; } = false;
+    public bool AutoContinueOnOracle { get; init; }
 
     /// <summary>
     /// Template for generating the next iteration prompt.
@@ -122,7 +122,7 @@ public record AutonomousConfig
     /// When true: AutoContinue triggers if !IsComplete (ignores CanContinue)
     /// When false: AutoContinue requires both !IsComplete AND CanContinue=true
     /// </summary>
-    public bool AutoContinueOnIncomplete { get; init; } = false;
+    public bool AutoContinueOnIncomplete { get; init; }
 
     /// <summary>
     /// Automatically infer CanContinue from IsComplete in oracle verdict.
@@ -130,7 +130,7 @@ public record AutonomousConfig
     /// Useful for smaller/local LLMs (GPUStack, Ollama) that don't reliably
     /// follow the CanContinue guideline in their JSON responses.
     /// </summary>
-    public bool InferCanContinueFromComplete { get; init; } = false;
+    public bool InferCanContinueFromComplete { get; init; }
 
     // ========================================
     // Retry and Resilience Configuration
@@ -139,7 +139,7 @@ public record AutonomousConfig
     /// <summary>
     /// Number of retry attempts when executor returns empty or failed result
     /// </summary>
-    public int RetryOnFailureCount { get; init; } = 0;
+    public int RetryOnFailureCount { get; init; }
 
     /// <summary>
     /// Delay between retry attempts in milliseconds
@@ -149,7 +149,7 @@ public record AutonomousConfig
     /// <summary>
     /// Enable fallback strategy when all retries fail
     /// </summary>
-    public bool EnableFallbackStrategy { get; init; } = false;
+    public bool EnableFallbackStrategy { get; init; }
 
     // ========================================
     // Final Iteration Strategy Configuration
@@ -160,7 +160,7 @@ public record AutonomousConfig
     /// Use this to ensure the task produces a complete result when max iterations is reached.
     /// Example: In 20 Questions, force a guess on question 20.
     /// </summary>
-    public bool EnableFinalIterationStrategy { get; init; } = false;
+    public bool EnableFinalIterationStrategy { get; init; }
 }
 
 /// <summary>

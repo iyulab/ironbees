@@ -1,60 +1,60 @@
 using Ironbees.Core.Conversation;
 using Microsoft.Extensions.AI;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
 public class AgentStickinessTests
 {
-    private static Mock<IAgent> CreateMockAgent(string name)
+    private static IAgent CreateMockAgent(string name)
     {
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns($"Agent: {name}");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns($"Agent: {name}");
         return mockAgent;
     }
 
     private static AgentOrchestrator CreateOrchestrator(
-        Mock<IAgentRegistry> registry,
-        Mock<ILLMFrameworkAdapter> adapter,
-        Mock<IAgentSelector> selector,
-        Mock<IConversationStore>? conversationStore = null)
+        IAgentRegistry registry,
+        ILLMFrameworkAdapter adapter,
+        IAgentSelector selector,
+        IConversationStore? conversationStore = null)
     {
-        var mockLoader = new Mock<IAgentLoader>();
+        var mockLoader = Substitute.For<IAgentLoader>();
         return new AgentOrchestrator(
-            mockLoader.Object,
-            registry.Object,
-            adapter.Object,
-            selector.Object,
+            mockLoader,
+            registry,
+            adapter,
+            selector,
             agentsDirectory: null,
-            conversationStore: conversationStore?.Object);
+            conversationStore: conversationStore);
     }
 
     [Fact]
     public async Task SelectAgent_SameTopicContinues_KeepsCurrentAgent()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
 
         var codeAgent = CreateMockAgent("code-agent");
         var mathAgent = CreateMockAgent("math-agent");
 
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { "code-agent", "math-agent" });
-        registry.Setup(r => r.Get("code-agent")).Returns(codeAgent.Object);
-        registry.Setup(r => r.Get("math-agent")).Returns(mathAgent.Object);
+        registry.ListAgents().Returns(new List<string> { "code-agent", "math-agent" });
+        registry.GetAgent("code-agent").Returns(codeAgent);
+        registry.GetAgent("math-agent").Returns(mathAgent);
 
         // Code agent scores 0.7, math agent scores 0.8 — delta = 0.1 < threshold 0.2
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = mathAgent.Object, Score = 0.8 },
-                new() { Agent = codeAgent.Object, Score = 0.7 }
+                new() { Agent = mathAgent, Score = 0.8 },
+                new() { Agent = codeAgent, Score = 0.7 }
             });
 
         // Existing conversation with code-agent
@@ -69,15 +69,15 @@ public class AgentStickinessTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
-        adapter.Setup(a => a.RunAsync(
-            codeAgent.Object, // Should keep the code agent
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Sticky response");
+        adapter.RunAsync(
+            codeAgent, // Should keep the code agent
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Sticky response");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -87,43 +87,43 @@ public class AgentStickinessTests
 
         // Assert — should have called code-agent (sticky), not math-agent
         Assert.Equal("Sticky response", result);
-        adapter.Verify(a => a.RunAsync(
-            codeAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-        adapter.Verify(a => a.RunAsync(
-            mathAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+        await adapter.Received(1).RunAsync(
+            codeAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>());
+        await adapter.DidNotReceive().RunAsync(
+            mathAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task SelectAgent_NewTopicHigherScore_SwitchesAgent()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
 
         var codeAgent = CreateMockAgent("code-agent");
         var mathAgent = CreateMockAgent("math-agent");
 
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { "code-agent", "math-agent" });
-        registry.Setup(r => r.Get("code-agent")).Returns(codeAgent.Object);
-        registry.Setup(r => r.Get("math-agent")).Returns(mathAgent.Object);
+        registry.ListAgents().Returns(new List<string> { "code-agent", "math-agent" });
+        registry.GetAgent("code-agent").Returns(codeAgent);
+        registry.GetAgent("math-agent").Returns(mathAgent);
 
         // Math agent scores much higher: 0.95 vs code agent 0.3 — delta = 0.65 > threshold 0.2
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = mathAgent.Object, Score = 0.95 },
-                new() { Agent = codeAgent.Object, Score = 0.3 }
+                new() { Agent = mathAgent, Score = 0.95 },
+                new() { Agent = codeAgent, Score = 0.3 }
             });
 
         // Existing conversation with code-agent
@@ -138,15 +138,15 @@ public class AgentStickinessTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
-        adapter.Setup(a => a.RunAsync(
-            mathAgent.Object, // Should switch to math agent
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Math response");
+        adapter.RunAsync(
+            mathAgent, // Should switch to math agent
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Math response");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -156,38 +156,38 @@ public class AgentStickinessTests
 
         // Assert — should have switched to math-agent
         Assert.Equal("Math response", result);
-        adapter.Verify(a => a.RunAsync(
-            mathAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await adapter.Received(1).RunAsync(
+            mathAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task SelectAgent_NewTopicMarginalScore_KeepsCurrentAgent()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
 
         var codeAgent = CreateMockAgent("code-agent");
         var mathAgent = CreateMockAgent("math-agent");
 
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { "code-agent", "math-agent" });
-        registry.Setup(r => r.Get("code-agent")).Returns(codeAgent.Object);
-        registry.Setup(r => r.Get("math-agent")).Returns(mathAgent.Object);
+        registry.ListAgents().Returns(new List<string> { "code-agent", "math-agent" });
+        registry.GetAgent("code-agent").Returns(codeAgent);
+        registry.GetAgent("math-agent").Returns(mathAgent);
 
         // Math agent scores only slightly higher: delta = 0.19 < threshold 0.2
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = mathAgent.Object, Score = 0.69 },
-                new() { Agent = codeAgent.Object, Score = 0.5 }
+                new() { Agent = mathAgent, Score = 0.69 },
+                new() { Agent = codeAgent, Score = 0.5 }
             });
 
         var existingState = new ConversationState
@@ -201,15 +201,15 @@ public class AgentStickinessTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
-        adapter.Setup(a => a.RunAsync(
-            codeAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Code response");
+        adapter.RunAsync(
+            codeAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Code response");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -219,50 +219,50 @@ public class AgentStickinessTests
 
         // Assert — should keep code-agent (marginal difference)
         Assert.Equal("Code response", result);
-        adapter.Verify(a => a.RunAsync(
-            codeAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await adapter.Received(1).RunAsync(
+            codeAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task SelectAgent_NoConversation_NormalSelection()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
 
         var codeAgent = CreateMockAgent("code-agent");
         var mathAgent = CreateMockAgent("math-agent");
 
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { "code-agent", "math-agent" });
-        registry.Setup(r => r.Get("code-agent")).Returns(codeAgent.Object);
-        registry.Setup(r => r.Get("math-agent")).Returns(mathAgent.Object);
+        registry.ListAgents().Returns(new List<string> { "code-agent", "math-agent" });
+        registry.GetAgent("code-agent").Returns(codeAgent);
+        registry.GetAgent("math-agent").Returns(mathAgent);
 
         // Math agent scores highest
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = mathAgent.Object, Score = 0.9 },
-                new() { Agent = codeAgent.Object, Score = 0.3 }
+                new() { Agent = mathAgent, Score = 0.9 },
+                new() { Agent = codeAgent, Score = 0.3 }
             });
 
         // No existing conversation
-        conversationStore.Setup(s => s.LoadAsync("conv-new", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ConversationState?)null);
+        conversationStore.LoadAsync("conv-new", Arg.Any<CancellationToken>())
+            .Returns((ConversationState?)null);
 
-        adapter.Setup(a => a.RunAsync(
-            mathAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Math response");
+        adapter.RunAsync(
+            mathAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Math response");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-new" };
@@ -272,38 +272,38 @@ public class AgentStickinessTests
 
         // Assert — first turn, no stickiness, should select best agent (math)
         Assert.Equal("Math response", result);
-        adapter.Verify(a => a.RunAsync(
-            mathAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await adapter.Received(1).RunAsync(
+            mathAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task SelectAgent_CustomStickinessThreshold_Respected()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
 
         var codeAgent = CreateMockAgent("code-agent");
         var mathAgent = CreateMockAgent("math-agent");
 
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { "code-agent", "math-agent" });
-        registry.Setup(r => r.Get("code-agent")).Returns(codeAgent.Object);
-        registry.Setup(r => r.Get("math-agent")).Returns(mathAgent.Object);
+        registry.ListAgents().Returns(new List<string> { "code-agent", "math-agent" });
+        registry.GetAgent("code-agent").Returns(codeAgent);
+        registry.GetAgent("math-agent").Returns(mathAgent);
 
         // Delta = 0.3, with custom threshold of 0.5, should keep current
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = mathAgent.Object, Score = 0.8 },
-                new() { Agent = codeAgent.Object, Score = 0.5 }
+                new() { Agent = mathAgent, Score = 0.8 },
+                new() { Agent = codeAgent, Score = 0.5 }
             });
 
         var existingState = new ConversationState
@@ -317,15 +317,15 @@ public class AgentStickinessTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
-        adapter.Setup(a => a.RunAsync(
-            codeAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Code response");
+        adapter.RunAsync(
+            codeAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Code response");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions
@@ -339,38 +339,38 @@ public class AgentStickinessTests
 
         // Assert — delta 0.3 < threshold 0.5, should keep code-agent
         Assert.Equal("Code response", result);
-        adapter.Verify(a => a.RunAsync(
-            codeAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await adapter.Received(1).RunAsync(
+            codeAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task AgentSwitch_RecordsMetadata()
     {
         // Arrange
-        var registry = new Mock<IAgentRegistry>();
-        var adapter = new Mock<ILLMFrameworkAdapter>();
-        var selector = new Mock<IAgentSelector>();
-        var conversationStore = new Mock<IConversationStore>();
+        var registry = Substitute.For<IAgentRegistry>();
+        var adapter = Substitute.For<ILLMFrameworkAdapter>();
+        var selector = Substitute.For<IAgentSelector>();
+        var conversationStore = Substitute.For<IConversationStore>();
 
         var codeAgent = CreateMockAgent("code-agent");
         var mathAgent = CreateMockAgent("math-agent");
 
-        registry.Setup(r => r.ListAgents()).Returns(new List<string> { "code-agent", "math-agent" });
-        registry.Setup(r => r.Get("code-agent")).Returns(codeAgent.Object);
-        registry.Setup(r => r.Get("math-agent")).Returns(mathAgent.Object);
+        registry.ListAgents().Returns(new List<string> { "code-agent", "math-agent" });
+        registry.GetAgent("code-agent").Returns(codeAgent);
+        registry.GetAgent("math-agent").Returns(mathAgent);
 
         // Strong switch signal: delta = 0.6 > threshold 0.2
-        selector.Setup(s => s.ScoreAgentsAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentScore>
+        selector.ScoreAgentsAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new List<AgentScore>
             {
-                new() { Agent = mathAgent.Object, Score = 0.9 },
-                new() { Agent = codeAgent.Object, Score = 0.3 }
+                new() { Agent = mathAgent, Score = 0.9 },
+                new() { Agent = codeAgent, Score = 0.3 }
             });
 
         var existingState = new ConversationState
@@ -384,15 +384,15 @@ public class AgentStickinessTests
             }
         };
 
-        conversationStore.Setup(s => s.LoadAsync("conv-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingState);
+        conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
+            .Returns(existingState);
 
-        adapter.Setup(a => a.RunAsync(
-            mathAgent.Object,
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyList<ChatMessage>?>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Math response");
+        adapter.RunAsync(
+            mathAgent,
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyList<ChatMessage>?>(),
+            Arg.Any<CancellationToken>())
+            .Returns("Math response");
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -401,13 +401,13 @@ public class AgentStickinessTests
         await orchestrator.ProcessAsync("Calculate integral", options);
 
         // Assert — AppendMessageAsync should be called (agent switch updates existing state)
-        conversationStore.Verify(s => s.AppendMessageAsync(
+        await conversationStore.Received(1).AppendMessageAsync(
             "conv-1",
-            It.Is<ConversationMessage>(m => m.Role == "user" && m.Content == "Calculate integral"),
-            It.IsAny<CancellationToken>()), Times.Once);
-        conversationStore.Verify(s => s.AppendMessageAsync(
+            Arg.Is<ConversationMessage>(m => m.Role == "user" && m.Content == "Calculate integral"),
+            Arg.Any<CancellationToken>());
+        await conversationStore.Received(1).AppendMessageAsync(
             "conv-1",
-            It.Is<ConversationMessage>(m => m.Role == "assistant" && m.Content == "Math response"),
-            It.IsAny<CancellationToken>()), Times.Once);
+            Arg.Is<ConversationMessage>(m => m.Role == "assistant" && m.Content == "Math response"),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -1,4 +1,4 @@
-using Moq;
+using NSubstitute;
 using System.Diagnostics;
 
 namespace Ironbees.Core.Tests;
@@ -12,25 +12,27 @@ namespace Ironbees.Core.Tests;
 /// </summary>
 public class EmbeddingAgentSelectorBenchmarkTests
 {
-    private readonly Mock<IEmbeddingProvider> _mockEmbeddingProvider;
+    private static readonly float[] TestEmbeddingInput = [1.0f, 0.5f, 0.3f];
+
+    private readonly IEmbeddingProvider _mockEmbeddingProvider;
     private readonly float[] _testEmbedding;
 
     public EmbeddingAgentSelectorBenchmarkTests()
     {
-        _mockEmbeddingProvider = new Mock<IEmbeddingProvider>();
-        _mockEmbeddingProvider.Setup(p => p.Dimensions).Returns(384);
-        _mockEmbeddingProvider.Setup(p => p.ModelName).Returns("test-model");
+        _mockEmbeddingProvider = Substitute.For<IEmbeddingProvider>();
+        _mockEmbeddingProvider.Dimensions.Returns(384);
+        _mockEmbeddingProvider.ModelName.Returns("test-model");
 
-        _testEmbedding = VectorSimilarity.Normalize(new float[] { 1.0f, 0.5f, 0.3f });
+        _testEmbedding = VectorSimilarity.Normalize(TestEmbeddingInput);
     }
 
-    private IAgent CreateTestAgent(
+    private static IAgent CreateTestAgent(
         string name,
         string description,
         List<string>? capabilities = null,
         List<string>? tags = null)
     {
-        var mockAgent = new Mock<IAgent>();
+        var mockAgent = Substitute.For<IAgent>();
         var config = new AgentConfig
         {
             Name = name,
@@ -47,14 +49,14 @@ public class EmbeddingAgentSelectorBenchmarkTests
             Tags = tags ?? new List<string>()
         };
 
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns(description);
-        mockAgent.Setup(a => a.Config).Returns(config);
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns(description);
+        mockAgent.Config.Returns(config);
 
-        return mockAgent.Object;
+        return mockAgent;
     }
 
-    private List<float[]> GenerateDistinctEmbeddings(int count)
+    private static List<float[]> GenerateDistinctEmbeddings(int count)
     {
         var embeddings = new List<float[]>();
         for (int i = 0; i < count; i++)
@@ -73,14 +75,14 @@ public class EmbeddingAgentSelectorBenchmarkTests
         var embeddings = GenerateDistinctEmbeddings(5);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_testEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embeddings);
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(embeddings);
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agents = new List<IAgent>
         {
@@ -133,8 +135,8 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string text, CancellationToken ct) =>
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 // Simulate some delay for embedding generation
                 Thread.Sleep(1);
@@ -142,15 +144,16 @@ public class EmbeddingAgentSelectorBenchmarkTests
             });
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<string> texts, CancellationToken ct) =>
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 // Simulate some delay for batch embedding generation
                 Thread.Sleep(5);
+                var texts = callInfo.ArgAt<IReadOnlyList<string>>(0);
                 return texts.Select(_ => _testEmbedding).ToArray();
             });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agents = new List<IAgent>
         {
@@ -183,14 +186,14 @@ public class EmbeddingAgentSelectorBenchmarkTests
         var embeddings = GenerateDistinctEmbeddings(10);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_testEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embeddings);
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(embeddings);
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agents = new List<IAgent>();
         for (int i = 0; i < 10; i++)
@@ -221,15 +224,15 @@ public class EmbeddingAgentSelectorBenchmarkTests
         var embeddings = GenerateDistinctEmbeddings(5);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_testEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embeddings);
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(embeddings);
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agents = new List<IAgent>
@@ -287,8 +290,8 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange - The hybrid selector runs both selectors in parallel
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string text, CancellationToken ct) =>
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 // Simulate some delay
                 Thread.Sleep(5);
@@ -296,15 +299,16 @@ public class EmbeddingAgentSelectorBenchmarkTests
             });
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<string> texts, CancellationToken ct) =>
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 Thread.Sleep(10);
+                var texts = callInfo.ArgAt<IReadOnlyList<string>>(0);
                 return texts.Select(_ => _testEmbedding).ToArray();
             });
 
         var keywordSelector = new KeywordAgentSelector();
-        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var embeddingSelector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var hybridSelector = new HybridAgentSelector(keywordSelector, embeddingSelector);
 
         var agents = new List<IAgent>
@@ -412,14 +416,14 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_testEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { _testEmbedding, _testEmbedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { _testEmbedding, _testEmbedding });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agents = new List<IAgent>
         {
@@ -447,19 +451,20 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_testEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<string> texts, CancellationToken ct) =>
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 // Simulate some delay to increase race condition likelihood
                 Thread.Sleep(1);
+                var texts = callInfo.ArgAt<IReadOnlyList<string>>(0);
                 return texts.Select(_ => _testEmbedding).ToArray();
             });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agents = new List<IAgent>
         {

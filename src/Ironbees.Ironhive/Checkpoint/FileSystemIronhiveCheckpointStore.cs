@@ -11,7 +11,7 @@ namespace Ironbees.Ironhive.Checkpoint;
 /// File system implementation of IronHive's ICheckpointStore.
 /// Stores orchestration checkpoints in the .ironbees/checkpoints directory.
 /// </summary>
-public class FileSystemIronhiveCheckpointStore : ICheckpointStore
+public partial class FileSystemIronhiveCheckpointStore : ICheckpointStore
 {
     private const string DefaultCheckpointDirectory = ".ironbees/checkpoints";
     private readonly string _checkpointDirectory;
@@ -51,15 +51,19 @@ public class FileSystemIronhiveCheckpointStore : ICheckpointStore
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
-            _logger.LogDebug("Created checkpoint directory: {Directory}", directory);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogCreatedCheckpointDirectory(_logger, directory);
+            }
         }
 
         var json = JsonSerializer.Serialize(checkpoint, _jsonOptions);
         await File.WriteAllTextAsync(filePath, json, cancellationToken);
 
-        _logger.LogInformation(
-            "Saved checkpoint {CheckpointId} for orchestration {OrchestrationId} at {FilePath}",
-            checkpoint.CheckpointId, orchestrationId, filePath);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            LogSavedCheckpoint(_logger, checkpoint.CheckpointId, orchestrationId, filePath);
+        }
     }
 
     /// <inheritdoc />
@@ -78,7 +82,10 @@ public class FileSystemIronhiveCheckpointStore : ICheckpointStore
             filePath = await GetLatestCheckpointFilePathAsync(orchestrationId, cancellationToken);
             if (filePath is null)
             {
-                _logger.LogDebug("No checkpoints found for orchestration {OrchestrationId}", orchestrationId);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogNoCheckpointsFound(_logger, orchestrationId);
+                }
                 return null;
             }
         }
@@ -89,18 +96,20 @@ public class FileSystemIronhiveCheckpointStore : ICheckpointStore
 
         if (!File.Exists(filePath))
         {
-            _logger.LogDebug(
-                "Checkpoint file not found: {FilePath} for orchestration {OrchestrationId}",
-                filePath, orchestrationId);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                LogCheckpointFileNotFound(_logger, filePath, orchestrationId);
+            }
             return null;
         }
 
         var json = await File.ReadAllTextAsync(filePath, cancellationToken);
         var checkpoint = JsonSerializer.Deserialize<OrchestrationCheckpoint>(json, _jsonOptions);
 
-        _logger.LogInformation(
-            "Loaded checkpoint {CheckpointId} for orchestration {OrchestrationId}",
-            checkpoint?.CheckpointId, orchestrationId);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            LogLoadedCheckpoint(_logger, checkpoint?.CheckpointId, orchestrationId);
+        }
 
         return checkpoint;
     }
@@ -134,9 +143,10 @@ public class FileSystemIronhiveCheckpointStore : ICheckpointStore
             }
         }
 
-        _logger.LogDebug(
-            "Listed {Count} checkpoints for orchestration {OrchestrationId}",
-            checkpoints.Count, orchestrationId);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogListedCheckpoints(_logger, checkpoints.Count, orchestrationId);
+        }
 
         return checkpoints;
     }
@@ -155,9 +165,10 @@ public class FileSystemIronhiveCheckpointStore : ICheckpointStore
         if (File.Exists(filePath))
         {
             File.Delete(filePath);
-            _logger.LogInformation(
-                "Deleted checkpoint {CheckpointId} for orchestration {OrchestrationId}",
-                checkpointId, orchestrationId);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                LogDeletedCheckpoint(_logger, checkpointId, orchestrationId);
+            }
         }
 
         return Task.CompletedTask;
@@ -175,13 +186,38 @@ public class FileSystemIronhiveCheckpointStore : ICheckpointStore
         if (Directory.Exists(orchestrationDirectory))
         {
             Directory.Delete(orchestrationDirectory, recursive: true);
-            _logger.LogInformation(
-                "Deleted all checkpoints for orchestration {OrchestrationId}",
-                orchestrationId);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                LogDeletedAllCheckpoints(_logger, orchestrationId);
+            }
         }
 
         return Task.CompletedTask;
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Created checkpoint directory: {Directory}")]
+    private static partial void LogCreatedCheckpointDirectory(ILogger logger, string directory);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Saved checkpoint {CheckpointId} for orchestration {OrchestrationId} at {FilePath}")]
+    private static partial void LogSavedCheckpoint(ILogger logger, string checkpointId, string orchestrationId, string filePath);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No checkpoints found for orchestration {OrchestrationId}")]
+    private static partial void LogNoCheckpointsFound(ILogger logger, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Checkpoint file not found: {FilePath} for orchestration {OrchestrationId}")]
+    private static partial void LogCheckpointFileNotFound(ILogger logger, string filePath, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Loaded checkpoint {CheckpointId} for orchestration {OrchestrationId}")]
+    private static partial void LogLoadedCheckpoint(ILogger logger, string? checkpointId, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Listed {Count} checkpoints for orchestration {OrchestrationId}")]
+    private static partial void LogListedCheckpoints(ILogger logger, int count, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Deleted checkpoint {CheckpointId} for orchestration {OrchestrationId}")]
+    private static partial void LogDeletedCheckpoint(ILogger logger, string checkpointId, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Deleted all checkpoints for orchestration {OrchestrationId}")]
+    private static partial void LogDeletedAllCheckpoints(ILogger logger, string orchestrationId);
 
     private string GetOrchestrationDirectory(string orchestrationId)
     {

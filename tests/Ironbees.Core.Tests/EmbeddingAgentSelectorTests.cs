@@ -1,25 +1,25 @@
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
 public class EmbeddingAgentSelectorTests
 {
-    private readonly Mock<IEmbeddingProvider> _mockEmbeddingProvider;
+    private readonly IEmbeddingProvider _mockEmbeddingProvider;
 
     public EmbeddingAgentSelectorTests()
     {
-        _mockEmbeddingProvider = new Mock<IEmbeddingProvider>();
-        _mockEmbeddingProvider.Setup(p => p.Dimensions).Returns(384);
-        _mockEmbeddingProvider.Setup(p => p.ModelName).Returns("test-model");
+        _mockEmbeddingProvider = Substitute.For<IEmbeddingProvider>();
+        _mockEmbeddingProvider.Dimensions.Returns(384);
+        _mockEmbeddingProvider.ModelName.Returns("test-model");
     }
 
-    private IAgent CreateTestAgent(
+    private static IAgent CreateTestAgent(
         string name,
         string description,
         List<string>? capabilities = null,
         List<string>? tags = null)
     {
-        var mockAgent = new Mock<IAgent>();
+        var mockAgent = Substitute.For<IAgent>();
         var config = new AgentConfig
         {
             Name = name,
@@ -36,11 +36,11 @@ public class EmbeddingAgentSelectorTests
             Tags = tags ?? new List<string>()
         };
 
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns(description);
-        mockAgent.Setup(a => a.Config).Returns(config);
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns(description);
+        mockAgent.Config.Returns(config);
 
-        return mockAgent.Object;
+        return mockAgent;
     }
 
     private static float[] CreateNormalizedVector(params float[] values)
@@ -57,14 +57,14 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.9f, 0.1f, 0.0f); // Closer to coding
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { codingEmbedding, writingEmbedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { codingEmbedding, writingEmbedding });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var codingAgent = CreateTestAgent(
             "coding-agent",
@@ -91,7 +91,7 @@ public class EmbeddingAgentSelectorTests
     public async Task SelectAgentAsync_EmptyAgents_ReturnsNull()
     {
         // Arrange
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var agents = new List<IAgent>();
 
         // Act
@@ -107,7 +107,7 @@ public class EmbeddingAgentSelectorTests
     public async Task SelectAgentAsync_SingleAgent_ReturnsAgentWithFullConfidence()
     {
         // Arrange
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent = CreateTestAgent(
             "single-agent",
@@ -129,7 +129,7 @@ public class EmbeddingAgentSelectorTests
     public async Task SelectAgentAsync_NullInput_ThrowsArgumentException()
     {
         // Arrange
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var agents = new List<IAgent>();
 
         // Act & Assert
@@ -141,7 +141,7 @@ public class EmbeddingAgentSelectorTests
     public async Task SelectAgentAsync_EmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var agents = new List<IAgent>();
 
         // Act & Assert
@@ -153,7 +153,7 @@ public class EmbeddingAgentSelectorTests
     public async Task SelectAgentAsync_WhitespaceInput_ThrowsArgumentException()
     {
         // Arrange
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
         var agents = new List<IAgent>();
 
         // Act & Assert
@@ -165,7 +165,7 @@ public class EmbeddingAgentSelectorTests
     public async Task SelectAgentAsync_NullAgents_ThrowsArgumentNullException()
     {
         // Arrange
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
@@ -182,14 +182,14 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.8f, 0.2f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { agent1Embedding, agent2Embedding, agent3Embedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { agent1Embedding, agent2Embedding, agent3Embedding });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
         var agent2 = CreateTestAgent("agent-2", "Second agent");
@@ -214,14 +214,14 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent = CreateTestAgent("perfect-match", "Exactly matching agent");
         var agents = new List<IAgent> { agent };
@@ -232,8 +232,8 @@ public class EmbeddingAgentSelectorTests
         var agent2Embedding = CreateNormalizedVector(0.0f, 1.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding, agent2Embedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding, agent2Embedding });
 
         agents = new List<IAgent> { agent, agent2 };
 
@@ -254,14 +254,14 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.0f, 1.0f, 0.0f); // Orthogonal
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { agentEmbedding, agentEmbedding }); // Two agents with same embedding
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { agentEmbedding, agentEmbedding }); // Two agents with same embedding
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
         var agent2 = CreateTestAgent("agent-2", "Second agent");
@@ -282,10 +282,10 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent = CreateTestAgent("cached-agent", "Agent to cache");
         var agents = new List<IAgent> { agent };
@@ -294,21 +294,19 @@ public class EmbeddingAgentSelectorTests
         await selector.WarmupCacheAsync(agents);
 
         // Verify embeddings were generated
-        _mockEmbeddingProvider.Verify(
-            p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        await _mockEmbeddingProvider.Received(1)
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
 
         // Now make a selection - should not call GenerateEmbeddingsAsync again
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         await selector.SelectAgentAsync("Query", agents);
 
         // Should still be only once (cached)
-        _mockEmbeddingProvider.Verify(
-            p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        await _mockEmbeddingProvider.Received(1)
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -319,14 +317,14 @@ public class EmbeddingAgentSelectorTests
         var embedding2 = CreateNormalizedVector(0.0f, 1.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding1, embedding2 });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding1, embedding2 });
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding1);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding1);
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         // Need at least 2 agents to trigger embedding generation (single agent returns 1.0 without embedding)
         var agent1 = CreateTestAgent("agent-1", "Test agent 1");
@@ -343,9 +341,8 @@ public class EmbeddingAgentSelectorTests
         await selector.SelectAgentAsync("Query", agents);
 
         // Assert - Should have called GenerateEmbeddingsAsync twice now
-        _mockEmbeddingProvider.Verify(
-            p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2));
+        await _mockEmbeddingProvider.Received(2)
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -355,14 +352,14 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding, CreateNormalizedVector(0.0f, 1.0f, 0.0f) });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding, CreateNormalizedVector(0.0f, 1.0f, 0.0f) });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("best-agent", "Best agent");
         var agent2 = CreateTestAgent("other-agent", "Other agent");
@@ -384,14 +381,14 @@ public class EmbeddingAgentSelectorTests
         var embedding2 = CreateNormalizedVector(0.0f, 1.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding1);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding1);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding1, embedding2 });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding1, embedding2 });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
         var agent2 = CreateTestAgent("agent-2", "Second agent");
@@ -423,19 +420,20 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(embedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(embedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IReadOnlyList<string> texts, CancellationToken _) =>
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 // Simulate some delay
                 Thread.Sleep(10);
+                var texts = callInfo.ArgAt<IReadOnlyList<string>>(0);
                 return texts.Select(_ => embedding).ToArray();
             });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
         var agent2 = CreateTestAgent("agent-2", "Second agent");
@@ -460,14 +458,14 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(-1.0f, 0.0f, 0.0f); // Opposite direction
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { agentEmbedding, agentEmbedding });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { agentEmbedding, agentEmbedding });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("agent-1", "First agent");
         var agent2 = CreateTestAgent("agent-2", "Second agent");
@@ -489,14 +487,14 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(queryEmbedding);
+            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
-            .Setup(p => p.GenerateEmbeddingsAsync(It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { embedding1, embedding2 });
+            .GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(new[] { embedding1, embedding2 });
 
-        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider.Object);
+        var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
 
         var agent1 = CreateTestAgent("best-agent", "Best agent");
         var agent2 = CreateTestAgent("runner-up", "Runner up agent");

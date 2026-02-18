@@ -6,7 +6,7 @@ namespace Ironbees.Core;
 /// Selects agents based on semantic similarity using embedding vectors.
 /// Uses cosine similarity to find the most relevant agent for a given query.
 /// </summary>
-public class EmbeddingAgentSelector : IAgentSelector
+public class EmbeddingAgentSelector : IAgentSelector, IDisposable
 {
     private readonly IEmbeddingProvider _embeddingProvider;
     private readonly ConcurrentDictionary<string, AgentEmbedding> _agentEmbeddings = new();
@@ -104,6 +104,27 @@ public class EmbeddingAgentSelector : IAgentSelector
     {
         var result = await SelectAgentAsync(input, availableAgents, cancellationToken);
         return result.AllScores;
+    }
+
+    /// <summary>
+    /// Disposes the cache lock semaphore.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Disposes managed resources.
+    /// </summary>
+    /// <param name="disposing">True if called from Dispose(), false from finalizer.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _cacheLock.Dispose();
+        }
     }
 
     /// <summary>
@@ -236,7 +257,7 @@ public class EmbeddingAgentSelector : IAgentSelector
         await EnsureAgentEmbeddingsAsync(agents, cancellationToken);
     }
 
-    private class AgentEmbedding
+    private sealed class AgentEmbedding
     {
         public required string AgentName { get; init; }
         public required float[] CombinedEmbedding { get; init; }

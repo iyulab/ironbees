@@ -40,13 +40,13 @@ public class HybridAgentSelector : IAgentSelector
 
         if (keywordWeight < 0 || embeddingWeight < 0)
         {
-            throw new ArgumentException("Weights must be non-negative");
+            throw new ArgumentException("Weights must be non-negative", keywordWeight < 0 ? nameof(keywordWeight) : nameof(embeddingWeight));
         }
 
         var totalWeight = keywordWeight + embeddingWeight;
         if (totalWeight == 0)
         {
-            throw new ArgumentException("At least one weight must be greater than zero");
+            throw new ArgumentException("At least one weight must be greater than zero", nameof(keywordWeight));
         }
 
         // Normalize weights to sum to 1.0

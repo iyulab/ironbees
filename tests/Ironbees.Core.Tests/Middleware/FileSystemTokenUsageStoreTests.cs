@@ -16,6 +16,7 @@ public class FileSystemTokenUsageStoreTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         _store.Dispose();
         if (Directory.Exists(_testRoot))
         {

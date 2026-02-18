@@ -8,7 +8,7 @@ namespace Ironbees.Core.AgentDirectory;
 /// Thread-safe implementation using file system locks where necessary.
 /// Follows the convention-over-configuration principle.
 /// </remarks>
-public sealed class FileSystemAgentDirectory : IAgentDirectory
+public sealed class FileSystemAgentDirectory : IAgentDirectory, IDisposable
 {
     private static readonly Dictionary<AgentSubdirectory, string> SubdirectoryNames = new()
     {
@@ -241,7 +241,7 @@ public sealed class FileSystemAgentDirectory : IAgentDirectory
         }
 
         var files = System.IO.Directory.GetFiles(workspacePath)
-            .Where(f => !f.EndsWith(".gitkeep"))
+            .Where(f => !f.EndsWith(".gitkeep", StringComparison.Ordinal))
             .ToList();
 
         foreach (var file in files)
@@ -280,7 +280,7 @@ public sealed class FileSystemAgentDirectory : IAgentDirectory
             }
 
             var files = System.IO.Directory.GetFiles(path)
-                .Where(f => !f.EndsWith(".gitkeep"))
+                .Where(f => !f.EndsWith(".gitkeep", StringComparison.Ordinal))
                 .ToList();
 
             fileCounts[subdirectory] = files.Count;
@@ -344,6 +344,14 @@ public sealed class FileSystemAgentDirectory : IAgentDirectory
 
         var agentName = Path.GetFileName(agentPath);
         return new FileSystemAgentDirectory(agentName, agentPath);
+    }
+
+    /// <summary>
+    /// Disposes the log lock semaphore.
+    /// </summary>
+    public void Dispose()
+    {
+        _logLock.Dispose();
     }
 
     // Private helpers

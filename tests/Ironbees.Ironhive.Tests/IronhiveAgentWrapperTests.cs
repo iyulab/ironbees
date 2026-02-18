@@ -1,5 +1,5 @@
 using Ironbees.Core;
-using Moq;
+using NSubstitute;
 using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
 
 namespace Ironbees.Ironhive.Tests;
@@ -10,7 +10,7 @@ public class IronhiveAgentWrapperTests
     public void Constructor_ValidArgs_SetsProperties()
     {
         // Arrange
-        var mockAgent = new Mock<IronHiveAgent>();
+        var mockAgent = Substitute.For<IronHiveAgent>();
         var config = new AgentConfig
         {
             Name = "my-agent",
@@ -21,13 +21,13 @@ public class IronhiveAgentWrapperTests
         };
 
         // Act
-        var wrapper = new IronhiveAgentWrapper(mockAgent.Object, config);
+        var wrapper = new IronhiveAgentWrapper(mockAgent, config);
 
         // Assert
         Assert.Equal("my-agent", wrapper.Name);
         Assert.Equal("My agent description", wrapper.Description);
         Assert.Same(config, wrapper.Config);
-        Assert.Same(mockAgent.Object, wrapper.IronhiveAgent);
+        Assert.Same(mockAgent, wrapper.IronhiveAgent);
     }
 
     [Fact]
@@ -49,16 +49,16 @@ public class IronhiveAgentWrapperTests
     [Fact]
     public void Constructor_NullConfig_Throws()
     {
-        var mockAgent = new Mock<IronHiveAgent>();
+        var mockAgent = Substitute.For<IronHiveAgent>();
 
         Assert.Throws<ArgumentNullException>(() =>
-            new IronhiveAgentWrapper(mockAgent.Object, null!));
+            new IronhiveAgentWrapper(mockAgent, null!));
     }
 
     [Fact]
     public void ImplementsIAgent()
     {
-        var mockAgent = new Mock<IronHiveAgent>();
+        var mockAgent = Substitute.For<IronHiveAgent>();
         var config = new AgentConfig
         {
             Name = "agent",
@@ -68,7 +68,7 @@ public class IronhiveAgentWrapperTests
             Model = new ModelConfig { Provider = "openai", Deployment = "gpt-4o" }
         };
 
-        var wrapper = new IronhiveAgentWrapper(mockAgent.Object, config);
+        var wrapper = new IronhiveAgentWrapper(mockAgent, config);
 
         Assert.IsAssignableFrom<IAgent>(wrapper);
     }

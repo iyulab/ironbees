@@ -1,6 +1,6 @@
 using Ironbees.AgentFramework.Workflow;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.AgentFramework.Tests.Workflow;
 
@@ -11,18 +11,19 @@ namespace Ironbees.AgentFramework.Tests.Workflow;
 public class FileSystemCheckpointStoreTests : IDisposable
 {
     private readonly string _testRootPath;
-    private readonly Mock<ILogger<FileSystemCheckpointStore>> _mockLogger;
+    private readonly ILogger<FileSystemCheckpointStore> _mockLogger;
     private readonly FileSystemCheckpointStore _store;
 
     public FileSystemCheckpointStoreTests()
     {
         _testRootPath = Path.Combine(Path.GetTempPath(), $"ironbees-checkpoint-tests-{Guid.NewGuid()}");
-        _mockLogger = new Mock<ILogger<FileSystemCheckpointStore>>();
-        _store = new FileSystemCheckpointStore(_testRootPath, logger: _mockLogger.Object);
+        _mockLogger = Substitute.For<ILogger<FileSystemCheckpointStore>>();
+        _store = new FileSystemCheckpointStore(_testRootPath, logger: _mockLogger);
     }
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         _store.Dispose();
 
         // Clean up test directory

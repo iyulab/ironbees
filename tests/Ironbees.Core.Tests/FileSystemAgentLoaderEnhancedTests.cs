@@ -22,6 +22,7 @@ public class FileSystemAgentLoaderEnhancedTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         if (Directory.Exists(_testAgentsDir))
         {
             Directory.Delete(_testAgentsDir, recursive: true);
@@ -313,7 +314,7 @@ model:
         return agentPath;
     }
 
-    private void CreateAgentYaml(string agentPath, string name, string description, string version)
+    private static void CreateAgentYaml(string agentPath, string name, string description, string version)
     {
         var yaml = $@"name: {name}
 description: {description}

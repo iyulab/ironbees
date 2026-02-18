@@ -298,7 +298,7 @@ public class AgentConfigValidatorTests
     }
 
     // Helper method
-    private AgentConfig CreateValidConfig(string name)
+    private static AgentConfig CreateValidConfig(string name)
     {
         return new AgentConfig
         {

@@ -5,7 +5,7 @@ using Ironbees.Core;
 using Ironbees.Core.Orchestration;
 using Ironbees.Ironhive.Orchestration;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
+using NSubstitute;
 using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
 
 namespace Ironbees.Ironhive.Tests.Orchestration;
@@ -271,9 +271,9 @@ public class OrchestratorFactoryTests
     {
         // Arrange
         var settings = new OrchestratorSettings { Type = OrchestratorType.Sequential };
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("mock-agent");
-        var agents = new List<IAgent> { mockAgent.Object };
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("mock-agent");
+        var agents = new List<IAgent> { mockAgent };
 
         // Act & Assert
         var ex = Assert.Throws<InvalidOperationException>(() =>
@@ -283,8 +283,8 @@ public class OrchestratorFactoryTests
 
     private static IronhiveAgentWrapper CreateIronhiveAgentWrapper(string name)
     {
-        var mockIronhiveAgent = new Mock<IronHiveAgent>();
-        mockIronhiveAgent.Setup(a => a.Name).Returns(name);
+        var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
+        mockIronhiveAgent.Name.Returns(name);
 
         var config = new AgentConfig
         {
@@ -295,6 +295,6 @@ public class OrchestratorFactoryTests
             Model = new ModelConfig { Provider = "test", Deployment = "test-model" }
         };
 
-        return new IronhiveAgentWrapper(mockIronhiveAgent.Object, config);
+        return new IronhiveAgentWrapper(mockIronhiveAgent, config);
     }
 }

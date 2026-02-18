@@ -19,6 +19,7 @@ public class FileSystemAgentDirectoryTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         if (System.IO.Directory.Exists(_testRoot))
         {
             System.IO.Directory.Delete(_testRoot, recursive: true);

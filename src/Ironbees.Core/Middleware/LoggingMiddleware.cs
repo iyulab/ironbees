@@ -13,7 +13,7 @@ namespace Ironbees.Core.Middleware;
 /// to capture the full request/response cycle including any modifications
 /// from other middleware.
 /// </remarks>
-public sealed class LoggingMiddleware : DelegatingChatClient
+public sealed partial class LoggingMiddleware : DelegatingChatClient
 {
     private readonly ILogger<LoggingMiddleware> _logger;
     private readonly LoggingOptions _options;
@@ -81,9 +81,10 @@ public sealed class LoggingMiddleware : DelegatingChatClient
         }
 
         stopwatch.Stop();
-        _logger.LogInformation(
-            "[{RequestId}] Streaming completed: {UpdateCount} updates in {ElapsedMs}ms",
-            requestId, updateCount, stopwatch.ElapsedMilliseconds);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            LogStreamingCompleted(_logger, requestId, updateCount, stopwatch.ElapsedMilliseconds);
+        }
     }
 
     private void LogRequest(
@@ -96,13 +97,10 @@ public sealed class LoggingMiddleware : DelegatingChatClient
         var messageCount = messageList.Count;
         var totalLength = messageList.Sum(m => m.Text?.Length ?? 0);
 
-        _logger.LogInformation(
-            "[{RequestId}] {RequestType} request: {MessageCount} messages, ~{TotalChars} chars, Model={ModelId}",
-            requestId,
-            isStreaming ? "Streaming" : "Standard",
-            messageCount,
-            totalLength,
-            options?.ModelId ?? "default");
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            LogRequest(_logger, requestId, isStreaming ? "Streaming" : "Standard", messageCount, totalLength, options?.ModelId ?? "default");
+        }
 
         if (_options.LogMessageContent && _logger.IsEnabled(LogLevel.Debug))
         {
@@ -113,7 +111,7 @@ public sealed class LoggingMiddleware : DelegatingChatClient
                 {
                     content = string.Concat(content.AsSpan(0, _options.MaxContentLength), "...");
                 }
-                _logger.LogDebug("[{RequestId}] {Role}: {Content}", requestId, message.Role.Value, content);
+                LogMessageContent(_logger, requestId, message.Role.Value, content);
             }
         }
     }
@@ -125,19 +123,17 @@ public sealed class LoggingMiddleware : DelegatingChatClient
 
         if (response.Usage != null)
         {
-            _logger.LogInformation(
-                "[{RequestId}] Response: {ContentLength} chars, Input={InputTokens}, Output={OutputTokens}, Time={ElapsedMs}ms",
-                requestId,
-                contentLength,
-                response.Usage.InputTokenCount ?? 0,
-                response.Usage.OutputTokenCount ?? 0,
-                elapsedMs);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                LogResponseWithUsage(_logger, requestId, contentLength, response.Usage.InputTokenCount ?? 0, response.Usage.OutputTokenCount ?? 0, elapsedMs);
+            }
         }
         else
         {
-            _logger.LogInformation(
-                "[{RequestId}] Response: {ContentLength} chars, Time={ElapsedMs}ms",
-                requestId, contentLength, elapsedMs);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                LogResponseWithoutUsage(_logger, requestId, contentLength, elapsedMs);
+            }
         }
 
         if (_options.LogMessageContent && _logger.IsEnabled(LogLevel.Debug))
@@ -147,17 +143,35 @@ public sealed class LoggingMiddleware : DelegatingChatClient
             {
                 content = string.Concat(content.AsSpan(0, _options.MaxContentLength), "...");
             }
-            _logger.LogDebug("[{RequestId}] Response content: {Content}", requestId, content);
+            LogResponseContent(_logger, requestId, content);
         }
     }
 
     private void LogError(string requestId, Exception ex, long elapsedMs)
     {
-        _logger.LogError(
-            ex,
-            "[{RequestId}] Request failed after {ElapsedMs}ms: {ErrorMessage}",
-            requestId, elapsedMs, ex.Message);
+        LogRequestFailed(_logger, ex, requestId, elapsedMs, ex.Message);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "[{RequestId}] Streaming completed: {UpdateCount} updates in {ElapsedMs}ms")]
+    private static partial void LogStreamingCompleted(ILogger logger, string requestId, int updateCount, long elapsedMs);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "[{RequestId}] {RequestType} request: {MessageCount} messages, ~{TotalChars} chars, Model={ModelId}")]
+    private static partial void LogRequest(ILogger logger, string requestId, string requestType, int messageCount, int totalChars, string modelId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "[{RequestId}] {Role}: {Content}")]
+    private static partial void LogMessageContent(ILogger logger, string requestId, string role, string content);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "[{RequestId}] Response: {ContentLength} chars, Input={InputTokens}, Output={OutputTokens}, Time={ElapsedMs}ms")]
+    private static partial void LogResponseWithUsage(ILogger logger, string requestId, int contentLength, long inputTokens, long outputTokens, long elapsedMs);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "[{RequestId}] Response: {ContentLength} chars, Time={ElapsedMs}ms")]
+    private static partial void LogResponseWithoutUsage(ILogger logger, string requestId, int contentLength, long elapsedMs);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "[{RequestId}] Response content: {Content}")]
+    private static partial void LogResponseContent(ILogger logger, string requestId, string content);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "[{RequestId}] Request failed after {ElapsedMs}ms: {ErrorMessage}")]
+    private static partial void LogRequestFailed(ILogger logger, Exception exception, string requestId, long elapsedMs, string errorMessage);
 }
 
 /// <summary>
@@ -168,7 +182,7 @@ public sealed class LoggingOptions
     /// <summary>
     /// Whether to log message content at Debug level. Default is false.
     /// </summary>
-    public bool LogMessageContent { get; set; } = false;
+    public bool LogMessageContent { get; set; }
 
     /// <summary>
     /// Maximum content length to log (0 for unlimited). Default is 500.

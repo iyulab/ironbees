@@ -31,7 +31,7 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     private IAutonomousMemoryStore? _memoryStore;
     private IContextSaturationMonitor? _saturationMonitor;
     private AutonomousContextOptions _contextOptions = new() { Enabled = true };
-    private bool _contextDisabled = false;
+    private bool _contextDisabled;
 
     /// <summary>
     /// Set the task executor (required)

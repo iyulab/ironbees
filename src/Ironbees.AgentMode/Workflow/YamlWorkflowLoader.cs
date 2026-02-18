@@ -31,20 +31,20 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
         }
 
         var content = await File.ReadAllTextAsync(filePath, cancellationToken);
-        return await LoadFromStringAsync(content, cancellationToken, filePath);
+        return await LoadFromStringAsync(content, filePath, cancellationToken);
     }
 
     public Task<WorkflowDefinition> LoadFromStringAsync(
         string yamlContent,
         CancellationToken cancellationToken = default)
     {
-        return LoadFromStringAsync(yamlContent, cancellationToken, null);
+        return LoadFromStringAsync(yamlContent, null, cancellationToken);
     }
 
     private Task<WorkflowDefinition> LoadFromStringAsync(
         string yamlContent,
-        CancellationToken cancellationToken,
-        string? filePath)
+        string? filePath,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -325,19 +325,19 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
         }
 
         var trimmed = value.Trim().ToLowerInvariant();
-        if (trimmed.EndsWith("m") && int.TryParse(trimmed[..^1], out var minutes))
+        if (trimmed.EndsWith('m') && int.TryParse(trimmed[..^1], out var minutes))
         {
             return TimeSpan.FromMinutes(minutes);
         }
-        if (trimmed.EndsWith("h") && int.TryParse(trimmed[..^1], out var hours))
+        if (trimmed.EndsWith('h') && int.TryParse(trimmed[..^1], out var hours))
         {
             return TimeSpan.FromHours(hours);
         }
-        if (trimmed.EndsWith("d") && int.TryParse(trimmed[..^1], out var days))
+        if (trimmed.EndsWith('d') && int.TryParse(trimmed[..^1], out var days))
         {
             return TimeSpan.FromDays(days);
         }
-        if (trimmed.EndsWith("s") && int.TryParse(trimmed[..^1], out var seconds))
+        if (trimmed.EndsWith('s') && int.TryParse(trimmed[..^1], out var seconds))
         {
             return TimeSpan.FromSeconds(seconds);
         }

@@ -19,7 +19,7 @@ namespace Ironbees.Ironhive.Orchestration;
 /// Factory implementation for creating orchestrators from Ironbees settings.
 /// Maps Ironbees declarative orchestration configuration to IronHive runtime orchestrators.
 /// </summary>
-public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
+public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
 {
     private readonly ILogger<IronhiveOrchestratorFactory> _logger;
     private readonly IronhiveMiddlewareFactory? _middlewareFactory;
@@ -46,9 +46,10 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             throw new ArgumentException("At least one agent is required for orchestration.", nameof(agents));
         }
 
-        _logger.LogDebug(
-            "Creating {OrchestratorType} orchestrator with {AgentCount} agents",
-            settings.Type, agents.Count);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogCreatingOrchestrator(_logger, settings.Type, agents.Count);
+        }
 
         // Extract IronHive agents from wrappers
         var ironhiveAgents = ExtractIronhiveAgents(agents);
@@ -105,12 +106,15 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         };
     }
 
-    private IronbeesIMultiAgentOrchestrator CreateSequentialOrchestrator(
+    private IronhiveOrchestratorWrapper CreateSequentialOrchestrator(
         IronbeesOrchestratorSettings settings,
         List<IronHiveAgent> ironhiveAgents,
         IronHiveOrchestratorOptions baseOptions)
     {
-        _logger.LogDebug("Building Sequential orchestrator");
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingSequentialOrchestrator(_logger);
+        }
 
         var orchestrator = new SequentialOrchestrator(new SequentialOrchestratorOptions
         {
@@ -129,12 +133,15 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         return new IronhiveOrchestratorWrapper(orchestrator, eventAdapter, IronbeesOrchestratorType.Sequential);
     }
 
-    private IronbeesIMultiAgentOrchestrator CreateParallelOrchestrator(
+    private IronhiveOrchestratorWrapper CreateParallelOrchestrator(
         IronbeesOrchestratorSettings settings,
         List<IronHiveAgent> ironhiveAgents,
         IronHiveOrchestratorOptions baseOptions)
     {
-        _logger.LogDebug("Building Parallel orchestrator");
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingParallelOrchestrator(_logger);
+        }
 
         var orchestrator = new ParallelOrchestrator(new ParallelOrchestratorOptions
         {
@@ -152,7 +159,7 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         return new IronhiveOrchestratorWrapper(orchestrator, eventAdapter, IronbeesOrchestratorType.Parallel);
     }
 
-    private IronbeesIMultiAgentOrchestrator CreateHubSpokeOrchestrator(
+    private IronhiveOrchestratorWrapper CreateHubSpokeOrchestrator(
         IronbeesOrchestratorSettings settings,
         List<IronHiveAgent> ironhiveAgents,
         IronHiveOrchestratorOptions baseOptions)
@@ -169,9 +176,10 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
 
         var spokeAgents = ironhiveAgents.Where(a => a.Name != settings.HubAgent).ToList();
 
-        _logger.LogDebug(
-            "Building HubSpoke orchestrator with hub '{HubAgent}' and {SpokeCount} spokes",
-            settings.HubAgent, spokeAgents.Count);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingHubSpokeOrchestrator(_logger, settings.HubAgent, spokeAgents.Count);
+        }
 
         var orchestrator = new HubSpokeOrchestrator(new HubSpokeOrchestratorOptions
         {
@@ -193,7 +201,7 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         return new IronhiveOrchestratorWrapper(orchestrator, eventAdapter, IronbeesOrchestratorType.HubSpoke);
     }
 
-    private IronbeesIMultiAgentOrchestrator CreateHandoffOrchestrator(
+    private IronhiveOrchestratorWrapper CreateHandoffOrchestrator(
         IronbeesOrchestratorSettings settings,
         List<IronHiveAgent> ironhiveAgents,
         IReadOnlyDictionary<string, IReadOnlyList<IronbeesHandoffTargetDefinition>>? handoffMap,
@@ -205,9 +213,10 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
                 "InitialAgent must be specified for Handoff orchestration.", nameof(settings));
         }
 
-        _logger.LogDebug(
-            "Building Handoff orchestrator with initial agent '{InitialAgent}', max transitions: {MaxTransitions}",
-            settings.InitialAgent, settings.MaxTransitions);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingHandoffOrchestrator(_logger, settings.InitialAgent, settings.MaxTransitions);
+        }
 
         var builder = new HandoffOrchestratorBuilder()
             .SetName("ironbees-handoff")
@@ -229,14 +238,15 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         return new IronhiveOrchestratorWrapper(orchestrator, eventAdapter, IronbeesOrchestratorType.Handoff);
     }
 
-    private IronbeesIMultiAgentOrchestrator CreateGroupChatOrchestrator(
+    private IronhiveOrchestratorWrapper CreateGroupChatOrchestrator(
         IronbeesOrchestratorSettings settings,
         List<IronHiveAgent> ironhiveAgents,
         IronHiveOrchestratorOptions baseOptions)
     {
-        _logger.LogDebug(
-            "Building GroupChat orchestrator with {AgentCount} agents, max rounds: {MaxRounds}",
-            ironhiveAgents.Count, settings.MaxRounds);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingGroupChatOrchestrator(_logger, ironhiveAgents.Count, settings.MaxRounds);
+        }
 
         var builder = new GroupChatOrchestratorBuilder()
             .SetName("ironbees-groupchat")
@@ -269,7 +279,7 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         return new IronhiveOrchestratorWrapper(orchestrator, eventAdapter, IronbeesOrchestratorType.GroupChat);
     }
 
-    private IronbeesIMultiAgentOrchestrator CreateGraphOrchestrator(
+    private IronhiveOrchestratorWrapper CreateGraphOrchestrator(
         IronbeesOrchestratorSettings settings,
         List<IronHiveAgent> ironhiveAgents,
         IronHiveOrchestratorOptions baseOptions)
@@ -280,9 +290,10 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
                 "Graph settings must be specified for Graph orchestration.", nameof(settings));
         }
 
-        _logger.LogDebug(
-            "Building Graph orchestrator with {NodeCount} nodes and {EdgeCount} edges",
-            settings.Graph.Nodes.Count, settings.Graph.Edges.Count);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingGraphOrchestrator(_logger, settings.Graph.Nodes.Count, settings.Graph.Edges.Count);
+        }
 
         var builder = new GraphOrchestratorBuilder()
             .WithOptions(new GraphOrchestratorOptions
@@ -343,6 +354,27 @@ public class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         var eventAdapter = new IronhiveEventAdapter(IronbeesOrchestratorType.Graph);
         return new IronhiveOrchestratorWrapper(orchestrator, eventAdapter, IronbeesOrchestratorType.Graph);
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Creating {OrchestratorType} orchestrator with {AgentCount} agents")]
+    private static partial void LogCreatingOrchestrator(ILogger logger, IronbeesOrchestratorType orchestratorType, int agentCount);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building Sequential orchestrator")]
+    private static partial void LogBuildingSequentialOrchestrator(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building Parallel orchestrator")]
+    private static partial void LogBuildingParallelOrchestrator(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building HubSpoke orchestrator with hub '{HubAgent}' and {SpokeCount} spokes")]
+    private static partial void LogBuildingHubSpokeOrchestrator(ILogger logger, string hubAgent, int spokeCount);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building Handoff orchestrator with initial agent '{InitialAgent}', max transitions: {MaxTransitions}")]
+    private static partial void LogBuildingHandoffOrchestrator(ILogger logger, string? initialAgent, int maxTransitions);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building GroupChat orchestrator with {AgentCount} agents, max rounds: {MaxRounds}")]
+    private static partial void LogBuildingGroupChatOrchestrator(ILogger logger, int agentCount, int maxRounds);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building Graph orchestrator with {NodeCount} nodes and {EdgeCount} edges")]
+    private static partial void LogBuildingGraphOrchestrator(ILogger logger, int nodeCount, int edgeCount);
 
     private static IronHiveHandoffTarget[] GetHandoffTargets(
         string agentName,

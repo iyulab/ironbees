@@ -34,7 +34,7 @@ public static class ServiceCollectionExtensions
         {
             throw new ArgumentException(
                 "Either OpenAIApiKey or (AzureOpenAIEndpoint + AzureOpenAIKey) must be provided.",
-                nameof(options));
+                nameof(configure));
         }
 
         // Register core services via AddIronbeesCore

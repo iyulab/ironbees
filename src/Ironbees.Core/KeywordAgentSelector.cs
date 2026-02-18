@@ -5,6 +5,8 @@ namespace Ironbees.Core;
 /// </summary>
 public class KeywordAgentSelector : IAgentSelector
 {
+    private static readonly char[] WordSeparators = [' ', '\t', '\n', '\r', ',', '.', '!', '?', ';', ':', '-', '_'];
+
     private readonly double _minimumConfidenceThreshold;
     private readonly IAgent? _fallbackAgent;
     private readonly KeywordNormalizer _normalizer;
@@ -208,7 +210,7 @@ public class KeywordAgentSelector : IAgentSelector
         };
     }
 
-    private string GetAgentDocumentText(IAgent agent)
+    private static string GetAgentDocumentText(IAgent agent)
     {
         var config = agent.Config;
         var parts = new List<string>
@@ -223,7 +225,7 @@ public class KeywordAgentSelector : IAgentSelector
         return string.Join(" ", parts);
     }
 
-    private double ScoreKeywords(
+    private static double ScoreKeywords(
         HashSet<string> inputWords,
         List<string> keywords,
         string category,
@@ -241,7 +243,9 @@ public class KeywordAgentSelector : IAgentSelector
         {
             var keywordLower = keyword.ToLowerInvariant();
             if (inputWords.Contains(keywordLower) ||
-                inputWords.Any(w => w.Contains(keywordLower) || keywordLower.Contains(w)))
+                inputWords.Any(w =>
+                    (w.Contains(keywordLower) && keywordLower.Length >= 3) ||
+                    (keywordLower.Contains(w) && w.Length >= 3)))
             {
                 matches++;
                 matchedKeywords.Add(keyword);
@@ -251,7 +255,11 @@ public class KeywordAgentSelector : IAgentSelector
         if (matches > 0)
         {
             reasons.Add($"{category} matches: {string.Join(", ", matchedKeywords)}");
-            return (double)matches / keywords.Count;
+            // Geometric mean of agent-side and query-side coverage prevents
+            // agents with fewer keywords from getting disproportionately high scores
+            var agentCoverage = (double)matches / keywords.Count;
+            var queryCoverage = (double)matches / Math.Max(inputWords.Count, 1);
+            return Math.Sqrt(agentCoverage * queryCoverage);
         }
 
         return 0;
@@ -288,8 +296,7 @@ public class KeywordAgentSelector : IAgentSelector
 
         // Extract and normalize keywords
         var words = text
-            .Split(new[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?', ';', ':', '-', '_' },
-                StringSplitOptions.RemoveEmptyEntries)
+            .Split(WordSeparators, StringSplitOptions.RemoveEmptyEntries)
             .Select(w => w.ToLowerInvariant())
             .Where(w => w.Length > 2 && !_stopwords.Contains(w))
             .Select(w => _normalizer.Normalize(w))

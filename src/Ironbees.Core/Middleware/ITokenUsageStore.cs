@@ -26,12 +26,12 @@ public interface ITokenUsageStore
     /// Gets token usage entries within a time range.
     /// </summary>
     /// <param name="from">Start of time range (inclusive).</param>
-    /// <param name="to">End of time range (exclusive).</param>
+    /// <param name="endTime">End of time range (exclusive).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Collection of token usage entries.</returns>
     Task<IReadOnlyList<TokenUsage>> GetUsageAsync(
         DateTimeOffset from,
-        DateTimeOffset to,
+        DateTimeOffset endTime,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -39,13 +39,13 @@ public interface ITokenUsageStore
     /// </summary>
     /// <param name="agentName">The agent name to filter by.</param>
     /// <param name="from">Optional start of time range.</param>
-    /// <param name="to">Optional end of time range.</param>
+    /// <param name="endTime">Optional end of time range.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Collection of token usage entries.</returns>
     Task<IReadOnlyList<TokenUsage>> GetUsageByAgentAsync(
         string agentName,
         DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? endTime = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -62,12 +62,12 @@ public interface ITokenUsageStore
     /// Gets aggregated statistics for a time range.
     /// </summary>
     /// <param name="from">Optional start of time range.</param>
-    /// <param name="to">Optional end of time range.</param>
+    /// <param name="endTime">Optional end of time range.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Aggregated statistics.</returns>
     Task<TokenUsageStatistics> GetStatisticsAsync(
         DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? endTime = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -93,7 +93,7 @@ public class DefaultContextManagerTests
 
         // Assert
         Assert.Equal(2, results.Count);
-        Assert.All(results, r => Assert.Contains("elephant", r.Content.ToLower()));
+        Assert.All(results, r => Assert.Contains("elephant", r.Content.ToLowerInvariant()));
     }
 
     [Fact]
@@ -316,16 +316,16 @@ public class DefaultContextManagerTests
 }
 
 // Test helpers
-file record MockRequest(string RequestId, string Prompt) : ITaskRequest;
+file sealed record MockRequest(string RequestId, string Prompt) : ITaskRequest;
 
-file record MockResult(string RequestId) : ITaskResult
+file sealed record MockResult(string RequestId) : ITaskResult
 {
     public bool Success => true;
     public string Output => "Test output";
     public string? ErrorOutput => null;
 }
 
-file class MockTaskExecutor : ITaskExecutor<MockRequest, MockResult>
+file sealed class MockTaskExecutor : ITaskExecutor<MockRequest, MockResult>
 {
     public Task<MockResult> ExecuteAsync(MockRequest request, Action<TaskOutput>? onOutput = null, CancellationToken cancellationToken = default)
     {

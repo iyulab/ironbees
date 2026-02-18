@@ -1,5 +1,5 @@
 using Ironbees.Core;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.Core.Tests;
 
@@ -24,7 +24,7 @@ public class KeywordAgentSelectorAccuracyTests
         _testAgents = CreateTestAgentPool();
     }
 
-    private List<IAgent> CreateTestAgentPool()
+    private static List<IAgent> CreateTestAgentPool()
     {
         return new List<IAgent>
         {
@@ -90,9 +90,9 @@ public class KeywordAgentSelectorAccuracyTests
         };
     }
 
-    private IAgent CreateTestAgent(string name, string description, List<string> capabilities, List<string> tags)
+    private static IAgent CreateTestAgent(string name, string description, List<string> capabilities, List<string> tags)
     {
-        var mockAgent = new Mock<IAgent>();
+        var mockAgent = Substitute.For<IAgent>();
         var config = new AgentConfig
         {
             Name = name,
@@ -109,11 +109,11 @@ public class KeywordAgentSelectorAccuracyTests
             Tags = tags
         };
 
-        mockAgent.Setup(a => a.Name).Returns(name);
-        mockAgent.Setup(a => a.Description).Returns(description);
-        mockAgent.Setup(a => a.Config).Returns(config);
+        mockAgent.Name.Returns(name);
+        mockAgent.Description.Returns(description);
+        mockAgent.Config.Returns(config);
 
-        return mockAgent.Object;
+        return mockAgent;
     }
 
     [Theory]

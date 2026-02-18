@@ -19,7 +19,7 @@ namespace Ironbees.AgentFramework.Workflow;
 /// Advanced features (HumanGate, conditional transitions) will be added incrementally.
 /// </para>
 /// </remarks>
-public sealed class MafWorkflowConverter : IWorkflowConverter
+public sealed partial class MafWorkflowConverter : IWorkflowConverter
 {
     private readonly ILogger<MafWorkflowConverter>? _logger;
 
@@ -49,8 +49,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
             throw new WorkflowConversionException($"Workflow validation failed: {errors}");
         }
 
-        _logger?.LogInformation("Converting workflow '{WorkflowName}' with {StateCount} states",
-            definition.Name, definition.States.Count);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Information))
+        {
+            LogConvertingWorkflow(_logger, definition.Name, definition.States.Count);
+        }
 
         // Determine workflow pattern based on state types
         var pattern = DetermineWorkflowPattern(definition);
@@ -191,7 +193,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
         Func<string, CancellationToken, Task<AIAgent>> agentResolver,
         CancellationToken cancellationToken)
     {
-        _logger?.LogDebug("Building sequential workflow for '{WorkflowName}'", definition.Name);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingSequentialWorkflow(_logger, definition.Name);
+        }
 
         // Extract agent states in execution order
         var agentStates = GetOrderedAgentStates(definition);
@@ -203,8 +208,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
             {
                 var agent = await agentResolver(state.Executor, cancellationToken);
                 agents.Add(agent);
-                _logger?.LogDebug("Resolved agent '{Executor}' for state '{StateId}'",
-                    state.Executor, state.Id);
+                if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogResolvedAgent(_logger, state.Executor, state.Id);
+                }
             }
         }
 
@@ -223,7 +230,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
         Func<string, CancellationToken, Task<AIAgent>> agentResolver,
         CancellationToken cancellationToken)
     {
-        _logger?.LogDebug("Building parallel workflow for '{WorkflowName}'", definition.Name);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingParallelWorkflow(_logger, definition.Name);
+        }
 
         var parallelState = definition.States.First(s => s.Type == WorkflowStateType.Parallel);
         var agents = new List<AIAgent>();
@@ -232,7 +242,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
         {
             var agent = await agentResolver(executor, cancellationToken);
             agents.Add(agent);
-            _logger?.LogDebug("Resolved parallel agent '{Executor}'", executor);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+            {
+                LogResolvedParallelAgent(_logger, executor);
+            }
         }
 
         if (agents.Count == 0)
@@ -250,16 +263,16 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
         Func<string, CancellationToken, Task<AIAgent>> agentResolver,
         CancellationToken cancellationToken)
     {
-        _logger?.LogDebug("Building mixed workflow for '{WorkflowName}'", definition.Name);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogBuildingMixedWorkflow(_logger, definition.Name);
+        }
 
         // For mixed workflows with both sequential and parallel states,
         // we flatten to sequential execution for now.
         // MAF's WorkflowBuilder API is limited in preview - full graph support pending.
 
-        _logger?.LogWarning(
-            "Mixed workflow '{WorkflowName}' contains both sequential and parallel states. " +
-            "Flattening to sequential execution. For true parallelism, use separate Parallel states.",
-            definition.Name);
+        if (_logger is not null) { LogMixedWorkflowFlattened(_logger, definition.Name); }
 
         var orderedStates = GetOrderedStates(definition);
         var allAgents = new List<AIAgent>();
@@ -273,8 +286,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
                     {
                         var agent = await agentResolver(state.Executor, cancellationToken);
                         allAgents.Add(agent);
-                        _logger?.LogDebug("Added agent '{Executor}' from state '{StateId}'",
-                            state.Executor, state.Id);
+                        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                        {
+                            LogAddedAgentFromState(_logger, state.Executor, state.Id);
+                        }
                     }
                     break;
 
@@ -284,8 +299,10 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
                     {
                         var pAgent = await agentResolver(executor, cancellationToken);
                         allAgents.Add(pAgent);
-                        _logger?.LogDebug("Added parallel agent '{Executor}' from state '{StateId}' (flattened)",
-                            executor, state.Id);
+                        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+                        {
+                            LogAddedParallelAgentFlattened(_logger, executor, state.Id);
+                        }
                     }
                     break;
 
@@ -295,9 +312,7 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
                     break;
 
                 default:
-                    _logger?.LogWarning(
-                        "State type '{StateType}' not supported in mixed workflow, skipping",
-                        state.Type);
+                    if (_logger is not null) { LogUnsupportedStateType(_logger, state.Type); }
                     break;
             }
         }
@@ -311,6 +326,36 @@ public sealed class MafWorkflowConverter : IWorkflowConverter
         // Build as sequential workflow using MAF
         return AgentWorkflowBuilder.BuildSequential([.. allAgents]);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Converting workflow '{WorkflowName}' with {StateCount} states")]
+    private static partial void LogConvertingWorkflow(ILogger logger, string workflowName, int stateCount);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building sequential workflow for '{WorkflowName}'")]
+    private static partial void LogBuildingSequentialWorkflow(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Resolved agent '{Executor}' for state '{StateId}'")]
+    private static partial void LogResolvedAgent(ILogger logger, string executor, string stateId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building parallel workflow for '{WorkflowName}'")]
+    private static partial void LogBuildingParallelWorkflow(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Resolved parallel agent '{Executor}'")]
+    private static partial void LogResolvedParallelAgent(ILogger logger, string executor);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Building mixed workflow for '{WorkflowName}'")]
+    private static partial void LogBuildingMixedWorkflow(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Mixed workflow '{WorkflowName}' contains both sequential and parallel states. Flattening to sequential execution. For true parallelism, use separate Parallel states.")]
+    private static partial void LogMixedWorkflowFlattened(ILogger logger, string workflowName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Added agent '{Executor}' from state '{StateId}'")]
+    private static partial void LogAddedAgentFromState(ILogger logger, string executor, string stateId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Added parallel agent '{Executor}' from state '{StateId}' (flattened)")]
+    private static partial void LogAddedParallelAgentFlattened(ILogger logger, string executor, string stateId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "State type '{StateType}' not supported in mixed workflow, skipping")]
+    private static partial void LogUnsupportedStateType(ILogger logger, WorkflowStateType stateType);
 
     private static List<WorkflowStateDefinition> GetOrderedAgentStates(WorkflowDefinition definition)
     {

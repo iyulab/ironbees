@@ -70,7 +70,7 @@ public record EnhancedOracleVerdict : OracleVerdict
     /// <summary>
     /// Goal achieved with context
     /// </summary>
-    public static new EnhancedOracleVerdict GoalAchieved(
+    public static EnhancedOracleVerdict GoalAchieved(
         string analysis,
         double confidence = 1.0,
         IEnumerable<string>? completedGoals = null) => new()

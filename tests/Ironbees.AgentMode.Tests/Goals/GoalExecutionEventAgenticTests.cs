@@ -20,7 +20,7 @@ public class GoalExecutionEventAgenticTests
     public void GoalExecutionEventType_AgenticEvents_AreValid(GoalExecutionEventType eventType)
     {
         // Assert
-        Assert.True(Enum.IsDefined(typeof(GoalExecutionEventType), eventType));
+        Assert.True(Enum.IsDefined(eventType));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class GoalExecutionEventAgenticTests
         // Act & Assert
         foreach (var type in agenticTypes)
         {
-            Assert.True(Enum.IsDefined(typeof(GoalExecutionEventType), type),
+            Assert.True(Enum.IsDefined(type),
                 $"{type} should be defined in GoalExecutionEventType");
         }
     }
@@ -59,7 +59,7 @@ public class GoalExecutionEventAgenticTests
     public void HitlRequestType_AllValues_AreValid(HitlRequestType requestType)
     {
         // Assert
-        Assert.True(Enum.IsDefined(typeof(HitlRequestType), requestType));
+        Assert.True(Enum.IsDefined(requestType));
     }
 
     #endregion
@@ -653,14 +653,14 @@ public class GoalExecutionEventAgenticTests
     public void GoalExecutionError_NonRecoverable_SetsCorrectly()
     {
         // Arrange
-        var exception = new OutOfMemoryException("Dataset too large");
+        var exception = new InvalidOperationException("Simulated OOM error: Dataset too large");
 
         // Act
         var error = GoalExecutionError.FromException(exception, isRecoverable: false);
 
         // Assert
         Assert.False(error.IsRecoverable);
-        Assert.Equal("OutOfMemoryException", error.Code);
+        Assert.Equal("InvalidOperationException", error.Code);
     }
 
     #endregion

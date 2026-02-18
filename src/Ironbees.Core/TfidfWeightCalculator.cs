@@ -5,6 +5,8 @@ namespace Ironbees.Core;
 /// </summary>
 public class TfidfWeightCalculator
 {
+    private static readonly char[] WordSeparators = [' ', '\t', '\n', '\r', ',', '.', '!', '?', ';', ':', '-', '_'];
+
     private readonly Dictionary<string, double> _idfScores;
     private readonly int _totalDocuments;
 
@@ -33,8 +35,7 @@ public class TfidfWeightCalculator
 
         var documentWords = documentText
             .ToLowerInvariant()
-            .Split(new[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?', ';', ':', '-', '_' },
-                StringSplitOptions.RemoveEmptyEntries)
+            .Split(WordSeparators, StringSplitOptions.RemoveEmptyEntries)
             .ToList();
 
         if (documentWords.Count == 0)
@@ -91,8 +92,7 @@ public class TfidfWeightCalculator
             var documentText = GetAgentDocumentText(agent);
             var words = documentText
                 .ToLowerInvariant()
-                .Split(new[] { ' ', '\t', '\n', '\r', ',', '.', '!', '?', ';', ':', '-', '_' },
-                    StringSplitOptions.RemoveEmptyEntries)
+                .Split(WordSeparators, StringSplitOptions.RemoveEmptyEntries)
                 .Distinct()
                 .ToHashSet();
 
@@ -114,7 +114,7 @@ public class TfidfWeightCalculator
         return idfScores;
     }
 
-    private string GetAgentDocumentText(IAgent agent)
+    private static string GetAgentDocumentText(IAgent agent)
     {
         var config = agent.Config;
         var parts = new List<string>

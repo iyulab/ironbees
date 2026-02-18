@@ -1,7 +1,9 @@
+using System.Text.Json;
 using Ironbees.AgentMode.Exceptions;
 using Ironbees.AgentMode.Workflow;
 using Ironbees.AgentMode.Workflow.Triggers;
 using Ironbees.AgentMode.Models;
+using Ironbees.Core.Orchestration;
 using Xunit;
 
 namespace Ironbees.AgentMode.Tests.Workflow;
@@ -179,7 +181,7 @@ public class YamlDrivenOrchestratorTests
         Assert.Contains("agent3", _executorFactory.AllAgentNames);
     }
 
-    [Fact(Skip = "Intermittent test host crash in .NET 10 - needs investigation")]
+    [Fact]
     public async Task ExecuteAsync_AgentError_SetsFailedStatus()
     {
         // Arrange
@@ -308,6 +310,357 @@ public class YamlDrivenOrchestratorTests
         Assert.Contains("not found", states.Last().ErrorMessage, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WithComplexConditionExpression_FollowsCorrectPath()
+    {
+        // Arrange — test that compound expression "success && build.success" works
+        var workflow = new WorkflowDefinition
+        {
+            Name = "ComplexConditionWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+                new WorkflowStateDefinition
+                {
+                    Id = "AGENT",
+                    Type = WorkflowStateType.Agent,
+                    Executor = "checker",
+                    Conditions =
+                    [
+                        new ConditionalTransition { If = "success && build.success", Then = "SUCCESS" },
+                        new ConditionalTransition { Then = "FAILURE", IsDefault = true }
+                    ]
+                },
+                new WorkflowStateDefinition { Id = "SUCCESS", Type = WorkflowStateType.Terminal },
+                new WorkflowStateDefinition { Id = "FAILURE", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = CreateOrchestrator();
+
+        // Act
+        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+
+        // Assert — MockAgentExecutor returns build_success=true, status is Running → both true
+        var finalState = states.Last();
+        Assert.Equal(WorkflowExecutionStatus.Completed, finalState.Status);
+        Assert.Equal("SUCCESS", finalState.CurrentStateId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithIterationCountCondition_ExitsLoopCorrectly()
+    {
+        // Arrange — test iteration_count >= N condition for loop termination
+        var workflow = new WorkflowDefinition
+        {
+            Name = "IterationLoopWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+                new WorkflowStateDefinition
+                {
+                    Id = "AGENT",
+                    Type = WorkflowStateType.Agent,
+                    Executor = "worker",
+                    Conditions =
+                    [
+                        new ConditionalTransition { If = "iteration_count >= 2", Then = "END" }
+                    ],
+                    Next = "AGENT" // Loop back
+                },
+                new WorkflowStateDefinition { Id = "END", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = CreateOrchestrator();
+
+        // Act
+        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+
+        // Assert — should loop twice then exit
+        var finalState = states.Last();
+        Assert.Equal(WorkflowExecutionStatus.Completed, finalState.Status);
+        Assert.Equal("END", finalState.CurrentStateId);
+        // At least 2 iterations (initial + loop)
+        var agentStates = states.Where(s => s.CurrentStateId == "AGENT").ToList();
+        Assert.True(agentStates.Count >= 2);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithNotCondition_NegatesCorrectly()
+    {
+        // Arrange — test !failure condition (should be true when not failed)
+        var workflow = new WorkflowDefinition
+        {
+            Name = "NotConditionWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "CHECK" },
+                new WorkflowStateDefinition
+                {
+                    Id = "CHECK",
+                    Type = WorkflowStateType.Agent,
+                    Executor = "checker",
+                    Conditions =
+                    [
+                        new ConditionalTransition { If = "!failure", Then = "SUCCESS" },
+                        new ConditionalTransition { Then = "FAILURE", IsDefault = true }
+                    ]
+                },
+                new WorkflowStateDefinition { Id = "SUCCESS", Type = WorkflowStateType.Terminal },
+                new WorkflowStateDefinition { Id = "FAILURE", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = CreateOrchestrator();
+
+        // Act — status is Running, so !failure = !false = true
+        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+
+        // Assert
+        Assert.Equal("SUCCESS", states.Last().CurrentStateId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOutputDataComparison_UsesAgentResult()
+    {
+        // Arrange — test output.* comparison with agent result data
+        var workflow = new WorkflowDefinition
+        {
+            Name = "OutputComparisonWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+                new WorkflowStateDefinition
+                {
+                    Id = "AGENT",
+                    Type = WorkflowStateType.Agent,
+                    Executor = "scorer",
+                    Conditions =
+                    [
+                        new ConditionalTransition { If = "build.success && test.success", Then = "PASS" },
+                        new ConditionalTransition { Then = "FAIL", IsDefault = true }
+                    ]
+                },
+                new WorkflowStateDefinition { Id = "PASS", Type = WorkflowStateType.Terminal },
+                new WorkflowStateDefinition { Id = "FAIL", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = CreateOrchestrator();
+
+        // Act — MockAgentExecutor returns build_success=true, test_success=true
+        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+
+        // Assert
+        Assert.Equal("PASS", states.Last().CurrentStateId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithOrCondition_MatchesFirstTrueCondition()
+    {
+        // Arrange — test OR condition: success || failure
+        var workflow = new WorkflowDefinition
+        {
+            Name = "OrConditionWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "CHECK" },
+                new WorkflowStateDefinition
+                {
+                    Id = "CHECK",
+                    Type = WorkflowStateType.Agent,
+                    Executor = "checker",
+                    Conditions =
+                    [
+                        new ConditionalTransition { If = "success || failure", Then = "MATCHED" },
+                        new ConditionalTransition { Then = "UNMATCHED", IsDefault = true }
+                    ]
+                },
+                new WorkflowStateDefinition { Id = "MATCHED", Type = WorkflowStateType.Terminal },
+                new WorkflowStateDefinition { Id = "UNMATCHED", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = CreateOrchestrator();
+
+        // Act — status is Running, so success=true → OR short-circuits to true
+        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+
+        // Assert
+        Assert.Equal("MATCHED", states.Last().CurrentStateId);
+    }
+
+    #region ResumeFromCheckpointAsync Tests
+
+    [Fact]
+    public async Task ResumeFromCheckpointAsync_WithoutCheckpointStore_ThrowsInvalidOperationException()
+    {
+        // Arrange - no checkpoint store
+        var orchestrator = CreateOrchestrator();
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("exec-1")) { }
+        });
+        Assert.Contains("ICheckpointStore", ex.Message);
+    }
+
+    [Fact]
+    public async Task ResumeFromCheckpointAsync_WithNullCheckpointId_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var checkpointStore = new MockCheckpointStore();
+        var orchestrator = new YamlDrivenOrchestrator(
+            _loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        {
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync(null!)) { }
+        });
+    }
+
+    [Fact]
+    public async Task ResumeFromCheckpointAsync_WithNonExistentCheckpoint_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var checkpointStore = new MockCheckpointStore();
+        var orchestrator = new YamlDrivenOrchestrator(
+            _loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("non-existent")) { }
+        });
+        Assert.Contains("No checkpoint found", ex.Message);
+    }
+
+    [Fact]
+    public async Task ResumeFromCheckpointAsync_WithEmptySerializedState_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var checkpointStore = new MockCheckpointStore();
+        checkpointStore.SavedCheckpoints["exec-1"] = new OrchestrationCheckpoint
+        {
+            CheckpointId = "cp-1",
+            OrchestrationId = "exec-1",
+            SerializedState = null
+        };
+        var orchestrator = new YamlDrivenOrchestrator(
+            _loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("exec-1")) { }
+        });
+        Assert.Contains("serialized state", ex.Message);
+    }
+
+    [Fact]
+    public async Task ResumeFromCheckpointAsync_WithValidCheckpoint_ResumesExecution()
+    {
+        // Arrange
+        var checkpointStore = new MockCheckpointStore();
+        var workflow = new WorkflowDefinition
+        {
+            Name = "ResumeWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+                new WorkflowStateDefinition { Id = "AGENT", Type = WorkflowStateType.Agent, Executor = "worker", Next = "END" },
+                new WorkflowStateDefinition { Id = "END", Type = WorkflowStateType.Terminal }
+            ]
+        };
+
+        // Simulate a checkpoint saved at the AGENT state (before it executes)
+        var resumeContext = CreateResumeContext(workflow, "AGENT", "exec-1", "test input");
+        checkpointStore.SavedCheckpoints["exec-1"] = new OrchestrationCheckpoint
+        {
+            CheckpointId = "cp-1",
+            OrchestrationId = "exec-1",
+            CurrentState = "AGENT",
+            SerializedState = JsonSerializer.Serialize(resumeContext, s_jsonOptions)
+        };
+
+        var orchestrator = new YamlDrivenOrchestrator(
+            _loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        // Act
+        var states = new List<WorkflowRuntimeState>();
+        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("exec-1"))
+        {
+            states.Add(state);
+        }
+
+        // Assert - should resume from AGENT, execute it, then complete
+        Assert.True(states.Count >= 2, $"Expected at least 2 states, got {states.Count}");
+        Assert.Equal("exec-1", states[0].ExecutionId);
+        Assert.Equal("ResumeWorkflow", states[0].WorkflowName);
+        Assert.Equal(WorkflowExecutionStatus.Completed, states.Last().Status);
+        Assert.True(_executorFactory.CreateExecutorCalled);
+    }
+
+    [Fact]
+    public async Task ResumeFromCheckpointAsync_PreservesOriginalInput()
+    {
+        // Arrange
+        var checkpointStore = new MockCheckpointStore();
+        var workflow = CreateSimpleWorkflow();
+        var resumeContext = CreateResumeContext(workflow, "END", "exec-1", "my original input");
+        checkpointStore.SavedCheckpoints["exec-1"] = new OrchestrationCheckpoint
+        {
+            CheckpointId = "cp-1",
+            OrchestrationId = "exec-1",
+            SerializedState = JsonSerializer.Serialize(resumeContext, s_jsonOptions)
+        };
+
+        var orchestrator = new YamlDrivenOrchestrator(
+            _loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        // Act
+        var states = new List<WorkflowRuntimeState>();
+        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("exec-1"))
+        {
+            states.Add(state);
+        }
+
+        // Assert
+        Assert.All(states, s => Assert.Equal("my original input", s.Input));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithCheckpointStore_SavesCheckpoints()
+    {
+        // Arrange
+        var checkpointStore = new MockCheckpointStore();
+        var workflow = new WorkflowDefinition
+        {
+            Name = "CheckpointWorkflow",
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+                new WorkflowStateDefinition { Id = "AGENT", Type = WorkflowStateType.Agent, Executor = "worker", Next = "END" },
+                new WorkflowStateDefinition { Id = "END", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = new YamlDrivenOrchestrator(
+            _loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        // Act
+        await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+
+        // Assert - checkpoints should have been saved during execution
+        Assert.True(checkpointStore.SaveCount > 0,
+            $"Expected checkpoints to be saved, but SaveCount was {checkpointStore.SaveCount}");
+    }
+
+    #endregion
+
+    private static readonly JsonSerializerOptions s_jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
     private static WorkflowDefinition CreateSimpleWorkflow()
     {
         return new WorkflowDefinition
@@ -321,7 +674,60 @@ public class YamlDrivenOrchestratorTests
         };
     }
 
+    private static object CreateResumeContext(
+        WorkflowDefinition workflow,
+        string currentStateId,
+        string executionId,
+        string input)
+    {
+        return new
+        {
+            workflow,
+            currentStateId,
+            input,
+            executionId,
+            startedAt = DateTimeOffset.UtcNow.AddMinutes(-5),
+            iterationCount = 0,
+            outputData = new Dictionary<string, object>(),
+            workingDirectory = Directory.GetCurrentDirectory()
+        };
+    }
+
     #region Mock Classes
+
+    private sealed class MockCheckpointStore : ICheckpointStore
+    {
+        public Dictionary<string, OrchestrationCheckpoint> SavedCheckpoints { get; } = new();
+        public int SaveCount { get; private set; }
+
+        public Task SaveCheckpointAsync(string orchestrationId, OrchestrationCheckpoint checkpoint, CancellationToken cancellationToken = default)
+        {
+            SavedCheckpoints[orchestrationId] = checkpoint;
+            SaveCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task<OrchestrationCheckpoint?> LoadCheckpointAsync(string orchestrationId, string? checkpointId = null, CancellationToken cancellationToken = default)
+        {
+            SavedCheckpoints.TryGetValue(orchestrationId, out var checkpoint);
+            return Task.FromResult(checkpoint);
+        }
+
+        public Task<IReadOnlyList<OrchestrationCheckpoint>> ListCheckpointsAsync(string orchestrationId, CancellationToken cancellationToken = default)
+        {
+            if (SavedCheckpoints.TryGetValue(orchestrationId, out var checkpoint))
+            {
+                return Task.FromResult<IReadOnlyList<OrchestrationCheckpoint>>([checkpoint]);
+            }
+            return Task.FromResult<IReadOnlyList<OrchestrationCheckpoint>>([]);
+        }
+
+        public Task DeleteCheckpointAsync(string orchestrationId, string checkpointId, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task DeleteAllCheckpointsAsync(string orchestrationId, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+    }
 
     private sealed class MockWorkflowLoader : IWorkflowLoader
     {

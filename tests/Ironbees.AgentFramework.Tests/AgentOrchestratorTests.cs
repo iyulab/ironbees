@@ -1,5 +1,5 @@
 using Ironbees.Core;
-using Moq;
+using NSubstitute;
 using System.Runtime.CompilerServices;
 
 namespace Ironbees.AgentFramework.Tests;
@@ -20,9 +20,9 @@ public class AgentOrchestratorTests
     public async Task LoadAgentsAsync_WithValidConfigs_RegistersAgents()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
         var configs = new List<AgentConfig>
         {
@@ -54,58 +54,57 @@ public class AgentOrchestratorTests
             }
         };
 
-        mockLoader.Setup(l => l.LoadAllConfigsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(configs);
+        mockLoader.LoadAllConfigsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(configs);
 
-        var mockAgent1 = new Mock<IAgent>();
-        mockAgent1.Setup(a => a.Name).Returns("agent1");
-        mockAgent1.Setup(a => a.Description).Returns("Test agent 1");
+        var mockAgent1 = Substitute.For<IAgent>();
+        mockAgent1.Name.Returns("agent1");
+        mockAgent1.Description.Returns("Test agent 1");
 
-        var mockAgent2 = new Mock<IAgent>();
-        mockAgent2.Setup(a => a.Name).Returns("agent2");
-        mockAgent2.Setup(a => a.Description).Returns("Test agent 2");
+        var mockAgent2 = Substitute.For<IAgent>();
+        mockAgent2.Name.Returns("agent2");
+        mockAgent2.Description.Returns("Test agent 2");
 
-        mockAdapter.SetupSequence(a => a.CreateAgentAsync(It.IsAny<AgentConfig>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(mockAgent1.Object)
-            .ReturnsAsync(mockAgent2.Object);
+        mockAdapter.CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>())
+            .Returns(mockAgent1, mockAgent2);
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "agent1", "agent2" });
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         await orchestrator.LoadAgentsAsync();
 
         // Assert
-        mockLoader.Verify(l => l.LoadAllConfigsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
-        mockAdapter.Verify(a => a.CreateAgentAsync(It.IsAny<AgentConfig>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-        mockRegistry.Verify(r => r.Register("agent1", It.IsAny<IAgent>()), Times.Once);
-        mockRegistry.Verify(r => r.Register("agent2", It.IsAny<IAgent>()), Times.Once);
+        await mockLoader.Received(1).LoadAllConfigsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await mockAdapter.Received(2).CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>());
+        mockRegistry.Received(1).Register("agent1", Arg.Any<IAgent>());
+        mockRegistry.Received(1).Register("agent2", Arg.Any<IAgent>());
     }
 
     [Fact]
     public async Task LoadAgentsAsync_NoConfigs_ThrowsInvalidOperationException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        mockLoader.Setup(l => l.LoadAllConfigsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<AgentConfig>());
+        mockLoader.LoadAllConfigsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new List<AgentConfig>());
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         await Assert.ThrowsAsync<AgentLoadException>(
@@ -116,9 +115,9 @@ public class AgentOrchestratorTests
     public async Task LoadAgentsAsync_AllAgentsFail_ThrowsAgentLoadException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
         var configs = new List<AgentConfig>
         {
@@ -137,21 +136,21 @@ public class AgentOrchestratorTests
             }
         };
 
-        mockLoader.Setup(l => l.LoadAllConfigsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(configs);
+        mockLoader.LoadAllConfigsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(configs);
 
-        mockAdapter.Setup(a => a.CreateAgentAsync(It.IsAny<AgentConfig>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Failed to create agent"));
+        mockAdapter.CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>())
+            .Returns<IAgent>(x => throw new InvalidOperationException("Failed to create agent"));
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string>());
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<AgentLoadException>(
@@ -164,52 +163,52 @@ public class AgentOrchestratorTests
     public async Task ProcessAsync_WithAgentName_CallsFrameworkAdapter()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
 
-        mockRegistry.Setup(r => r.Get("test-agent"))
-            .Returns(mockAgent.Object);
+        mockRegistry.GetAgent("test-agent")
+            .Returns(mockAgent);
 
-        mockAdapter.Setup(a => a.RunAsync(It.IsAny<IAgent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Test response");
+        mockAdapter.RunAsync(Arg.Any<IAgent>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("Test response");
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = await orchestrator.ProcessAsync("test input", "test-agent");
 
         // Assert
         Assert.Equal("Test response", result);
-        mockRegistry.Verify(r => r.Get("test-agent"), Times.Once);
-        mockAdapter.Verify(a => a.RunAsync(mockAgent.Object, "test input", It.IsAny<CancellationToken>()), Times.Once);
+        mockRegistry.Received(1).GetAgent("test-agent");
+        await mockAdapter.Received(1).RunAsync(mockAgent, "test input", Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ProcessAsync_AgentNotFound_ThrowsAgentNotFoundException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        mockRegistry.Setup(r => r.Get("nonexistent-agent"))
+        mockRegistry.GetAgent("nonexistent-agent")
             .Returns((IAgent?)null);
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         await Assert.ThrowsAsync<AgentNotFoundException>(
@@ -220,16 +219,16 @@ public class AgentOrchestratorTests
     public async Task ProcessAsync_EmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
@@ -240,122 +239,128 @@ public class AgentOrchestratorTests
     public async Task ProcessAsync_AutoSelect_UsesFirstAgent()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("first-agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("first-agent");
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "first-agent", "second-agent" });
 
-        mockRegistry.Setup(r => r.Get("first-agent"))
-            .Returns(mockAgent.Object);
+        mockRegistry.GetAgent("first-agent")
+            .Returns(mockAgent);
 
-        mockAdapter.Setup(a => a.RunAsync(It.IsAny<IAgent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("Test response");
+        mockAdapter.RunAsync(Arg.Any<IAgent>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("Test response");
 
-        var mockSelector = new Mock<IAgentSelector>();
-        mockSelector.Setup(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        var mockSelector = Substitute.For<IAgentSelector>();
+        mockSelector.SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
-                SelectedAgent = mockAgent.Object,
+                SelectedAgent = mockAgent,
                 ConfidenceScore = 0.9,
                 SelectionReason = "Test selection",
                 AllScores = new List<AgentScore>()
             });
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = await orchestrator.ProcessAsync("test input");
 
         // Assert
         Assert.Equal("Test response", result);
-        mockRegistry.Verify(r => r.ListAgents(), Times.Once);
-        mockSelector.Verify(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        mockRegistry.Received(1).ListAgents();
+        await mockSelector.Received(1).SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ProcessAsync_AutoSelectNoAgents_ThrowsInvalidOperationException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string>());
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await orchestrator.ProcessAsync("test input"));
     }
 
-    [Fact(Skip = "Requires proper mocking of IAsyncEnumerable")]
+    [Fact]
     public void StreamAsync_WithAgentName_ReturnsStream()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
 
-        mockRegistry.Setup(r => r.Get("test-agent"))
-            .Returns(mockAgent.Object);
+        mockRegistry.GetAgent("test-agent")
+            .Returns(mockAgent);
 
-        var mockSelector = new Mock<IAgentSelector>();
+        mockAdapter.StreamAsync(
+            Arg.Any<IAgent>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
+            .Returns(ToAsyncEnumerable<string>());
+
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var stream = orchestrator.StreamAsync("test input", "test-agent");
 
         // Assert
         Assert.NotNull(stream);
-        mockRegistry.Verify(r => r.Get("test-agent"), Times.Once);
+        mockRegistry.Received(1).GetAgent("test-agent");
     }
 
     [Fact]
     public void StreamAsync_AgentNotFound_ThrowsAgentNotFoundException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        mockRegistry.Setup(r => r.Get("nonexistent-agent"))
+        mockRegistry.GetAgent("nonexistent-agent")
             .Returns((IAgent?)null);
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         Assert.Throws<AgentNotFoundException>(
@@ -366,20 +371,20 @@ public class AgentOrchestratorTests
     public void ListAgents_ReturnsRegisteredAgents()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
         var agents = new List<string> { "agent1", "agent2", "agent3" };
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(agents);
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = orchestrator.ListAgents();
@@ -395,22 +400,22 @@ public class AgentOrchestratorTests
     public void GetAgent_ExistingAgent_ReturnsAgent()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
 
-        mockRegistry.Setup(r => r.Get("test-agent"))
-            .Returns(mockAgent.Object);
+        mockRegistry.GetAgent("test-agent")
+            .Returns(mockAgent);
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = orchestrator.GetAgent("test-agent");
@@ -424,19 +429,19 @@ public class AgentOrchestratorTests
     public void GetAgent_NonexistentAgent_ReturnsNull()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        mockRegistry.Setup(r => r.Get("nonexistent-agent"))
+        mockRegistry.GetAgent("nonexistent-agent")
             .Returns((IAgent?)null);
 
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = orchestrator.GetAgent("nonexistent-agent");
@@ -449,93 +454,93 @@ public class AgentOrchestratorTests
     public void Constructor_NullLoader_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
         // Act & Assert
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         Assert.Throws<ArgumentNullException>(
-            () => new AgentOrchestrator(null!, mockRegistry.Object, mockAdapter.Object, mockSelector.Object));
+            () => new AgentOrchestrator(null!, mockRegistry, mockAdapter, mockSelector));
     }
 
     [Fact]
     public void Constructor_NullRegistry_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
         // Act & Assert
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         Assert.Throws<ArgumentNullException>(
-            () => new AgentOrchestrator(mockLoader.Object, null!, mockAdapter.Object, mockSelector.Object));
+            () => new AgentOrchestrator(mockLoader, null!, mockAdapter, mockSelector));
     }
 
     [Fact]
     public void Constructor_NullAdapter_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
 
         // Act & Assert
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockSelector = Substitute.For<IAgentSelector>();
         Assert.Throws<ArgumentNullException>(
-            () => new AgentOrchestrator(mockLoader.Object, mockRegistry.Object, null!, mockSelector.Object));
+            () => new AgentOrchestrator(mockLoader, mockRegistry, null!, mockSelector));
     }
 
     [Fact]
     public void Constructor_NullSelector_ThrowsArgumentNullException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(
-            () => new AgentOrchestrator(mockLoader.Object, mockRegistry.Object, mockAdapter.Object, null!));
+            () => new AgentOrchestrator(mockLoader, mockRegistry, mockAdapter, null!));
     }
 
     [Fact]
     public async Task StreamAsync_AutoSelect_ReturnsChunks()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "test-agent" });
 
-        mockRegistry.Setup(r => r.Get("test-agent"))
-            .Returns(mockAgent.Object);
+        mockRegistry.GetAgent("test-agent")
+            .Returns(mockAgent);
 
         // Mock streaming response
-        mockAdapter.Setup(a => a.StreamAsync(It.IsAny<IAgent>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        mockAdapter.StreamAsync(Arg.Any<IAgent>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(ToAsyncEnumerable("Hello", " ", "World"));
 
-        var mockSelector = new Mock<IAgentSelector>();
-        mockSelector.Setup(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        var mockSelector = Substitute.For<IAgentSelector>();
+        mockSelector.SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
-                SelectedAgent = mockAgent.Object,
+                SelectedAgent = mockAgent,
                 ConfidenceScore = 0.9,
                 SelectionReason = "Test selection",
                 AllScores = new List<AgentScore>()
             });
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = new List<string>();
@@ -549,39 +554,39 @@ public class AgentOrchestratorTests
         Assert.Equal("Hello", result[0]);
         Assert.Equal(" ", result[1]);
         Assert.Equal("World", result[2]);
-        mockSelector.Verify(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-        mockAdapter.Verify(a => a.StreamAsync(
-            mockAgent.Object,
+        await mockSelector.Received(1).SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>());
+        mockAdapter.Received(1).StreamAsync(
+            mockAgent,
             "test input",
-            It.IsAny<CancellationToken>()), Times.Once);
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task StreamAsync_AutoSelectNoAgent_ReturnsWarningMessage()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "some-agent" });
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("some-agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("some-agent");
 
-        mockRegistry.Setup(r => r.Get("some-agent"))
-            .Returns(mockAgent.Object);
+        mockRegistry.GetAgent("some-agent")
+            .Returns(mockAgent);
 
-        var mockSelector = new Mock<IAgentSelector>();
-        mockSelector.Setup(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        var mockSelector = Substitute.For<IAgentSelector>();
+        mockSelector.SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
                 SelectedAgent = null,
                 ConfidenceScore = 0.0,
@@ -590,10 +595,10 @@ public class AgentOrchestratorTests
             });
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act
         var result = new List<string>();
@@ -605,31 +610,31 @@ public class AgentOrchestratorTests
         // Assert
         Assert.Single(result);
         Assert.Contains("No suitable agent found", result[0]);
-        Assert.Contains("⚠️", result[0]);
-        mockSelector.Verify(s => s.SelectAgentAsync(
-            It.IsAny<string>(),
-            It.IsAny<IReadOnlyCollection<IAgent>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
-        mockAdapter.Verify(a => a.StreamAsync(
-            It.IsAny<IAgent>(),
-            It.IsAny<string>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Contains("\u26a0\ufe0f", result[0]);
+        await mockSelector.Received(1).SelectAgentAsync(
+            Arg.Any<string>(),
+            Arg.Any<IReadOnlyCollection<IAgent>>(),
+            Arg.Any<CancellationToken>());
+        mockAdapter.DidNotReceive().StreamAsync(
+            Arg.Any<IAgent>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task StreamAsync_AutoSelectEmptyInput_ThrowsArgumentException()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
+        var mockSelector = Substitute.For<IAgentSelector>();
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
@@ -646,25 +651,25 @@ public class AgentOrchestratorTests
     public async Task StreamAsync_AutoSelect_LargeStream_NoMemoryLeak()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
+        var mockSelector = Substitute.For<IAgentSelector>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
-        mockAgent.Setup(a => a.Description).Returns("Test agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
+        mockAgent.Description.Returns("Test agent");
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "test-agent" }.AsReadOnly());
 
-        mockSelector.Setup(s => s.SelectAgentAsync(
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyCollection<IAgent>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        mockSelector.SelectAgentAsync(
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyCollection<IAgent>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
-                SelectedAgent = mockAgent.Object,
+                SelectedAgent = mockAgent,
                 ConfidenceScore = 0.9,
                 SelectionReason = "Test selection",
                 AllScores = Array.Empty<AgentScore>()
@@ -674,17 +679,17 @@ public class AgentOrchestratorTests
         var largeStream = Enumerable.Range(0, 1000)
             .Select(i => $"chunk_{i}");
 
-        mockAdapter.Setup(a => a.StreamAsync(
-                It.IsAny<IAgent>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
+        mockAdapter.StreamAsync(
+                Arg.Any<IAgent>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
             .Returns(ToAsyncEnumerable(largeStream.ToArray()));
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act - consume entire stream
         var collectedChunks = new List<string>();
@@ -710,25 +715,25 @@ public class AgentOrchestratorTests
     public async Task StreamAsync_AutoSelect_CancellationToken_ProperCleanup()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
+        var mockSelector = Substitute.For<IAgentSelector>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
-        mockAgent.Setup(a => a.Description).Returns("Test agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
+        mockAgent.Description.Returns("Test agent");
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "test-agent" }.AsReadOnly());
 
-        mockSelector.Setup(s => s.SelectAgentAsync(
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyCollection<IAgent>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        mockSelector.SelectAgentAsync(
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyCollection<IAgent>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
-                SelectedAgent = mockAgent.Object,
+                SelectedAgent = mockAgent,
                 ConfidenceScore = 0.9,
                 SelectionReason = "Test selection",
                 AllScores = Array.Empty<AgentScore>()
@@ -747,17 +752,17 @@ public class AgentOrchestratorTests
             }
         }
 
-        mockAdapter.Setup(a => a.StreamAsync(
-                It.IsAny<IAgent>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .Returns((IAgent a, string i, CancellationToken ct) => CancellableStream(ct));
+        mockAdapter.StreamAsync(
+                Arg.Any<IAgent>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns(callInfo => CancellableStream(callInfo.ArgAt<CancellationToken>(2)));
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act - cancel after 10 chunks
         var collectedChunks = new List<string>();
@@ -784,45 +789,45 @@ public class AgentOrchestratorTests
     public async Task StreamAsync_AutoSelect_MultipleConcurrentStreams_NoResourceLeak()
     {
         // Arrange
-        var mockLoader = new Mock<IAgentLoader>();
-        var mockRegistry = new Mock<IAgentRegistry>();
-        var mockAdapter = new Mock<ILLMFrameworkAdapter>();
-        var mockSelector = new Mock<IAgentSelector>();
+        var mockLoader = Substitute.For<IAgentLoader>();
+        var mockRegistry = Substitute.For<IAgentRegistry>();
+        var mockAdapter = Substitute.For<ILLMFrameworkAdapter>();
+        var mockSelector = Substitute.For<IAgentSelector>();
 
-        var mockAgent = new Mock<IAgent>();
-        mockAgent.Setup(a => a.Name).Returns("test-agent");
-        mockAgent.Setup(a => a.Description).Returns("Test agent");
+        var mockAgent = Substitute.For<IAgent>();
+        mockAgent.Name.Returns("test-agent");
+        mockAgent.Description.Returns("Test agent");
 
-        mockRegistry.Setup(r => r.ListAgents())
+        mockRegistry.ListAgents()
             .Returns(new List<string> { "test-agent" }.AsReadOnly());
 
-        mockSelector.Setup(s => s.SelectAgentAsync(
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyCollection<IAgent>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AgentSelectionResult
+        mockSelector.SelectAgentAsync(
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyCollection<IAgent>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new AgentSelectionResult
             {
-                SelectedAgent = mockAgent.Object,
+                SelectedAgent = mockAgent,
                 ConfidenceScore = 0.9,
                 SelectionReason = "Test selection",
                 AllScores = Array.Empty<AgentScore>()
             });
 
         // Each stream returns 100 chunks
-        mockAdapter.Setup(a => a.StreamAsync(
-                It.IsAny<IAgent>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .Returns((IAgent a, string input, CancellationToken ct) =>
+        mockAdapter.StreamAsync(
+                Arg.Any<IAgent>(),
+                Arg.Any<string>(),
+                Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
                 ToAsyncEnumerable(Enumerable.Range(0, 100)
-                    .Select(i => $"{input}_chunk_{i}")
+                    .Select(i => $"{callInfo.ArgAt<string>(1)}_chunk_{i}")
                     .ToArray()));
 
         var orchestrator = new AgentOrchestrator(
-            mockLoader.Object,
-            mockRegistry.Object,
-            mockAdapter.Object,
-            mockSelector.Object);
+            mockLoader,
+            mockRegistry,
+            mockAdapter,
+            mockSelector);
 
         // Act - run 10 concurrent streams
         var initialMemory = GC.GetTotalMemory(forceFullCollection: true);

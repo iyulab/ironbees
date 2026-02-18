@@ -14,10 +14,10 @@ namespace Ironbees.Core.Guardrails;
 /// (fail-fast behavior) unless configured otherwise.
 /// </para>
 /// </remarks>
-public sealed class GuardrailPipeline
+public sealed partial class GuardrailPipeline
 {
-    private readonly IReadOnlyList<IContentGuardrail> _inputGuardrails;
-    private readonly IReadOnlyList<IContentGuardrail> _outputGuardrails;
+    private readonly List<IContentGuardrail> _inputGuardrails;
+    private readonly List<IContentGuardrail> _outputGuardrails;
     private readonly ILogger<GuardrailPipeline>? _logger;
     private readonly GuardrailPipelineOptions _options;
 
@@ -84,23 +84,26 @@ public sealed class GuardrailPipeline
 
     private async Task<GuardrailPipelineResult> ValidateAsync(
         string content,
-        IReadOnlyList<IContentGuardrail> guardrails,
+        List<IContentGuardrail> guardrails,
         string contentType,
         CancellationToken cancellationToken)
     {
         if (guardrails.Count == 0)
         {
-            _logger?.LogDebug("No {ContentType} guardrails configured, skipping validation", contentType);
+            if (_logger?.IsEnabled(LogLevel.Debug) == true)
+            {
+                LogNoGuardrailsConfigured(_logger, contentType);
+            }
             return GuardrailPipelineResult.Empty();
         }
 
         var results = new List<GuardrailResult>();
         var allViolations = new List<GuardrailViolation>();
 
-        _logger?.LogDebug(
-            "Validating {ContentType} against {GuardrailCount} guardrails",
-            contentType,
-            guardrails.Count);
+        if (_logger?.IsEnabled(LogLevel.Debug) == true)
+        {
+            LogValidatingContent(_logger, contentType, guardrails.Count);
+        }
 
         foreach (var guardrail in guardrails)
         {
@@ -118,11 +121,10 @@ public sealed class GuardrailPipeline
                 {
                     allViolations.AddRange(result.Violations);
 
-                    _logger?.LogWarning(
-                        "Guardrail '{GuardrailName}' blocked {ContentType}: {Reason}",
-                        guardrail.Name,
-                        contentType,
-                        result.Reason);
+                    if (_logger is not null)
+                    {
+                        LogGuardrailBlocked(_logger, guardrail.Name, contentType, result.Reason);
+                    }
 
                     if (_options.ThrowOnViolation)
                     {
@@ -136,10 +138,10 @@ public sealed class GuardrailPipeline
                 }
                 else
                 {
-                    _logger?.LogDebug(
-                        "Guardrail '{GuardrailName}' passed for {ContentType}",
-                        guardrail.Name,
-                        contentType);
+                    if (_logger?.IsEnabled(LogLevel.Debug) == true)
+                    {
+                        LogGuardrailPassed(_logger, guardrail.Name, contentType);
+                    }
                 }
             }
             catch (GuardrailViolationException)
@@ -148,11 +150,10 @@ public sealed class GuardrailPipeline
             }
             catch (Exception ex) when (!_options.ThrowOnGuardrailError)
             {
-                _logger?.LogError(
-                    ex,
-                    "Guardrail '{GuardrailName}' threw an exception during {ContentType} validation",
-                    guardrail.Name,
-                    contentType);
+                if (_logger is not null)
+                {
+                    LogGuardrailException(_logger, ex, guardrail.Name, contentType);
+                }
 
                 // Add a violation for the error
                 var errorResult = GuardrailResult.Blocked(
@@ -178,6 +179,21 @@ public sealed class GuardrailPipeline
             GuardrailsExecuted = results.Count
         };
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No {ContentType} guardrails configured, skipping validation")]
+    private static partial void LogNoGuardrailsConfigured(ILogger logger, string contentType);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Validating {ContentType} against {GuardrailCount} guardrails")]
+    private static partial void LogValidatingContent(ILogger logger, string contentType, int guardrailCount);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Guardrail '{GuardrailName}' blocked {ContentType}: {Reason}")]
+    private static partial void LogGuardrailBlocked(ILogger logger, string guardrailName, string contentType, string? reason);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Guardrail '{GuardrailName}' passed for {ContentType}")]
+    private static partial void LogGuardrailPassed(ILogger logger, string guardrailName, string contentType);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Guardrail '{GuardrailName}' threw an exception during {ContentType} validation")]
+    private static partial void LogGuardrailException(ILogger logger, Exception exception, string guardrailName, string contentType);
 }
 
 /// <summary>

@@ -17,7 +17,7 @@ namespace Ironbees.Ironhive;
 /// <summary>
 /// Adapter that bridges Ironbees to IronHive for agent execution
 /// </summary>
-public class IronhiveAdapter : ILLMFrameworkAdapter
+public partial class IronhiveAdapter : ILLMFrameworkAdapter
 {
     private readonly IHiveService _hiveService;
     private readonly IIronhiveOrchestratorFactory _orchestratorFactory;
@@ -43,8 +43,10 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
     {
         ArgumentNullException.ThrowIfNull(config);
 
-        _logger.LogDebug("Creating IronHive agent: {AgentName} with provider {Provider}, model {Model}",
-            config.Name, config.Model.Provider, config.Model.Deployment);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogCreatingIronHiveAgent(_logger, config.Name, config.Model.Provider, config.Model.Deployment);
+        }
 
         var ironhiveAgent = _hiveService.CreateAgent(cfg =>
         {
@@ -92,17 +94,20 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
         var ironhiveAgent = GetIronhiveAgent(agent);
         var messages = CreateMessages(input, conversationHistory);
 
-        _logger.LogDebug("Running IronHive agent {AgentName} with input length {InputLength}",
-            agent.Name, input.Length);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogRunningIronHiveAgent(_logger, agent.Name, input.Length);
+        }
 
         var response = await ironhiveAgent.InvokeAsync(messages, cancellationToken);
 
         if (response.TokenUsage is not null)
         {
-            _logger.LogInformation(
-                "Agent {AgentName} ({Model}) usage: {Input} input, {Output} output tokens",
-                agent.Name, response.Message.Model ?? "unknown",
-                response.TokenUsage.InputTokens, response.TokenUsage.OutputTokens);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                LogAgentUsage(_logger, agent.Name, response.Message.Model ?? "unknown",
+                    response.TokenUsage.InputTokens, response.TokenUsage.OutputTokens);
+            }
         }
 
         return ExtractText(response);
@@ -127,8 +132,10 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
         var ironhiveAgent = GetIronhiveAgent(agent);
         var messages = CreateMessages(input, conversationHistory);
 
-        _logger.LogDebug("Streaming IronHive agent {AgentName} with input length {InputLength}",
-            agent.Name, input.Length);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogStreamingIronHiveAgent(_logger, agent.Name, input.Length);
+        }
 
         await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, cancellationToken))
         {
@@ -139,20 +146,47 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
             }
             else if (chunk is StreamingMessageDoneResponse done && done.TokenUsage is not null)
             {
-                _logger.LogInformation(
-                    "Agent {AgentName} ({Model}) streaming usage: {Input} input, {Output} output tokens",
-                    agent.Name, done.Model,
-                    done.TokenUsage.InputTokens, done.TokenUsage.OutputTokens);
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    LogAgentStreamingUsage(_logger, agent.Name, done.Model,
+                        done.TokenUsage.InputTokens, done.TokenUsage.OutputTokens);
+                }
             }
             else if (chunk is StreamingMessageErrorResponse error)
             {
-                _logger.LogError("IronHive streaming error: Code={Code}, Message={Message}",
-                    error.Code, error.Message);
+                LogIronHiveStreamingError(_logger, error.Code, error.Message);
                 yield return $"[Error {error.Code}]: {error.Message}";
                 yield break;
             }
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Creating IronHive agent: {AgentName} with provider {Provider}, model {Model}")]
+    private static partial void LogCreatingIronHiveAgent(ILogger logger, string agentName, string provider, string model);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Running IronHive agent {AgentName} with input length {InputLength}")]
+    private static partial void LogRunningIronHiveAgent(ILogger logger, string agentName, int inputLength);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Agent {AgentName} ({Model}) usage: {Input} input, {Output} output tokens")]
+    private static partial void LogAgentUsage(ILogger logger, string agentName, string model, int input, int output);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Streaming IronHive agent {AgentName} with input length {InputLength}")]
+    private static partial void LogStreamingIronHiveAgent(ILogger logger, string agentName, int inputLength);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Agent {AgentName} ({Model}) streaming usage: {Input} input, {Output} output tokens")]
+    private static partial void LogAgentStreamingUsage(ILogger logger, string agentName, string? model, int input, int output);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "IronHive streaming error: Code={Code}, Message={ErrorMessage}")]
+    private static partial void LogIronHiveStreamingError(ILogger logger, int code, string? errorMessage);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Creating orchestrator type {OrchestratorType} with {AgentCount} agents")]
+    private static partial void LogCreatingOrchestrator(ILogger logger, Core.Orchestration.OrchestratorType orchestratorType, int agentCount);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Starting orchestration for goal {GoalId}, execution {ExecutionId}")]
+    private static partial void LogStartingOrchestration(ILogger logger, string goalId, string executionId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Starting orchestration with approval handler for goal {GoalId}, execution {ExecutionId}")]
+    private static partial void LogStartingOrchestrationWithApproval(ILogger logger, string goalId, string executionId);
 
     private static IronHiveAgent GetIronhiveAgent(IAgent agent)
     {
@@ -166,7 +200,7 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
             $"Expected IronhiveAgentWrapper but got {agent.GetType().Name}.");
     }
 
-    private static IEnumerable<Message> CreateMessages(
+    private static List<Message> CreateMessages(
         string input,
         IReadOnlyList<ChatMessage>? conversationHistory)
     {
@@ -227,9 +261,10 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(agentConfigs);
 
-        _logger.LogDebug(
-            "Creating orchestrator type {OrchestratorType} with {AgentCount} agents",
-            settings.Type, agentConfigs.Count);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogCreatingOrchestrator(_logger, settings.Type, agentConfigs.Count);
+        }
 
         // Create Ironbees agents from configs
         var agents = new List<IAgent>();
@@ -263,13 +298,14 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
         ArgumentNullException.ThrowIfNull(goalId);
         ArgumentNullException.ThrowIfNull(executionId);
 
-        _logger.LogDebug(
-            "Starting orchestration for goal {GoalId}, execution {ExecutionId}",
-            goalId, executionId);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogStartingOrchestration(_logger, goalId, executionId);
+        }
 
         await foreach (var streamEvent in orchestrator.RunStreamingAsync(input, cancellationToken))
         {
-            var mappedEvent = _eventMapper.Map(streamEvent, goalId, executionId);
+            var mappedEvent = OrchestrationEventMapper.Map(streamEvent, goalId, executionId);
             if (mappedEvent is not null)
             {
                 yield return mappedEvent;
@@ -301,13 +337,14 @@ public class IronhiveAdapter : ILLMFrameworkAdapter
         ArgumentNullException.ThrowIfNull(executionId);
         ArgumentNullException.ThrowIfNull(approvalHandler);
 
-        _logger.LogDebug(
-            "Starting orchestration with approval handler for goal {GoalId}, execution {ExecutionId}",
-            goalId, executionId);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogStartingOrchestrationWithApproval(_logger, goalId, executionId);
+        }
 
         await foreach (var streamEvent in orchestrator.RunStreamingAsync(input, cancellationToken))
         {
-            var mappedEvent = _eventMapper.Map(streamEvent, goalId, executionId);
+            var mappedEvent = OrchestrationEventMapper.Map(streamEvent, goalId, executionId);
             if (mappedEvent is null)
             {
                 continue;

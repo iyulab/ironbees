@@ -3,7 +3,7 @@ using Ironbees.AgentMode.Workflow;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 
 namespace Ironbees.AgentFramework.Tests.Workflow;
 
@@ -13,18 +13,18 @@ namespace Ironbees.AgentFramework.Tests.Workflow;
 /// </summary>
 public class MafWorkflowExecutorTests
 {
-    private readonly Mock<IWorkflowConverter> _mockConverter;
-    private readonly Mock<ILogger<MafWorkflowExecutor>> _mockLogger;
+    private readonly IWorkflowConverter _mockConverter;
+    private readonly ILogger<MafWorkflowExecutor> _mockLogger;
 
     public MafWorkflowExecutorTests()
     {
-        _mockConverter = new Mock<IWorkflowConverter>();
-        _mockLogger = new Mock<ILogger<MafWorkflowExecutor>>();
+        _mockConverter = Substitute.For<IWorkflowConverter>();
+        _mockLogger = Substitute.For<ILogger<MafWorkflowExecutor>>();
     }
 
     private MafWorkflowExecutor CreateExecutor()
     {
-        return new MafWorkflowExecutor(_mockConverter.Object, _mockLogger.Object);
+        return new MafWorkflowExecutor(_mockConverter, _mockLogger);
     }
 
     #region Constructor Tests
@@ -44,14 +44,14 @@ public class MafWorkflowExecutorTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new MafWorkflowExecutor(null!, _mockLogger.Object));
+            new MafWorkflowExecutor(null!, _mockLogger));
     }
 
     [Fact]
     public void Constructor_WithNullLogger_Succeeds()
     {
         // Act - logger is optional
-        var executor = new MafWorkflowExecutor(_mockConverter.Object, null);
+        var executor = new MafWorkflowExecutor(_mockConverter, null);
 
         // Assert
         Assert.NotNull(executor);
@@ -142,11 +142,11 @@ public class MafWorkflowExecutorTests
         var definition = CreateSimpleWorkflowDefinition();
 
         _mockConverter
-            .Setup(c => c.ConvertAsync(
+            .ConvertAsync(
                 definition,
-                It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Conversion failed"));
+                Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+                Arg.Any<CancellationToken>())
+            .Returns<Microsoft.Agents.AI.Workflows.Workflow>(x => throw new InvalidOperationException("Conversion failed"));
 
         // Act
         var events = await CollectEventsAsync(executor, definition, "input");
@@ -164,11 +164,11 @@ public class MafWorkflowExecutorTests
         var definition = CreateSimpleWorkflowDefinitionWithName("TestWorkflow");
 
         _mockConverter
-            .Setup(c => c.ConvertAsync(
+            .ConvertAsync(
                 definition,
-                It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Conversion failed"));
+                Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+                Arg.Any<CancellationToken>())
+            .Returns<Microsoft.Agents.AI.Workflows.Workflow>(x => throw new InvalidOperationException("Conversion failed"));
 
         // Act
         var events = await CollectEventsAsync(executor, definition, "input");
@@ -188,11 +188,11 @@ public class MafWorkflowExecutorTests
         var definition = CreateSimpleWorkflowDefinition();
 
         _mockConverter
-            .Setup(c => c.ConvertAsync(
+            .ConvertAsync(
                 definition,
-                It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Conversion failed"));
+                Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+                Arg.Any<CancellationToken>())
+            .Returns<Microsoft.Agents.AI.Workflows.Workflow>(x => throw new InvalidOperationException("Conversion failed"));
 
         // Act
         var events = await CollectEventsAsync(executor, definition, "input");
@@ -211,11 +211,11 @@ public class MafWorkflowExecutorTests
         var definition = CreateSimpleWorkflowDefinition();
 
         _mockConverter
-            .Setup(c => c.ConvertAsync(
+            .ConvertAsync(
                 definition,
-                It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Conversion failed"));
+                Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+                Arg.Any<CancellationToken>())
+            .Returns<Microsoft.Agents.AI.Workflows.Workflow>(x => throw new InvalidOperationException("Conversion failed"));
 
         // Act
         var events = await CollectEventsAsync(executor, definition, "input");
@@ -330,13 +330,13 @@ public class MafWorkflowExecutorTests
     public void WorkflowExecutionEventType_ContainsExpectedValues()
     {
         // Assert
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.WorkflowStarted));
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.AgentStarted));
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.AgentMessage));
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.AgentCompleted));
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.SuperStepCompleted));
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.WorkflowCompleted));
-        Assert.True(Enum.IsDefined(typeof(WorkflowExecutionEventType), WorkflowExecutionEventType.Error));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.WorkflowStarted));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.AgentStarted));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.AgentMessage));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.AgentCompleted));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.SuperStepCompleted));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.WorkflowCompleted));
+        Assert.True(Enum.IsDefined(WorkflowExecutionEventType.Error));
     }
 
     #endregion
@@ -365,9 +365,9 @@ public class MafWorkflowExecutorTests
     {
         return (name, _) =>
         {
-            var mockChatClient = new Mock<IChatClient>();
+            var mockChatClient = Substitute.For<IChatClient>();
             AIAgent agent = new ChatClientAgent(
-                mockChatClient.Object,
+                mockChatClient,
                 instructions: $"Test agent: {name}",
                 name: name);
             return Task.FromResult(agent);
@@ -377,9 +377,9 @@ public class MafWorkflowExecutorTests
     private static Microsoft.Agents.AI.Workflows.Workflow CreateMockMafWorkflow()
     {
         // Create a minimal MAF workflow for testing
-        var mockChatClient = new Mock<IChatClient>();
+        var mockChatClient = Substitute.For<IChatClient>();
         var agent = new ChatClientAgent(
-            mockChatClient.Object,
+            mockChatClient,
             instructions: "Test agent",
             name: "test");
 

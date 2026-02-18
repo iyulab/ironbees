@@ -19,7 +19,7 @@ public class OrchestrationEventMapper
     /// <param name="goalId">The goal ID for the execution.</param>
     /// <param name="executionId">The execution ID for this run.</param>
     /// <returns>A mapped GoalExecutionEvent, or null if the event should be skipped.</returns>
-    public GoalExecutionEvent? Map(
+    public static GoalExecutionEvent? Map(
         OrchestrationStreamEvent streamEvent,
         string goalId,
         string executionId)

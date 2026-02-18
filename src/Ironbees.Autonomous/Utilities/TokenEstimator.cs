@@ -7,7 +7,7 @@ namespace Ironbees.Autonomous.Utilities;
 /// </summary>
 internal static class TokenEstimator
 {
-    private static readonly ITokenCounter _counter = TokenCounter.Default();
+    private static readonly TokenCounter _counter = TokenCounter.Default();
 
     /// <summary>
     /// Estimates token count using TokenMeter's tiktoken-based counting.

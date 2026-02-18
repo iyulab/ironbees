@@ -7,7 +7,7 @@ namespace EmbeddingSample;
 /// Demonstrates Ironbees embedding features including local ONNX models,
 /// EmbeddingAgentSelector, and HybridAgentSelector.
 /// </summary>
-class Program
+sealed class Program
 {
     static async Task Main(string[] args)
     {
@@ -438,7 +438,7 @@ class Program
     /// <summary>
     /// Mock agent implementation for demonstration.
     /// </summary>
-    class MockAgent : IAgent
+    sealed class MockAgent : IAgent
     {
         public required string Name { get; init; }
         public required string Description { get; init; }

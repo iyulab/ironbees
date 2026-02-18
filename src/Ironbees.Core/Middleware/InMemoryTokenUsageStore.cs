@@ -33,12 +33,12 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
     /// <inheritdoc/>
     public Task<IReadOnlyList<TokenUsage>> GetUsageAsync(
         DateTimeOffset from,
-        DateTimeOffset to,
+        DateTimeOffset endTime,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var result = _usages
-            .Where(u => u.Timestamp >= from && u.Timestamp < to)
+            .Where(u => u.Timestamp >= from && u.Timestamp < endTime)
             .OrderByDescending(u => u.Timestamp)
             .ToList();
         return Task.FromResult<IReadOnlyList<TokenUsage>>(result);
@@ -48,7 +48,7 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
     public Task<IReadOnlyList<TokenUsage>> GetUsageByAgentAsync(
         string agentName,
         DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? endTime = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -60,9 +60,9 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
             query = query.Where(u => u.Timestamp >= from.Value);
         }
 
-        if (to.HasValue)
+        if (endTime.HasValue)
         {
-            query = query.Where(u => u.Timestamp < to.Value);
+            query = query.Where(u => u.Timestamp < endTime.Value);
         }
 
         var result = query.OrderByDescending(u => u.Timestamp).ToList();
@@ -85,7 +85,7 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
     /// <inheritdoc/>
     public Task<TokenUsageStatistics> GetStatisticsAsync(
         DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? endTime = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -97,9 +97,9 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
             query = query.Where(u => u.Timestamp >= from.Value);
         }
 
-        if (to.HasValue)
+        if (endTime.HasValue)
         {
-            query = query.Where(u => u.Timestamp < to.Value);
+            query = query.Where(u => u.Timestamp < endTime.Value);
         }
 
         var usages = query.ToList();
@@ -132,7 +132,7 @@ public sealed class InMemoryTokenUsageStore : ITokenUsageStore
             ByModel = byModel,
             ByAgent = byAgent,
             From = from,
-            To = to
+            To = endTime
         };
 
         return Task.FromResult(stats);

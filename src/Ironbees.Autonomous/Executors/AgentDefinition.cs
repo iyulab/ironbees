@@ -130,7 +130,7 @@ public record GuessRule
             .Select(k => k.ToLowerInvariant())
             .ToHashSet();
 
-        return Conditions.All(c => keywords.Any(k => k.Contains(c.ToLowerInvariant())));
+        return Conditions.All(c => keywords.Any(k => k.Contains(c, StringComparison.OrdinalIgnoreCase)));
     }
 
     /// <summary>Get the guess value</summary>

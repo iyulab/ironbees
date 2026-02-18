@@ -7,35 +7,35 @@ using Ironbees.AgentMode.Goals;
 using Ironbees.AgentMode.Workflow;
 using Ironbees.Core.Goals;
 using Microsoft.Agents.AI;
-using Moq;
+using NSubstitute;
 using Xunit;
 
 namespace Ironbees.AgentFramework.Tests.Goals;
 
 public class GoalExecutionBridgeTests
 {
-    private readonly Mock<IGoalLoader> _mockGoalLoader;
-    private readonly Mock<IWorkflowTemplateResolver> _mockTemplateResolver;
-    private readonly Mock<IMafWorkflowExecutor> _mockWorkflowExecutor;
-    private readonly Mock<ICheckpointStore> _mockCheckpointStore;
+    private readonly IGoalLoader _mockGoalLoader;
+    private readonly IWorkflowTemplateResolver _mockTemplateResolver;
+    private readonly IMafWorkflowExecutor _mockWorkflowExecutor;
+    private readonly ICheckpointStore _mockCheckpointStore;
     private readonly Func<string, CancellationToken, Task<AIAgent>> _mockAgentResolver;
 
     public GoalExecutionBridgeTests()
     {
-        _mockGoalLoader = new Mock<IGoalLoader>();
-        _mockTemplateResolver = new Mock<IWorkflowTemplateResolver>();
-        _mockWorkflowExecutor = new Mock<IMafWorkflowExecutor>();
-        _mockCheckpointStore = new Mock<ICheckpointStore>();
+        _mockGoalLoader = Substitute.For<IGoalLoader>();
+        _mockTemplateResolver = Substitute.For<IWorkflowTemplateResolver>();
+        _mockWorkflowExecutor = Substitute.For<IMafWorkflowExecutor>();
+        _mockCheckpointStore = Substitute.For<ICheckpointStore>();
         _mockAgentResolver = (name, ct) => Task.FromResult<AIAgent>(null!);
     }
 
     private GoalExecutionBridge CreateBridge()
     {
         return new GoalExecutionBridge(
-            _mockGoalLoader.Object,
-            _mockTemplateResolver.Object,
-            _mockWorkflowExecutor.Object,
-            _mockCheckpointStore.Object,
+            _mockGoalLoader,
+            _mockTemplateResolver,
+            _mockWorkflowExecutor,
+            _mockCheckpointStore,
             _mockAgentResolver);
     }
 
@@ -78,9 +78,9 @@ public class GoalExecutionBridgeTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new GoalExecutionBridge(
             null!,
-            _mockTemplateResolver.Object,
-            _mockWorkflowExecutor.Object,
-            _mockCheckpointStore.Object,
+            _mockTemplateResolver,
+            _mockWorkflowExecutor,
+            _mockCheckpointStore,
             _mockAgentResolver));
     }
 
@@ -89,10 +89,10 @@ public class GoalExecutionBridgeTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new GoalExecutionBridge(
-            _mockGoalLoader.Object,
+            _mockGoalLoader,
             null!,
-            _mockWorkflowExecutor.Object,
-            _mockCheckpointStore.Object,
+            _mockWorkflowExecutor,
+            _mockCheckpointStore,
             _mockAgentResolver));
     }
 
@@ -101,10 +101,10 @@ public class GoalExecutionBridgeTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new GoalExecutionBridge(
-            _mockGoalLoader.Object,
-            _mockTemplateResolver.Object,
+            _mockGoalLoader,
+            _mockTemplateResolver,
             null!,
-            _mockCheckpointStore.Object,
+            _mockCheckpointStore,
             _mockAgentResolver));
     }
 
@@ -113,9 +113,9 @@ public class GoalExecutionBridgeTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new GoalExecutionBridge(
-            _mockGoalLoader.Object,
-            _mockTemplateResolver.Object,
-            _mockWorkflowExecutor.Object,
+            _mockGoalLoader,
+            _mockTemplateResolver,
+            _mockWorkflowExecutor,
             null!,
             _mockAgentResolver));
     }
@@ -125,10 +125,10 @@ public class GoalExecutionBridgeTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => new GoalExecutionBridge(
-            _mockGoalLoader.Object,
-            _mockTemplateResolver.Object,
-            _mockWorkflowExecutor.Object,
-            _mockCheckpointStore.Object,
+            _mockGoalLoader,
+            _mockTemplateResolver,
+            _mockWorkflowExecutor,
+            _mockCheckpointStore,
             null!));
     }
 
@@ -168,8 +168,8 @@ public class GoalExecutionBridgeTests
     {
         // Arrange
         var bridge = CreateBridge();
-        _mockGoalLoader.Setup(x => x.GetGoalByIdAsync(It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((GoalDefinition?)null);
+        _mockGoalLoader.GetGoalByIdAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns((GoalDefinition?)null);
 
         // Act
         var events = new List<GoalExecutionEvent>();
@@ -195,17 +195,17 @@ public class GoalExecutionBridgeTests
         };
         var workflow = CreateTestWorkflowDefinition();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(workflow);
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns(workflow);
 
-        _mockWorkflowExecutor.Setup(x => x.ExecuteAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<CancellationToken>()))
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<CancellationToken>())
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         // Act
@@ -233,17 +233,17 @@ public class GoalExecutionBridgeTests
         };
         var workflow = CreateTestWorkflowDefinition();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(workflow);
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns(workflow);
 
-        _mockWorkflowExecutor.Setup(x => x.ExecuteAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<CancellationToken>()))
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<CancellationToken>())
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         // Act
@@ -266,11 +266,11 @@ public class GoalExecutionBridgeTests
         var bridge = CreateBridge();
         var goal = CreateTestGoal();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new WorkflowTemplateNotFoundException("test-template", ["path1"]));
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns<WorkflowDefinition>(x => throw new WorkflowTemplateNotFoundException("test-template", ["path1"]));
 
         // Act
         var events = new List<GoalExecutionEvent>();
@@ -293,11 +293,11 @@ public class GoalExecutionBridgeTests
         var bridge = CreateBridge();
         var goal = CreateTestGoal();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new WorkflowTemplateResolutionException("test-template", ["missing.param"]));
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns<WorkflowDefinition>(x => throw new WorkflowTemplateResolutionException("test-template", ["missing.param"]));
 
         // Act
         var events = new List<GoalExecutionEvent>();
@@ -324,17 +324,17 @@ public class GoalExecutionBridgeTests
         };
         var workflow = CreateTestWorkflowDefinition();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(workflow);
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns(workflow);
 
-        _mockWorkflowExecutor.Setup(x => x.ExecuteAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<CancellationToken>()))
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<CancellationToken>())
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         // Act
@@ -343,11 +343,11 @@ public class GoalExecutionBridgeTests
         }
 
         // Assert
-        _mockWorkflowExecutor.Verify(x => x.ExecuteAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        _mockWorkflowExecutor.Received(1).ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -361,19 +361,19 @@ public class GoalExecutionBridgeTests
         };
         var workflow = CreateTestWorkflowDefinition();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(workflow);
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns(workflow);
 
-        _mockWorkflowExecutor.Setup(x => x.ExecuteWithCheckpointingAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<ICheckpointStore>(),
-            It.IsAny<CancellationToken>()))
+        _mockWorkflowExecutor.ExecuteWithCheckpointingAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<ICheckpointStore>(),
+            Arg.Any<CancellationToken>())
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         // Act
@@ -382,13 +382,13 @@ public class GoalExecutionBridgeTests
         }
 
         // Assert
-        _mockWorkflowExecutor.Verify(x => x.ExecuteWithCheckpointingAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<ICheckpointStore>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        _mockWorkflowExecutor.Received(1).ExecuteWithCheckpointingAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<ICheckpointStore>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -402,11 +402,11 @@ public class GoalExecutionBridgeTests
         };
         var workflow = CreateTestWorkflowDefinition();
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(workflow);
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns(workflow);
 
         var workflowEvents = new List<WorkflowExecutionEvent>
         {
@@ -414,11 +414,11 @@ public class GoalExecutionBridgeTests
             new() { Type = WorkflowExecutionEventType.WorkflowCompleted, Content = "Completed" }
         };
 
-        _mockWorkflowExecutor.Setup(x => x.ExecuteAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<CancellationToken>()))
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<CancellationToken>())
             .Returns(workflowEvents.ToAsyncEnumerable());
 
         // Act
@@ -495,10 +495,10 @@ public class GoalExecutionBridgeTests
             }
         };
 
-        _mockCheckpointStore.Setup(x => x.GetAllForExecutionAsync(
+        _mockCheckpointStore.GetAllForExecutionAsync(
             "exec-1",
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(checkpoints);
+            Arg.Any<CancellationToken>())
+            .Returns(checkpoints);
 
         // Act
         var result = await bridge.GetCheckpointsAsync("exec-1");
@@ -521,17 +521,17 @@ public class GoalExecutionBridgeTests
         var workflow = CreateTestWorkflowDefinition();
         var customExecutionId = "custom-exec-123";
 
-        _mockTemplateResolver.Setup(x => x.ResolveAsync(
-            It.IsAny<string>(),
-            It.IsAny<GoalDefinition>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync(workflow);
+        _mockTemplateResolver.ResolveAsync(
+            Arg.Any<string>(),
+            Arg.Any<GoalDefinition>(),
+            Arg.Any<CancellationToken>())
+            .Returns(workflow);
 
-        _mockWorkflowExecutor.Setup(x => x.ExecuteAsync(
-            It.IsAny<WorkflowDefinition>(),
-            It.IsAny<string>(),
-            It.IsAny<Func<string, CancellationToken, Task<AIAgent>>>(),
-            It.IsAny<CancellationToken>()))
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(),
+            Arg.Any<string>(),
+            Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
+            Arg.Any<CancellationToken>())
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         var options = new GoalExecutionOptions { ExecutionId = customExecutionId };
@@ -552,10 +552,10 @@ public class GoalExecutionBridgeTests
     {
         // Arrange
         var bridge = CreateBridge();
-        _mockCheckpointStore.Setup(x => x.GetLatestForExecutionAsync(
-            It.IsAny<string>(),
-            It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CheckpointData?)null);
+        _mockCheckpointStore.GetLatestForExecutionAsync(
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
+            .Returns((CheckpointData?)null);
 
         // Act
         var events = new List<GoalExecutionEvent>();

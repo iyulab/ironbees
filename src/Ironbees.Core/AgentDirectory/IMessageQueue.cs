@@ -13,6 +13,7 @@ namespace Ironbees.Core.AgentDirectory;
 /// - Easy debugging and monitoring
 /// - Process-independent message persistence
 /// </remarks>
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix — "Queue" is the domain term
 public interface IMessageQueue
 {
     /// <summary>
@@ -69,10 +70,10 @@ public interface IMessageQueue
     /// Marks a message as failed.
     /// </summary>
     /// <param name="messageId">The message ID.</param>
-    /// <param name="error">Optional error message.</param>
+    /// <param name="errorMessage">Optional error message.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if the message was found and marked failed.</returns>
-    Task<bool> FailAsync(string messageId, string? error = null, CancellationToken cancellationToken = default);
+    Task<bool> FailAsync(string messageId, string? errorMessage = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Publishes a result message to this agent's outbox.

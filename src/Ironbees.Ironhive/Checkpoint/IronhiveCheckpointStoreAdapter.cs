@@ -18,7 +18,7 @@ namespace Ironbees.Ironhive.Checkpoint;
 /// Adapts Ironbees ICheckpointStore to IronHive ICheckpointStore interface.
 /// Enables IronHive orchestrators to use Ironbees checkpoint persistence.
 /// </summary>
-public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
+public partial class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
 {
     private readonly IronbeesCheckpointStore _innerStore;
     private readonly ILogger<IronhiveCheckpointStoreAdapter>? _logger;
@@ -50,9 +50,10 @@ public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
 
         await _innerStore.SaveCheckpointAsync(orchestrationId, ironbeesCheckpoint, ct);
 
-        _logger?.LogDebug(
-            "Saved IronHive checkpoint for orchestration {OrchestrationId}, {StepCount} steps completed",
-            orchestrationId, checkpoint.CompletedStepCount);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogSavedIronHiveCheckpoint(_logger, orchestrationId, checkpoint.CompletedStepCount);
+        }
     }
 
     /// <inheritdoc />
@@ -66,15 +67,19 @@ public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
 
         if (ironbeesCheckpoint is null)
         {
-            _logger?.LogDebug("No checkpoint found for orchestration {OrchestrationId}", orchestrationId);
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+            {
+                LogNoCheckpointFound(_logger, orchestrationId);
+            }
             return null;
         }
 
         var ironhiveCheckpoint = ConvertToIronHive(ironbeesCheckpoint);
 
-        _logger?.LogDebug(
-            "Loaded IronHive checkpoint for orchestration {OrchestrationId}",
-            orchestrationId);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogLoadedIronHiveCheckpoint(_logger, orchestrationId);
+        }
 
         return ironhiveCheckpoint;
     }
@@ -86,8 +91,26 @@ public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
 
         await _innerStore.DeleteAllCheckpointsAsync(orchestrationId, ct);
 
-        _logger?.LogDebug("Deleted all checkpoints for orchestration {OrchestrationId}", orchestrationId);
+        if (_logger is not null && _logger.IsEnabled(LogLevel.Debug))
+        {
+            LogDeletedAllCheckpoints(_logger, orchestrationId);
+        }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Saved IronHive checkpoint for orchestration {OrchestrationId}, {StepCount} steps completed")]
+    private static partial void LogSavedIronHiveCheckpoint(ILogger logger, string orchestrationId, int stepCount);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "No checkpoint found for orchestration {OrchestrationId}")]
+    private static partial void LogNoCheckpointFound(ILogger logger, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Loaded IronHive checkpoint for orchestration {OrchestrationId}")]
+    private static partial void LogLoadedIronHiveCheckpoint(ILogger logger, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Deleted all checkpoints for orchestration {OrchestrationId}")]
+    private static partial void LogDeletedAllCheckpoints(ILogger logger, string orchestrationId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to deserialize checkpoint state")]
+    private static partial void LogFailedToDeserializeCheckpointState(ILogger logger, Exception exception);
 
     private IronbeesOrchestrationCheckpoint ConvertToIronbees(IronHiveOrchestrationCheckpoint ironhiveCheckpoint)
     {
@@ -111,7 +134,9 @@ public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
             OrchestrationId = ironhiveCheckpoint.OrchestrationId,
             CreatedAt = new DateTimeOffset(ironhiveCheckpoint.CreatedAt, TimeSpan.Zero),
             CurrentState = $"step-{ironhiveCheckpoint.CompletedStepCount}",
-            CurrentAgent = ironhiveCheckpoint.CompletedSteps.LastOrDefault()?.AgentName,
+            CurrentAgent = ironhiveCheckpoint.CompletedSteps.Count > 0
+                ? ironhiveCheckpoint.CompletedSteps[^1].AgentName
+                : null,
             SerializedState = serializedState,
             AgentResults = agentResults,
             Messages = ConvertMessages(ironhiveCheckpoint.CurrentMessages),
@@ -142,7 +167,7 @@ public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
             }
             catch (JsonException ex)
             {
-                _logger?.LogWarning(ex, "Failed to deserialize checkpoint state");
+                if (_logger is not null) { LogFailedToDeserializeCheckpointState(_logger, ex); }
             }
         }
 
@@ -179,7 +204,7 @@ public class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
         };
     }
 
-    private static IReadOnlyList<CheckpointMessage> ConvertMessages(
+    private static List<CheckpointMessage> ConvertMessages(
         IReadOnlyList<IronHiveMessage> messages)
     {
         var result = new List<CheckpointMessage>();

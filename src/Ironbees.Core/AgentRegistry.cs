@@ -22,7 +22,7 @@ public class AgentRegistry : IAgentRegistry
     }
 
     /// <inheritdoc />
-    public IAgent? Get(string name)
+    public IAgent? GetAgent(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         return _agents.TryGetValue(name, out var agent) ? agent : null;

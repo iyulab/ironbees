@@ -1,7 +1,7 @@
 using Ironbees.Core;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 using OpenAI;
 
 namespace Ironbees.AgentFramework.Tests;
@@ -26,9 +26,9 @@ public class AgentFrameworkAdapterHistoryTests
     public async Task RunAsync_WithNullHistory_FallsToBaseMethod()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
         var agent = await adapter.CreateAgentAsync(config);
@@ -43,9 +43,9 @@ public class AgentFrameworkAdapterHistoryTests
     public async Task RunAsync_WithEmptyHistory_FallsToBaseMethod()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
         var agent = await adapter.CreateAgentAsync(config);
@@ -60,9 +60,9 @@ public class AgentFrameworkAdapterHistoryTests
     public async Task RunAsync_WithHistory_IncludesHistoryInMessages()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
         var agent = await adapter.CreateAgentAsync(config);
@@ -83,9 +83,9 @@ public class AgentFrameworkAdapterHistoryTests
     public async Task StreamAsync_WithNullHistory_DoesNotThrow()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
         var agent = await adapter.CreateAgentAsync(config);
@@ -104,9 +104,9 @@ public class AgentFrameworkAdapterHistoryTests
     public async Task StreamAsync_WithHistory_IncludesHistoryInMessages()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
         var agent = await adapter.CreateAgentAsync(config);
@@ -130,10 +130,10 @@ public class AgentFrameworkAdapterHistoryTests
     public async Task RunAsync_WrongAgentType_ThrowsArgumentException()
     {
         // Arrange
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
-        var mockAgent = new Mock<IAgent>();
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
+        var mockAgent = Substitute.For<IAgent>();
 
         var history = new List<ChatMessage>
         {
@@ -142,16 +142,16 @@ public class AgentFrameworkAdapterHistoryTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await adapter.RunAsync(mockAgent.Object, "test input", history));
+            async () => await adapter.RunAsync(mockAgent, "test input", history));
     }
 
     [Fact]
     public async Task RunAsync_BaseMethodDelegatesToHistoryOverload()
     {
         // Arrange — verify the base RunAsync delegates to the history overload
-        var mockClient = new Mock<OpenAIClient>("test-key");
-        var mockLogger = new Mock<ILogger<AgentFrameworkAdapter>>();
-        var adapter = new AgentFrameworkAdapter(mockClient.Object, mockLogger.Object);
+        var mockClient = Substitute.For<OpenAIClient>("test-key");
+        var mockLogger = Substitute.For<ILogger<AgentFrameworkAdapter>>();
+        var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
         var agent = await adapter.CreateAgentAsync(config);

@@ -22,7 +22,7 @@ namespace Ironbees.Core.Goals;
 /// - Optional caching for improved performance
 /// - Hot reload support with FileSystemWatcher (when enabled)
 /// </remarks>
-public class FileSystemGoalLoader : IGoalLoader, IDisposable
+public partial class FileSystemGoalLoader : IGoalLoader, IDisposable
 {
     private const string GoalConfigFileName = "goal.yaml";
     private const string DefaultGoalsDirectory = "goals";
@@ -117,20 +117,20 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
                             goalPath,
                             validationResult.Errors);
                     }
-                    else if (_options.LogWarnings)
+                    else if (_options.LogWarnings && _logger is not null)
                     {
                         foreach (var error in validationResult.Errors)
                         {
-                            _logger?.LogWarning("Goal validation error: {Error}", error);
+                            LogGoalValidationError(_logger, error);
                         }
                     }
                 }
 
-                if (validationResult.Warnings.Count > 0 && _options.LogWarnings)
+                if (validationResult.Warnings.Count > 0 && _options.LogWarnings && _logger is not null)
                 {
                     foreach (var warning in validationResult.Warnings)
                     {
-                        _logger?.LogWarning("Goal validation warning: {Warning}", warning);
+                        LogGoalValidationWarning(_logger, warning);
                     }
                 }
             }
@@ -201,20 +201,20 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
                 {
                     throw new GoalValidationException(duplicateMessage, duplicates);
                 }
-                else if (_options.LogWarnings)
+                else if (_options.LogWarnings && _logger is not null)
                 {
-                    _logger?.LogWarning("Duplicate goal IDs: {Message}", duplicateMessage);
+                    LogDuplicateGoalIds(_logger, duplicateMessage);
                 }
             }
         }
 
         // Log errors if enabled
-        if (errors.Count > 0 && _options.LogWarnings)
+        if (errors.Count > 0 && _options.LogWarnings && _logger is not null)
         {
-            _logger?.LogWarning("Failed to load {ErrorCount} goal(s)", errors.Count);
+            LogFailedToLoadGoals(_logger, errors.Count);
             foreach (var (path, error) in errors)
             {
-                _logger?.LogWarning("  - {GoalName}: {ErrorMessage}", Path.GetFileName(path), error.Message);
+                LogGoalLoadError(_logger, Path.GetFileName(path), error.Message);
             }
         }
 
@@ -342,8 +342,24 @@ public class FileSystemGoalLoader : IGoalLoader, IDisposable
         OnFileChanged(sender, e);
     }
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Goal validation error: {Error}")]
+    private static partial void LogGoalValidationError(ILogger logger, string error);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Goal validation warning: {Warning}")]
+    private static partial void LogGoalValidationWarning(ILogger logger, string warning);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Duplicate goal IDs: {Message}")]
+    private static partial void LogDuplicateGoalIds(ILogger logger, string message);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to load {ErrorCount} goal(s)")]
+    private static partial void LogFailedToLoadGoals(ILogger logger, int errorCount);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "  - {GoalName}: {ErrorMessage}")]
+    private static partial void LogGoalLoadError(ILogger logger, string goalName, string errorMessage);
+
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         if (_fileWatcher != null)
         {
             _fileWatcher.EnableRaisingEvents = false;
@@ -375,12 +391,12 @@ public class FileSystemGoalLoaderOptions
     /// <summary>
     /// Stop loading on first error rather than continuing (default: false).
     /// </summary>
-    public bool StopOnFirstError { get; set; } = false;
+    public bool StopOnFirstError { get; set; }
 
     /// <summary>
     /// Enable strict validation that throws on errors (default: false).
     /// </summary>
-    public bool StrictValidation { get; set; } = false;
+    public bool StrictValidation { get; set; }
 
     /// <summary>
     /// Log warnings to console (default: true).
@@ -390,7 +406,7 @@ public class FileSystemGoalLoaderOptions
     /// <summary>
     /// Enable hot reload with FileSystemWatcher (default: false).
     /// </summary>
-    public bool EnableHotReload { get; set; } = false;
+    public bool EnableHotReload { get; set; }
 }
 
 /// <summary>

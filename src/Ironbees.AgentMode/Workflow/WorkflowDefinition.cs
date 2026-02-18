@@ -197,8 +197,12 @@ public enum TriggerType
 public sealed record ConditionalTransition
 {
     /// <summary>
-    /// Condition expression to evaluate.
-    /// Supports: "success", "failure", "build.success", "test.success", etc.
+    /// Condition expression to evaluate using <see cref="WorkflowExpressionEvaluator"/>.
+    /// Supports boolean operators (||, !), comparison operators, variable references
+    /// (status, iteration_count, output.*), dot-notation (build.success), parenthesized
+    /// grouping, and literals (true/false, numbers, quoted strings).
+    /// Examples: "success", "build.success", "iteration_count >= 5",
+    /// "success &amp;&amp; build.success", "output.score >= 80 || iteration_count > 10".
     /// </summary>
     public string? If { get; init; }
 

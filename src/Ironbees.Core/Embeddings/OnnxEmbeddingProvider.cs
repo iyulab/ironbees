@@ -109,7 +109,7 @@ public class OnnxEmbeddingProvider : IEmbeddingProvider, IDisposable
             };
 
             using var results = _session.Run(inputs);
-            var output = results.First().AsEnumerable<float>().ToArray();
+            var output = ((IList<DisposableNamedOnnxValue>)results)[0].AsEnumerable<float>().ToArray();
 
             // Extract embedding (first token [CLS] representation)
             var embedding = new float[_dimensions];
@@ -146,7 +146,7 @@ public class OnnxEmbeddingProvider : IEmbeddingProvider, IDisposable
                 };
 
                 using var results = _session.Run(inputs);
-                var output = results.First().AsEnumerable<float>().ToArray();
+                var output = ((IList<DisposableNamedOnnxValue>)results)[0].AsEnumerable<float>().ToArray();
 
                 var embedding = new float[_dimensions];
                 Array.Copy(output, 0, embedding, 0, _dimensions);
@@ -167,7 +167,7 @@ public class OnnxEmbeddingProvider : IEmbeddingProvider, IDisposable
         {
             ModelType.MiniLML6V2 => "all-MiniLM-L6-v2",
             ModelType.MiniLML12V2 => "all-MiniLM-L12-v2",
-            _ => throw new ArgumentException($"Unknown model type: {modelType}")
+            _ => throw new ArgumentException($"Unknown model type: {modelType}", nameof(modelType))
         };
     }
 
@@ -182,6 +182,7 @@ public class OnnxEmbeddingProvider : IEmbeddingProvider, IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         _session?.Dispose();
     }
 }

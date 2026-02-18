@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Ironbees.Core.AgentDirectory;
@@ -17,6 +18,11 @@ namespace Ironbees.Core.AgentDirectory;
 /// </remarks>
 public sealed class AgentDirectoryMigrator
 {
+    private static readonly System.Text.Json.JsonSerializerOptions s_indentedJsonOptions = new()
+    {
+        WriteIndented = true
+    };
+
     private readonly IAgentLoader _loader;
     private readonly MigratorOptions _options;
 
@@ -172,18 +178,18 @@ public sealed class AgentDirectoryMigrator
         sb.AppendLine("                   AGENT MIGRATION REPORT                       ");
         sb.AppendLine("═══════════════════════════════════════════════════════════════");
         sb.AppendLine();
-        sb.AppendLine($"Directory: {batch.AgentsDirectory}");
-        sb.AppendLine($"Start Time: {batch.StartTime:yyyy-MM-dd HH:mm:ss}");
-        sb.AppendLine($"End Time: {batch.EndTime:yyyy-MM-dd HH:mm:ss}");
-        sb.AppendLine($"Duration: {batch.Duration.TotalSeconds:F2} seconds");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"Directory: {batch.AgentsDirectory}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"Start Time: {batch.StartTime:yyyy-MM-dd HH:mm:ss}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"End Time: {batch.EndTime:yyyy-MM-dd HH:mm:ss}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"Duration: {batch.Duration.TotalSeconds:F2} seconds");
         sb.AppendLine();
         sb.AppendLine("───────────────────────────────────────────────────────────────");
         sb.AppendLine("                         SUMMARY                                ");
         sb.AppendLine("───────────────────────────────────────────────────────────────");
-        sb.AppendLine($"  Total Agents: {batch.TotalAgents}");
-        sb.AppendLine($"  ✓ Successful: {batch.SuccessCount}");
-        sb.AppendLine($"  ○ Skipped:    {batch.SkippedCount}");
-        sb.AppendLine($"  ✗ Failed:     {batch.FailedCount}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"  Total Agents: {batch.TotalAgents}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"  \u2713 Successful: {batch.SuccessCount}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"  \u25cb Skipped:    {batch.SkippedCount}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"  \u2717 Failed:     {batch.FailedCount}");
         sb.AppendLine();
 
         if (batch.Results.Any(r => r.Status == MigrationStatus.Success))
@@ -193,10 +199,10 @@ public sealed class AgentDirectoryMigrator
             sb.AppendLine("───────────────────────────────────────────────────────────────");
             foreach (var result in batch.Results.Where(r => r.Status == MigrationStatus.Success))
             {
-                sb.AppendLine($"  ✓ {result.AgentName}");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"  \u2713 {result.AgentName}");
                 if (result.DirectoriesCreated.Count > 0)
                 {
-                    sb.AppendLine($"    Directories created: {string.Join(", ", result.DirectoriesCreated)}");
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"    Directories created: {string.Join(", ", result.DirectoriesCreated)}");
                 }
             }
             sb.AppendLine();
@@ -209,7 +215,7 @@ public sealed class AgentDirectoryMigrator
             sb.AppendLine("───────────────────────────────────────────────────────────────");
             foreach (var result in batch.Results.Where(r => r.Status == MigrationStatus.Skipped))
             {
-                sb.AppendLine($"  ○ {result.AgentName}: {result.Message}");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"  \u25cb {result.AgentName}: {result.Message}");
             }
             sb.AppendLine();
         }
@@ -221,7 +227,7 @@ public sealed class AgentDirectoryMigrator
             sb.AppendLine("───────────────────────────────────────────────────────────────");
             foreach (var result in batch.Results.Where(r => r.Status == MigrationStatus.Failed))
             {
-                sb.AppendLine($"  ✗ {result.AgentName}: {result.Message}");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"  \u2717 {result.AgentName}: {result.Message}");
             }
             sb.AppendLine();
         }
@@ -269,10 +275,7 @@ public sealed class AgentDirectoryMigrator
             version = "1.0"
         };
 
-        return System.Text.Json.JsonSerializer.Serialize(metadata, new System.Text.Json.JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
+        return System.Text.Json.JsonSerializer.Serialize(metadata, s_indentedJsonOptions);
     }
 }
 
@@ -284,7 +287,7 @@ public sealed class MigratorOptions
     /// <summary>
     /// Force migration even if already migrated. Default: false.
     /// </summary>
-    public bool ForceMigration { get; set; } = false;
+    public bool ForceMigration { get; set; }
 
     /// <summary>
     /// Create initial memory file with agent metadata. Default: true.

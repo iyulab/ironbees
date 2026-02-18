@@ -5,7 +5,7 @@ namespace Ironbees.Core.Tests;
 
 public class AgentRegistryTests
 {
-    private class TestAgent : IAgent
+    private sealed class TestAgent : IAgent
     {
         public TestAgent(string name, string description, AgentConfig config)
         {
@@ -74,7 +74,7 @@ public class AgentRegistryTests
         registry.Register("test-agent", agent);
 
         // Act
-        var result = registry.Get("test-agent");
+        var result = registry.GetAgent("test-agent");
 
         // Assert
         Assert.NotNull(result);
@@ -88,7 +88,7 @@ public class AgentRegistryTests
         var registry = new AgentRegistry();
 
         // Act
-        var result = registry.Get("non-existing");
+        var result = registry.GetAgent("non-existing");
 
         // Assert
         Assert.Null(result);
@@ -209,7 +209,7 @@ public class AgentRegistryTests
         registry.Register("test-agent", agent);
 
         // Act
-        var result = registry.Get("TEST-AGENT");
+        var result = registry.GetAgent("TEST-AGENT");
 
         // Assert
         Assert.NotNull(result);
