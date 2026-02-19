@@ -25,6 +25,8 @@
     <!-- Package-specific Metadata -->
     <Description>Thin adapter layer integrating Ironbees with Azure OpenAI and Microsoft Agent Framework. Provides execution adapters, dependency injection extensions, and ASP.NET Core setup - delegates actual agent execution to underlying frameworks.</Description>
     <PackageTags>$(PackageTagsBase);azure-openai;microsoft-agent-framework;dependency-injection</PackageTags>
+    <!-- Azure.AI.OpenAI and Microsoft.Agents.AI are still in preview -->
+    <NoWarn>$(NoWarn);NU5104</NoWarn>
   </PropertyGroup>
 
 </Project>
