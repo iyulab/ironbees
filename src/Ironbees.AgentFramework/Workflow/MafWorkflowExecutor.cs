@@ -147,9 +147,10 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
         try
         {
             // Execute using MAF InProcessExecution with streaming
-            await using var streamingRun = await InProcessExecution.StreamAsync(
+            await using var streamingRun = await InProcessExecution.RunStreamingAsync(
                 workflow,
                 input,
+                sessionId: null,
                 cancellationToken: cancellationToken);
 
             // Process workflow events from the streaming run
@@ -359,14 +360,15 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
         {
             // Execute using MAF InProcessExecution with checkpointing enabled
             var checkpointManager = CheckpointManager.Default;
-            await using var checkpointedRun = await InProcessExecution.StreamAsync(
+            await using var checkpointedRun = await InProcessExecution.RunStreamingAsync(
                 workflow,
                 input,
                 checkpointManager,
+                sessionId: null,
                 cancellationToken: cancellationToken);
 
             // Process workflow events from the streaming run
-            await foreach (var evt in checkpointedRun.Run.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
+            await foreach (var evt in checkpointedRun.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
             {
                 var executionEvent = MapWorkflowEvent(evt);
                 if (executionEvent != null)
@@ -514,14 +516,14 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
 
             // Resume using MAF InProcessExecution
             var checkpointManager = CheckpointManager.Default;
-            var resumedRun = await InProcessExecution.ResumeStreamAsync(
+            await using var resumedRun = await InProcessExecution.ResumeStreamingAsync(
                 workflow,
                 mafCheckpoint,
                 checkpointManager,
                 cancellationToken: cancellationToken);
 
             // Process workflow events
-            await foreach (var evt in resumedRun.Run.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
+            await foreach (var evt in resumedRun.WatchStreamAsync(cancellationToken).WithCancellation(cancellationToken))
             {
                 var executionEvent = MapWorkflowEvent(evt);
                 if (executionEvent != null)
