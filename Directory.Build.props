@@ -45,7 +45,8 @@
     <!-- Documentation -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591: missing XML doc comments -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- NU1903: known high vulnerability in transitive Microsoft.Bcl.Memory (no fix available) -->
+    <NoWarn>$(NoWarn);CS1591;NU1903</NoWarn>
 
     <!-- Package README -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
