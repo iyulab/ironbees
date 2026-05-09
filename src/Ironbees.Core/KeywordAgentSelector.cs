@@ -15,15 +15,20 @@ public class KeywordAgentSelector : IAgentSelector
     private TfidfWeightCalculator? _tfidfCalculator;
     private readonly Dictionary<string, HashSet<string>> _keywordCache;
     private readonly object _cacheLock = new();
+    private readonly Func<string, IEnumerable<string>>? _queryTokenizer;
 
     /// <summary>
     /// Creates a new keyword-based agent selector
     /// </summary>
     /// <param name="minimumConfidenceThreshold">Minimum confidence score to consider (default: 0.3)</param>
     /// <param name="fallbackAgent">Agent to use when no match found (optional)</param>
+    /// <param name="tokenizer">Optional custom query tokenizer. When provided, replaces the default
+    /// whitespace-split + KeywordNormalizer pipeline for the input query only.
+    /// Use to inject language-specific tokenizers (e.g., Korean morpheme analyzers).</param>
     public KeywordAgentSelector(
         double minimumConfidenceThreshold = 0.3,
-        IAgent? fallbackAgent = null)
+        IAgent? fallbackAgent = null,
+        Func<string, IEnumerable<string>>? tokenizer = null)
     {
         if (minimumConfidenceThreshold < 0 || minimumConfidenceThreshold > 1)
         {
@@ -37,6 +42,7 @@ public class KeywordAgentSelector : IAgentSelector
         _normalizer = new KeywordNormalizer();
         _stopwords = StopwordsProvider.GetDefaultStopwords();
         _keywordCache = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        _queryTokenizer = tokenizer;
     }
 
     /// <inheritdoc />
@@ -118,7 +124,9 @@ public class KeywordAgentSelector : IAgentSelector
         IReadOnlyCollection<IAgent> availableAgents)
     {
         var inputLower = input.ToLowerInvariant();
-        var inputWords = ExtractKeywords(inputLower);
+        var inputWords = _queryTokenizer is not null
+            ? _queryTokenizer(inputLower).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : ExtractKeywords(inputLower);
 
         // Initialize TF-IDF calculator on first use (lazy initialization)
         if (_tfidfCalculator == null && availableAgents.Count > 0)

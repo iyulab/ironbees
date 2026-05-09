@@ -277,4 +277,41 @@ public class KeywordAgentSelectorTests
         Assert.Equal("python-agent", result.SelectedAgent.Name);
         Assert.True(result.ConfidenceScore > 0.5);
     }
+
+    [Fact]
+    public async Task SelectAgentAsync_WithCustomTokenizer_ReceivesTokenizerOutput()
+    {
+        // Custom tokenizer: 공백 분리 후 "을", "를", "해줘" suffix 제거
+        static IEnumerable<string> KoreanStub(string text) =>
+            text.Split(' ').Select(w => w.TrimEnd('을', '를', '이', '가', '에', '해', '줘').ToLowerInvariant())
+                .Where(w => w.Length >= 2);
+
+        var selector = new KeywordAgentSelector(tokenizer: KoreanStub);
+
+        var fileAgent = CreateTestAgent("file-agent", "Handles files",
+            capabilities: new List<string> { "파일" });
+        var agents = new List<IAgent> { fileAgent };
+
+        var result = await selector.SelectAgentAsync("파일을", agents);
+
+        // Custom tokenizer strips "을" → "파일" → matches capability
+        Assert.NotNull(result.SelectedAgent);
+        Assert.Equal("file-agent", result.SelectedAgent.Name);
+    }
+
+    [Fact]
+    public async Task SelectAgentAsync_WithNullTokenizer_BehavesLikeDefault()
+    {
+        var selectorDefault = new KeywordAgentSelector();
+        var selectorNullTokenizer = new KeywordAgentSelector(tokenizer: null);
+
+        var agent = CreateTestAgent("test-agent", "Test agent",
+            capabilities: new List<string> { "test" });
+        var agents = new List<IAgent> { agent };
+
+        var r1 = await selectorDefault.SelectAgentAsync("test query", agents);
+        var r2 = await selectorNullTokenizer.SelectAgentAsync("test query", agents);
+
+        Assert.Equal(r1.SelectedAgent?.Name, r2.SelectedAgent?.Name);
+    }
 }
