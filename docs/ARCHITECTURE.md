@@ -299,16 +299,16 @@ if (!result.IsAllowed)
 
 ```xml
 <!-- Core -->
-<PackageReference Include="Microsoft.Extensions.AI" Version="10.2.0" />
-<PackageReference Include="YamlDotNet" Version="16.3.0" />
-<PackageReference Include="Polly" Version="8.6.5" />
+<PackageReference Include="Microsoft.Extensions.AI" Version="10.5.0" />
+<PackageReference Include="YamlDotNet" Version="17.1.0" />
+<PackageReference Include="Polly" Version="8.6.6" />
 
 <!-- IronHive (Multi-agent orchestration) -->
-<PackageReference Include="IronHive.Abstractions" Version="0.3.0" />
-<PackageReference Include="IronHive.Core" Version="0.3.0" />
+<PackageReference Include="IronHive.Abstractions" Version="0.5.4" />
+<PackageReference Include="IronHive.Core" Version="0.5.4" />
 
 <!-- MAF (Workflow system) -->
-<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.*" />
+<PackageReference Include="Microsoft.Agents.AI" Version="1.3.0" />
 ```
 
 ## Workflow Decision Guide
