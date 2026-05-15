@@ -137,6 +137,14 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         // Select agent
         var agent = await ResolveAgentAsync(input, options, previousAgentName, cancellationToken);
+        var resolvedAgentName = agent.Name;
+
+        // Apply per-request system prompt override if specified
+        if (options.SystemPromptOverride is not null)
+        {
+            var overriddenConfig = agent.Config with { SystemPrompt = options.SystemPromptOverride };
+            agent = await _frameworkAdapter.CreateAgentAsync(overriddenConfig, cancellationToken);
+        }
 
         // Execute
         var response = await _frameworkAdapter.RunAsync(agent, input, history, cancellationToken);
@@ -145,7 +153,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         if (options.ConversationId is not null && _conversationStore is not null)
         {
             await SaveConversationTurnAsync(
-                options.ConversationId, agent.Name, previousAgentName,
+                options.ConversationId, resolvedAgentName, previousAgentName,
                 input, response, conversationState, cancellationToken);
         }
 
@@ -246,6 +254,14 @@ public class AgentOrchestrator : IAgentOrchestrator
 
         // Select agent
         var agent = await ResolveAgentAsync(input, options, previousAgentName, cancellationToken);
+        var resolvedAgentName = agent.Name;
+
+        // Apply per-request system prompt override if specified
+        if (options.SystemPromptOverride is not null)
+        {
+            var overriddenConfig = agent.Config with { SystemPrompt = options.SystemPromptOverride };
+            agent = await _frameworkAdapter.CreateAgentAsync(overriddenConfig, cancellationToken);
+        }
 
         // Stream with history
         var responseBuilder = new System.Text.StringBuilder();
@@ -259,7 +275,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         if (options.ConversationId is not null && _conversationStore is not null)
         {
             await SaveConversationTurnAsync(
-                options.ConversationId, agent.Name, previousAgentName,
+                options.ConversationId, resolvedAgentName, previousAgentName,
                 input, responseBuilder.ToString(), conversationState, cancellationToken);
         }
     }

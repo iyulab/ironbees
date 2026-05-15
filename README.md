@@ -93,7 +93,7 @@ services.AddIronbeesIronhive(options =>
     options.AgentsDirectory = "./agents";
     options.ConfigureHive = hive =>
     {
-        hive.AddMessageGenerator("openai", new OpenAIMessageGenerator(apiKey));
+        hive.AddOpenAIProviders("openai", new OpenAIConfig { ApiKey = apiKey });
     };
 });
 ```
@@ -129,6 +129,51 @@ await foreach (var chunk in orchestrator.StreamAsync("Write a blog post"))
 {
     Console.Write(chunk);
 }
+
+// Per-request system prompt override (RAG context, per-workspace instructions)
+var ragContext = await ragService.SearchAsync(query, workspaceId);
+await foreach (var chunk in orchestrator.StreamAsync(query, new ProcessOptions
+{
+    AgentName = "rag-agent",
+    ConversationId = sessionId,
+    SystemPromptOverride = $"Context:\n{ragContext}\n\nInstructions: {workspace.Instructions}",
+}))
+{
+    Console.Write(chunk);
+}
+```
+
+### ASP.NET Core Integration
+
+**Required packages** — `Ironbees.Core` is abstraction-only. An LLM backend package must also be added:
+
+```bash
+dotnet add package Ironbees.Ironhive
+dotnet add package IronHive.Providers.OpenAI
+```
+
+**`ConfigureHive` is a property assignment, not a method call:**
+
+```csharp
+services.AddIronbeesIronhive(opts =>
+{
+    opts.AgentsDirectory = "agents";
+    opts.ConfigureHive = hive =>       // ← property assignment (not a method call)
+    {
+        hive.AddOpenAIProviders("openai", new OpenAIConfig { ApiKey = "..." });
+    };
+});
+```
+
+**`LoadAgentsAsync()` must be called after DI build, before `app.Run()`:**
+
+```csharp
+var app = builder.Build();
+
+var orchestrator = app.Services.GetRequiredService<IAgentOrchestrator>();
+await orchestrator.LoadAgentsAsync();
+
+app.Run();
 ```
 
 ## Multi-Agent Orchestration

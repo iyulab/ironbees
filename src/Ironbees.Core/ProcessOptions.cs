@@ -28,4 +28,12 @@ public record ProcessOptions
     /// A different agent must score higher than the current agent by this amount to trigger a switch.
     /// </summary>
     public double StickinessThreshold { get; init; } = 0.2;
+
+    /// <summary>
+    /// Overrides the agent's YAML system prompt for this request only.
+    /// Use for RAG context injection, per-workspace instructions, or other
+    /// runtime-determined system prompts. When null, the agent's configured
+    /// system prompt is used unchanged.
+    /// </summary>
+    public string? SystemPromptOverride { get; init; }
 }
