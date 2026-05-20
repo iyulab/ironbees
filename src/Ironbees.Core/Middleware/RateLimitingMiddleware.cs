@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using TokenMeter;
 
 namespace Ironbees.Core.Middleware;
 
@@ -15,7 +14,6 @@ public sealed partial class RateLimitingMiddleware : DelegatingChatClient
     private readonly RateLimitOptions _options;
     private readonly ILogger<RateLimitingMiddleware> _logger;
     private readonly SemaphoreSlim _semaphore;
-    private readonly ITokenCounter? _tokenCounter;
 
     // Sliding window tracking
     private readonly ConcurrentQueue<DateTimeOffset> _requestTimestamps = new();
@@ -26,17 +24,14 @@ public sealed partial class RateLimitingMiddleware : DelegatingChatClient
     /// </summary>
     /// <param name="innerClient">The inner chat client to delegate to.</param>
     /// <param name="options">Rate limiting configuration.</param>
-    /// <param name="tokenCounter">Optional token counter from TokenMeter for accurate estimation.</param>
     /// <param name="logger">Optional logger for diagnostics.</param>
     public RateLimitingMiddleware(
         IChatClient innerClient,
         RateLimitOptions? options = null,
-        ITokenCounter? tokenCounter = null,
         ILogger<RateLimitingMiddleware>? logger = null)
         : base(innerClient)
     {
         _options = options ?? new RateLimitOptions();
-        _tokenCounter = tokenCounter;
         _logger = logger ?? NullLogger<RateLimitingMiddleware>.Instance;
         _semaphore = new SemaphoreSlim(_options.MaxConcurrentRequests, _options.MaxConcurrentRequests);
     }
@@ -222,12 +217,9 @@ public sealed partial class RateLimitingMiddleware : DelegatingChatClient
     [LoggerMessage(Level = LogLevel.Warning, Message = "Rate limit exceeded: {LimitType} ({Current}/{Limit}). Strategy: {Strategy}")]
     private static partial void LogRateLimitExceeded(ILogger logger, string limitType, int current, int limit, RateLimitStrategy strategy);
 
-    private int EstimateTokens(string text)
+    private static int EstimateTokens(string text)
     {
-        if (_tokenCounter is not null)
-            return _tokenCounter.CountTokens(text);
-
-        // Fallback: rough estimation ~4 characters per token
+        // Rough estimation: ~4 characters per token (GPT-style)
         return (text.Length + 3) / 4;
     }
 }

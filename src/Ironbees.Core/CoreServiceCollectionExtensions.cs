@@ -25,7 +25,6 @@ public static class CoreServiceCollectionExtensions
         configure?.Invoke(options);
 
         // Register TokenMeter services (skip if already registered)
-        services.TryAddSingleton<ITokenCounter>(_ => TokenCounter.Default());
         services.TryAddSingleton<ICostCalculator>(_ => CostCalculator.Default());
 
         // Register core services (skip if already registered)
