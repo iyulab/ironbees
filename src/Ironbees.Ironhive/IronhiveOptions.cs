@@ -53,4 +53,13 @@ public class IronhiveOptions
     /// Whether to enable OpenTelemetry tracing for orchestration.
     /// </summary>
     public bool EnableOpenTelemetry { get; set; }
+
+    /// <summary>
+    /// Factory delegates that recreate an <see cref="IronHive.Abstractions.Messages.IMessageGenerator"/>
+    /// for a named provider when the endpoint URL changes at runtime.
+    /// Keyed by provider name (e.g., "gpustack").
+    /// The delegate receives the new endpoint URL and must return a fully configured generator.
+    /// Registered by the consumer application alongside the initial provider setup.
+    /// </summary>
+    public Dictionary<string, Func<string, IronHive.Abstractions.Messages.IMessageGenerator>> ProviderEndpointUpdaters { get; } = new();
 }

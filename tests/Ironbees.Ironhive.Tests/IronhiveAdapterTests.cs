@@ -28,6 +28,7 @@ public class IronhiveAdapterTests
             _hiveServiceMock,
             _orchestratorFactoryMock,
             _eventMapper,
+            new IronhiveOptions(),
             NullLogger<IronhiveAdapter>.Instance);
     }
 
@@ -532,6 +533,7 @@ public class IronhiveAdapterTests
             _hiveServiceMock,
             _orchestratorFactoryMock,
             _eventMapper,
+            new IronhiveOptions(),
             mockLogger);
 
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
@@ -585,6 +587,7 @@ public class IronhiveAdapterTests
             _hiveServiceMock,
             _orchestratorFactoryMock,
             _eventMapper,
+            new IronhiveOptions(),
             mockLogger);
 
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();

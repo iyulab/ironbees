@@ -22,17 +22,23 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     private readonly IHiveService _hiveService;
     private readonly IIronhiveOrchestratorFactory _orchestratorFactory;
     private readonly OrchestrationEventMapper _eventMapper;
+    private readonly IronhiveOptions _options;
     private readonly ILogger<IronhiveAdapter> _logger;
+
+    // Tracks last registered endpoint per provider to skip redundant re-registrations.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> _activeEndpoints = new();
 
     public IronhiveAdapter(
         IHiveService hiveService,
         IIronhiveOrchestratorFactory orchestratorFactory,
         OrchestrationEventMapper eventMapper,
+        IronhiveOptions options,
         ILogger<IronhiveAdapter> logger)
     {
         _hiveService = hiveService ?? throw new ArgumentNullException(nameof(hiveService));
         _orchestratorFactory = orchestratorFactory ?? throw new ArgumentNullException(nameof(orchestratorFactory));
         _eventMapper = eventMapper ?? throw new ArgumentNullException(nameof(eventMapper));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -46,6 +52,27 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         if (_logger.IsEnabled(LogLevel.Debug))
         {
             LogCreatingIronHiveAgent(_logger, config.Name, config.Model.Provider, config.Model.Deployment);
+        }
+
+        // If an endpoint override is set and a factory is registered for this provider,
+        // re-register the provider's message generator with the new endpoint.
+        // We skip re-registration when the endpoint hasn't changed to avoid unnecessary churn.
+        if (config.Model.Endpoint is not null
+            && _options.ProviderEndpointUpdaters.TryGetValue(config.Model.Provider, out var updater))
+        {
+            var newEndpoint = config.Model.Endpoint;
+            var previousEndpoint = _activeEndpoints.GetOrAdd(config.Model.Provider, string.Empty);
+            if (!string.Equals(previousEndpoint, newEndpoint, StringComparison.Ordinal))
+            {
+                var newGenerator = updater(newEndpoint);
+                _hiveService.Providers.SetMessageGenerator(config.Model.Provider, newGenerator);
+                _activeEndpoints[config.Model.Provider] = newEndpoint;
+
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    LogProviderEndpointUpdated(_logger, config.Model.Provider, newEndpoint);
+                }
+            }
         }
 
         var ironhiveAgent = _hiveService.CreateAgent(cfg =>
@@ -178,6 +205,9 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
 
     [LoggerMessage(Level = LogLevel.Error, Message = "IronHive streaming error: Code={Code}, Message={ErrorMessage}")]
     private static partial void LogIronHiveStreamingError(ILogger logger, int code, string? errorMessage);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Provider {ProviderName} endpoint updated to {NewEndpoint}")]
+    private static partial void LogProviderEndpointUpdated(ILogger logger, string providerName, string newEndpoint);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Creating orchestrator type {OrchestratorType} with {AgentCount} agents")]
     private static partial void LogCreatingOrchestrator(ILogger logger, Core.Orchestration.OrchestratorType orchestratorType, int agentCount);

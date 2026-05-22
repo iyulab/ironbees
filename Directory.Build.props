@@ -18,7 +18,7 @@
 
   <PropertyGroup Label="Package Information">
     <!-- Version -->
-    <Version>0.6.5</Version>
+    <Version>0.6.6</Version>
 
     <!-- Authors and Company -->
     <Authors>iyulab</Authors>
