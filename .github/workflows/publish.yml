@@ -61,6 +61,7 @@ jobs:
           "Ironbees.AgentFramework"
           "Ironbees.AgentMode"
           "Ironbees.Autonomous"
+          "Ironbees.Ironhive"
         )
 
         NEEDS_PUBLISH=false
@@ -112,6 +113,12 @@ jobs:
           --no-build \
           --output ./packages
 
+        echo "🔨 Packing Ironbees.Ironhive..."
+        dotnet pack src/Ironbees.Ironhive/Ironbees.Ironhive.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./packages
+
         echo "✅ All packages created"
         ls -lh ./packages/
 
@@ -149,6 +156,7 @@ jobs:
           - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }})
           - [Ironbees.AgentMode ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode/${{ steps.extract_version.outputs.version }})
           - [Ironbees.Autonomous ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Autonomous/${{ steps.extract_version.outputs.version }})
+          - [Ironbees.Ironhive ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Ironhive/${{ steps.extract_version.outputs.version }})
         draft: false
         prerelease: ${{ contains(steps.extract_version.outputs.version, 'preview') || contains(steps.extract_version.outputs.version, 'beta') || contains(steps.extract_version.outputs.version, 'alpha') }}
         files: ./packages/*.nupkg
