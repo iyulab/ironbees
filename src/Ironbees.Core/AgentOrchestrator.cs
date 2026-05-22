@@ -139,10 +139,14 @@ public class AgentOrchestrator : IAgentOrchestrator
         var agent = await ResolveAgentAsync(input, options, previousAgentName, cancellationToken);
         var resolvedAgentName = agent.Name;
 
-        // Apply per-request system prompt override if specified
-        if (options.SystemPromptOverride is not null)
+        // Apply per-request config overrides (system prompt and/or model deployment)
+        if (options.SystemPromptOverride is not null || options.ModelOverride is not null)
         {
-            var overriddenConfig = agent.Config with { SystemPrompt = options.SystemPromptOverride };
+            var overriddenConfig = agent.Config;
+            if (options.SystemPromptOverride is not null)
+                overriddenConfig = overriddenConfig with { SystemPrompt = options.SystemPromptOverride };
+            if (options.ModelOverride is not null)
+                overriddenConfig = overriddenConfig with { Model = overriddenConfig.Model with { Deployment = options.ModelOverride } };
             agent = await _frameworkAdapter.CreateAgentAsync(overriddenConfig, cancellationToken);
         }
 
@@ -256,10 +260,14 @@ public class AgentOrchestrator : IAgentOrchestrator
         var agent = await ResolveAgentAsync(input, options, previousAgentName, cancellationToken);
         var resolvedAgentName = agent.Name;
 
-        // Apply per-request system prompt override if specified
-        if (options.SystemPromptOverride is not null)
+        // Apply per-request config overrides (system prompt and/or model deployment)
+        if (options.SystemPromptOverride is not null || options.ModelOverride is not null)
         {
-            var overriddenConfig = agent.Config with { SystemPrompt = options.SystemPromptOverride };
+            var overriddenConfig = agent.Config;
+            if (options.SystemPromptOverride is not null)
+                overriddenConfig = overriddenConfig with { SystemPrompt = options.SystemPromptOverride };
+            if (options.ModelOverride is not null)
+                overriddenConfig = overriddenConfig with { Model = overriddenConfig.Model with { Deployment = options.ModelOverride } };
             agent = await _frameworkAdapter.CreateAgentAsync(overriddenConfig, cancellationToken);
         }
 

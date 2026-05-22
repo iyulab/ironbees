@@ -36,4 +36,11 @@ public record ProcessOptions
     /// system prompt is used unchanged.
     /// </summary>
     public string? SystemPromptOverride { get; init; }
+
+    /// <summary>
+    /// Overrides the agent's YAML <c>model.deployment</c> for this request only.
+    /// Use when the administrator changes the active model at runtime without redeployment.
+    /// When null, the value from <c>agent.yaml</c> is used as-is.
+    /// </summary>
+    public string? ModelOverride { get; init; }
 }
