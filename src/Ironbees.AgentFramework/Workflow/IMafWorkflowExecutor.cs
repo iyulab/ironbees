@@ -8,6 +8,11 @@ namespace Ironbees.AgentFramework.Workflow;
 /// Defines the contract for executing MAF workflows converted from Ironbees YAML workflow definitions.
 /// This interface bridges Ironbees' file-based workflow definitions with MAF's workflow execution engine.
 /// </summary>
+/// <remarks>
+/// "MAF" throughout the <c>Ironbees.AgentFramework</c> assembly refers to the Microsoft Agent Framework
+/// (the <c>Microsoft.Agents.AI</c> package family). This assembly is a thin adapter delegating actual
+/// agent/workflow execution to that framework.
+/// </remarks>
 public interface IMafWorkflowExecutor
 {
     /// <summary>
