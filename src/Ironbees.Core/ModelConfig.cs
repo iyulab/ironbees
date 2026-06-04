@@ -39,11 +39,4 @@ public record ModelConfig
     /// Presence penalty (-2.0 - 2.0)
     /// </summary>
     public double? PresencePenalty { get; init; }
-
-    /// <summary>
-    /// LLM provider endpoint URL override.
-    /// When set, the provider will use this URL instead of its registered base URL.
-    /// null means use the registered provider endpoint unchanged.
-    /// </summary>
-    public string? Endpoint { get; init; }
 }

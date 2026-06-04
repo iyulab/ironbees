@@ -43,11 +43,4 @@ public record ProcessOptions
     /// When null, the value from <c>agent.yaml</c> is used as-is.
     /// </summary>
     public string? ModelOverride { get; init; }
-
-    /// <summary>
-    /// Overrides the LLM provider endpoint URL for this request only.
-    /// Use when the administrator changes the GPUStack endpoint at runtime without redeployment.
-    /// When null, the provider's registered endpoint is used unchanged.
-    /// </summary>
-    public string? EndpointOverride { get; init; }
 }
