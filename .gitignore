@@ -52,3 +52,6 @@ local-packages/
 
 # Local integration tests (not for CI)
 local-tests/
+
+# IDE language server cache
+*.lscache
