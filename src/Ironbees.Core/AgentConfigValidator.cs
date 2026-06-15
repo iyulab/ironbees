@@ -109,10 +109,9 @@ public static class AgentConfigValidator
 
     private static void ValidateModelConfig(ModelConfig model, List<string> errors, List<string> warnings)
     {
-        if (string.IsNullOrWhiteSpace(model.Deployment))
-        {
-            errors.Add("Model deployment name is required");
-        }
+        // Deployment is intentionally optional: an empty deployment defers model
+        // resolution to invoke time (ProcessOptions.ModelOverride or the orchestrator's
+        // default model). Load-time validation must not reject it.
 
         if (model.Temperature < 0.0 || model.Temperature > 2.0)
         {

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-16
+
+### Added - Runtime model resolution
+
+Agents may now omit `model.deployment` in `agent.yaml` and have the model resolved at invoke time,
+supporting environments where the active model is decided at runtime (e.g. selected from a database
+setting) rather than pinned per agent.
+
+- `IronbeesCoreOptions.DefaultModelDeployment` — default model substituted at load time when an
+  agent omits its deployment.
+- `AgentOrchestrator` constructor gains an optional `defaultModelDeployment` parameter.
+
+### Changed
+
+- **BREAKING (source, nullable):** `ModelConfig.Deployment` changed from `required string` to `string?`.
+  Existing configs that set a deployment are unaffected; the type is now nullable to express the
+  runtime-resolved state.
+- `AgentConfigValidator` no longer rejects an empty `model.deployment` at load time.
+- Model resolution precedence at invoke time: `ProcessOptions.ModelOverride` > agent deployment >
+  `DefaultModelDeployment`. When none resolve to a value, the agent fails with an actionable error.
+
 ## [0.6.0] - 2026-02-05
 
 ### Added - IronHive Multi-Agent Orchestration Integration

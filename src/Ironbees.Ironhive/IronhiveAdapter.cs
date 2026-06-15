@@ -57,9 +57,17 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     {
         ArgumentNullException.ThrowIfNull(config);
 
+        var deployment = config.Model.Deployment;
+        if (string.IsNullOrWhiteSpace(deployment))
+        {
+            throw new InvalidOperationException(
+                $"Agent '{config.Name}' has no model deployment resolved. Provide ProcessOptions.ModelOverride, " +
+                "configure a default model, or set 'model.deployment' in agent.yaml.");
+        }
+
         if (_logger.IsEnabled(LogLevel.Debug))
         {
-            LogCreatingIronHiveAgent(_logger, config.Name, config.Model.Provider, config.Model.Deployment);
+            LogCreatingIronHiveAgent(_logger, config.Name, config.Model.Provider, deployment);
         }
 
         var ironhiveAgent = _hiveService.CreateAgent(cfg =>
@@ -67,7 +75,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             cfg.Name = config.Name;
             cfg.Description = config.Description;
             cfg.Provider = config.Model.Provider;
-            cfg.Model = config.Model.Deployment;
+            cfg.Model = deployment;
             cfg.Instructions = config.SystemPrompt;
 
             if (config.Model.MaxTokens != 4000 ||

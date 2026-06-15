@@ -59,7 +59,8 @@ public static class CoreServiceCollectionExtensions
                 adapter,
                 selector,
                 options.AgentsDirectory,
-                conversationStore);
+                conversationStore,
+                options.DefaultModelDeployment);
         });
 
         return services;
@@ -86,4 +87,13 @@ public class IronbeesCoreOptions
     /// When set, enables multi-turn conversation support via FileSystemConversationStore.
     /// </summary>
     public string? ConversationsDirectory { get; set; }
+
+    /// <summary>
+    /// Default model deployment used when an agent's <c>model.deployment</c> is omitted in
+    /// agent.yaml. Enables runtime model resolution: agents load without a pinned model and the
+    /// active model is supplied here (or per-request via <see cref="ProcessOptions.ModelOverride"/>).
+    /// When null and an agent omits its deployment with no per-request override, that agent fails
+    /// to load with an actionable error.
+    /// </summary>
+    public string? DefaultModelDeployment { get; set; }
 }

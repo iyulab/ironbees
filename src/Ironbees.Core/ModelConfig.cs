@@ -11,9 +11,14 @@ public record ModelConfig
     public string Provider { get; init; } = "azure-openai";
 
     /// <summary>
-    /// Model deployment name (e.g., "gpt-4o", "gpt-4o-mini")
+    /// Model deployment name (e.g., "gpt-4o", "gpt-4o-mini").
+    /// Optional: when omitted, the model is resolved at invoke time from
+    /// <see cref="ProcessOptions.ModelOverride"/>, or from the orchestrator's
+    /// configured default model (IronbeesCoreOptions.DefaultModelDeployment).
+    /// This supports environments where the active model is decided at runtime
+    /// (e.g. selected from a database setting) rather than pinned in agent.yaml.
     /// </summary>
-    public required string Deployment { get; init; }
+    public string? Deployment { get; init; }
 
     /// <summary>
     /// Temperature for response randomness (0.0 - 2.0)

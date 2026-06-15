@@ -15,6 +15,7 @@ public class AgentOrchestrator : IAgentOrchestrator
     private readonly IAgentSelector _agentSelector;
     private readonly IConversationStore? _conversationStore;
     private readonly string? _agentsDirectory;
+    private readonly string? _defaultModelDeployment;
 
     public AgentOrchestrator(
         IAgentLoader loader,
@@ -22,7 +23,8 @@ public class AgentOrchestrator : IAgentOrchestrator
         ILLMFrameworkAdapter frameworkAdapter,
         IAgentSelector agentSelector,
         string? agentsDirectory = null,
-        IConversationStore? conversationStore = null)
+        IConversationStore? conversationStore = null,
+        string? defaultModelDeployment = null)
     {
         _loader = loader ?? throw new ArgumentNullException(nameof(loader));
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
@@ -30,6 +32,7 @@ public class AgentOrchestrator : IAgentOrchestrator
         _agentSelector = agentSelector ?? throw new ArgumentNullException(nameof(agentSelector));
         _agentsDirectory = agentsDirectory;
         _conversationStore = conversationStore;
+        _defaultModelDeployment = defaultModelDeployment;
     }
 
     /// <inheritdoc />
@@ -49,8 +52,9 @@ public class AgentOrchestrator : IAgentOrchestrator
         {
             try
             {
-                var agent = await _frameworkAdapter.CreateAgentAsync(config, cancellationToken);
-                _registry.Register(config.Name, agent);
+                var resolvedConfig = ResolveModelDeployment(config);
+                var agent = await _frameworkAdapter.CreateAgentAsync(resolvedConfig, cancellationToken);
+                _registry.Register(resolvedConfig.Name, agent);
             }
             catch (Exception ex)
             {
@@ -299,6 +303,27 @@ public class AgentOrchestrator : IAgentOrchestrator
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         return _registry.GetAgent(name);
+    }
+
+    /// <summary>
+    /// Resolves an agent's model deployment at load time. When the config omits its deployment
+    /// (runtime-resolved model), the orchestrator's configured default model is substituted so
+    /// the agent can still be created; per-request <see cref="ProcessOptions.ModelOverride"/>
+    /// continues to take precedence at invoke time. If neither a deployment nor a default is
+    /// available, an actionable error is thrown (surfaced as an AgentLoadError for this agent).
+    /// </summary>
+    private AgentConfig ResolveModelDeployment(AgentConfig config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.Model.Deployment))
+            return config;
+
+        if (!string.IsNullOrWhiteSpace(_defaultModelDeployment))
+            return config with { Model = config.Model with { Deployment = _defaultModelDeployment } };
+
+        throw new InvalidOperationException(
+            $"Agent '{config.Name}' has no model deployment and no default model is configured. " +
+            "Set 'model.deployment' in agent.yaml, or set IronbeesCoreOptions.DefaultModelDeployment " +
+            "(or pass ProcessOptions.ModelOverride per request) to enable runtime model resolution.");
     }
 
     /// <summary>

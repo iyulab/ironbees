@@ -31,15 +31,23 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
     {
         ArgumentNullException.ThrowIfNull(config);
 
+        var deployment = config.Model.Deployment;
+        if (string.IsNullOrWhiteSpace(deployment))
+        {
+            throw new InvalidOperationException(
+                $"Agent '{config.Name}' has no model deployment resolved. Provide ProcessOptions.ModelOverride, " +
+                "configure a default model, or set 'model.deployment' in agent.yaml.");
+        }
+
         if (_logger.IsEnabled(LogLevel.Information))
         {
-            LogCreatingAgent(_logger, config.Name, config.Model.Deployment);
+            LogCreatingAgent(_logger, config.Name, deployment);
         }
 
         try
         {
             // Get ChatClient for the specified deployment
-            var chatClient = _client.GetChatClient(config.Model.Deployment);
+            var chatClient = _client.GetChatClient(deployment);
 
             if (_logger.IsEnabled(LogLevel.Information))
             {
