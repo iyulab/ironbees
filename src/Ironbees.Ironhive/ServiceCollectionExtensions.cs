@@ -34,6 +34,9 @@ public static class ServiceCollectionExtensions
         {
             core.AgentsDirectory = options.AgentsDirectory;
             core.MinimumConfidenceThreshold = options.MinimumConfidenceThreshold;
+            // Forward runtime model resolution: agents may omit model.deployment in agent.yaml and
+            // resolve the active model from this default (or per-request ProcessOptions.ModelOverride).
+            core.DefaultModelDeployment = options.DefaultModelDeployment;
         });
 
         // Register IHiveService

@@ -62,4 +62,13 @@ public class IronhiveOptions
     /// Registered by the consumer application alongside the initial provider setup.
     /// </summary>
     public Dictionary<string, Func<string, IronHive.Abstractions.Messages.IMessageGenerator>> ProviderEndpointUpdaters { get; } = new();
+
+    /// <summary>
+    /// Default model deployment used when an agent's <c>model.deployment</c> is omitted in agent.yaml,
+    /// enabling runtime model resolution. Forwarded to
+    /// <see cref="Ironbees.Core.IronbeesCoreOptions.DefaultModelDeployment"/> so agents load without a
+    /// pinned model. When null and an agent omits its deployment with no per-request
+    /// <c>ProcessOptions.ModelOverride</c>, that agent fails to load with an actionable error.
+    /// </summary>
+    public string? DefaultModelDeployment { get; set; }
 }

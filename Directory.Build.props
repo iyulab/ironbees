@@ -18,7 +18,10 @@
 
   <PropertyGroup Label="Package Information">
     <!-- Version -->
-    <Version>0.7.0</Version>
+    <!-- 0.7.1: Ironbees.Ironhive 어댑터에 DefaultModelDeployment 배선 추가 (0.7.0에서 Core에만 있고
+         IronhiveOptions/AddIronbeesIronhive에는 누락 → AddIronbeesIronhive consumer가 런타임 모델 해석
+         사용 불가). IronhiveOptions.DefaultModelDeployment 추가 + AddIronbeesCore로 전달. -->
+    <Version>0.7.1</Version>
 
     <!-- Authors and Company -->
     <Authors>iyulab</Authors>
