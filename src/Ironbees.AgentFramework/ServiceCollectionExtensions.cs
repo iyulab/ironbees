@@ -42,6 +42,9 @@ public static class ServiceCollectionExtensions
         {
             core.AgentsDirectory = options.AgentsDirectory;
             core.MinimumConfidenceThreshold = options.MinimumConfidenceThreshold ?? 0.3;
+            // Forward runtime model resolution: agents may omit model.deployment in agent.yaml and
+            // resolve the active model from this default (or per-request ProcessOptions.ModelOverride).
+            core.DefaultModelDeployment = options.DefaultModelDeployment;
         });
 
         // Register OpenAIClient (base class — works for both plain OpenAI and Azure)
@@ -99,4 +102,12 @@ public class IronbeesOptions
     /// </summary>
     public double? MinimumConfidenceThreshold { get; set; }
 
+    /// <summary>
+    /// Default model deployment used when an agent's <c>model.deployment</c> is omitted in agent.yaml,
+    /// enabling runtime model resolution. Forwarded to
+    /// <see cref="Ironbees.Core.IronbeesCoreOptions.DefaultModelDeployment"/> so agents load without a
+    /// pinned model. When null and an agent omits its deployment with no per-request
+    /// <c>ProcessOptions.ModelOverride</c>, that agent fails to load with an actionable error.
+    /// </summary>
+    public string? DefaultModelDeployment { get; set; }
 }

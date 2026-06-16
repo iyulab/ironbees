@@ -1,5 +1,7 @@
 using Ironbees.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Ironbees.AgentFramework.Tests;
 
@@ -10,6 +12,7 @@ public class ServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         // Act
         services.AddIronbees(options =>
@@ -137,6 +140,7 @@ public class ServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
         var testDirectory = "./test-agents";
 
         // Act
@@ -159,6 +163,7 @@ public class ServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         // Act
         services.AddIronbees(options =>
@@ -180,6 +185,7 @@ public class ServiceCollectionExtensionsTests
     {
         // Arrange
         var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
 
         // Act
         services.AddIronbees(options =>
@@ -206,6 +212,98 @@ public class ServiceCollectionExtensionsTests
         var orchestrator1 = provider.GetRequiredService<IAgentOrchestrator>();
         var orchestrator2 = provider.GetRequiredService<IAgentOrchestrator>();
         Assert.Same(orchestrator1, orchestrator2);
+    }
+
+    [Fact, Trait("Category", "Integration")]
+    public async Task AddIronbees_WithDefaultModelDeployment_LoadsAgentOmittingDeployment()
+    {
+        // Reproduces the AIMS repro: an agent.yaml omits model.deployment and relies on the
+        // DI-configured default. Without forwarding DefaultModelDeployment to the core orchestrator,
+        // the agent fails to load ("Failed to load any agents").
+        using var agents = new TempAgentsDirectory();
+        agents.WriteAgent("rag-agent", deployment: null);
+
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddIronbees(options =>
+        {
+            options.OpenAIApiKey = "test-key";
+            options.AgentsDirectory = agents.Path;
+            options.DefaultModelDeployment = "gpt-4o";
+        });
+
+        var provider = services.BuildServiceProvider();
+        var orchestrator = provider.GetRequiredService<IAgentOrchestrator>();
+        var registry = provider.GetRequiredService<IAgentRegistry>();
+
+        await orchestrator.LoadAgentsAsync();
+
+        Assert.Contains("rag-agent", registry.ListAgents());
+    }
+
+    [Fact, Trait("Category", "Integration")]
+    public async Task AddIronbees_WithoutDefaultModelDeployment_FailsToLoadAgentOmittingDeployment()
+    {
+        // Counterpart proving the default is what enables the load: same deployment-less agent with
+        // no DefaultModelDeployment configured fails with an actionable error.
+        using var agents = new TempAgentsDirectory();
+        agents.WriteAgent("rag-agent", deployment: null);
+
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddIronbees(options =>
+        {
+            options.OpenAIApiKey = "test-key";
+            options.AgentsDirectory = agents.Path;
+            // DefaultModelDeployment intentionally not set
+        });
+
+        var provider = services.BuildServiceProvider();
+        var orchestrator = provider.GetRequiredService<IAgentOrchestrator>();
+
+        await Assert.ThrowsAsync<AgentLoadException>(() => orchestrator.LoadAgentsAsync());
+    }
+
+    private sealed class TempAgentsDirectory : IDisposable
+    {
+        public string Path { get; }
+
+        public TempAgentsDirectory()
+        {
+            Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"ironbees-af-test-{Guid.NewGuid()}");
+            Directory.CreateDirectory(Path);
+        }
+
+        public void WriteAgent(string agentName, string? deployment)
+        {
+            var agentPath = System.IO.Path.Combine(Path, agentName);
+            Directory.CreateDirectory(agentPath);
+
+            var deploymentLine = deployment is null ? string.Empty : $"\n  deployment: {deployment}";
+            var yaml = $@"
+name: {agentName}
+description: Test agent for {agentName}
+version: 1.0.0
+model:
+  provider: openai{deploymentLine}
+  temperature: 0.7
+  maxTokens: 4000
+capabilities:
+  - test-capability
+tags:
+  - test
+";
+            File.WriteAllText(System.IO.Path.Combine(agentPath, "agent.yaml"), yaml);
+            File.WriteAllText(System.IO.Path.Combine(agentPath, "system-prompt.md"), $"You are {agentName}.");
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(Path))
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+        }
     }
 
     [Fact]
