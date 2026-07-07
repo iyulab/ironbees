@@ -1,5 +1,3 @@
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using Ironbees.AgentMode.Goals;
 using Ironbees.Core;
@@ -8,7 +6,6 @@ using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
-using IronHive.Abstractions.Messages.Roles;
 using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -24,29 +21,17 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     private readonly IHiveService _hiveService;
     private readonly IIronhiveOrchestratorFactory _orchestratorFactory;
     private readonly OrchestrationEventMapper _eventMapper;
-    private readonly IronhiveOptions _options;
     private readonly ILogger<IronhiveAdapter> _logger;
-
-    // Serializes administrative endpoint reconfiguration. The swap of a provider's message
-    // generator plus the active-endpoint bookkeeping is a multi-step operation that touches the
-    // shared provider registry, so it must be atomic with respect to concurrent reconfigure calls.
-    private readonly object _reconfigureLock = new();
-
-    // Tracks the last reconfigured endpoint per provider to skip redundant re-registrations.
-    // Guarded by _reconfigureLock.
-    private readonly Dictionary<string, string> _activeEndpoints = new(StringComparer.Ordinal);
 
     public IronhiveAdapter(
         IHiveService hiveService,
         IIronhiveOrchestratorFactory orchestratorFactory,
         OrchestrationEventMapper eventMapper,
-        IronhiveOptions options,
         ILogger<IronhiveAdapter> logger)
     {
         _hiveService = hiveService ?? throw new ArgumentNullException(nameof(hiveService));
         _orchestratorFactory = orchestratorFactory ?? throw new ArgumentNullException(nameof(orchestratorFactory));
         _eventMapper = eventMapper ?? throw new ArgumentNullException(nameof(eventMapper));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -70,7 +55,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogCreatingIronHiveAgent(_logger, config.Name, config.Model.Provider, deployment);
         }
 
-        var ironhiveAgent = _hiveService.CreateAgent(cfg =>
+        var ironhiveAgent = _hiveService.CreateAgentFrom(cfg =>
         {
             cfg.Name = config.Name;
             cfg.Description = config.Description;
@@ -95,128 +80,6 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         var wrapper = new IronhiveAgentWrapper(ironhiveAgent, config);
 
         return Task.FromResult<IAgent>(wrapper);
-    }
-
-    /// <summary>
-    /// Reconfigures the message generator endpoint for a provider at runtime, without redeployment.
-    /// </summary>
-    /// <remarks>
-    /// This is an <b>administrative</b> operation that mutates shared provider state: the new endpoint
-    /// applies to <b>all subsequent requests</b> using <paramref name="provider"/>. It is deliberately
-    /// not exposed on the per-request path (see <see cref="ProcessOptions"/>) because a per-request
-    /// mutation of shared state would let one caller redirect another caller's traffic.
-    /// <para>
-    /// Authorization is the consumer application's responsibility: because <paramref name="endpoint"/>
-    /// controls the outbound HTTP target for the provider, callers MUST restrict who can invoke this.
-    /// </para>
-    /// </remarks>
-    /// <param name="provider">Provider name registered in <see cref="IronhiveOptions.ProviderEndpointUpdaters"/>.</param>
-    /// <param name="endpoint">Absolute http(s) URL of the new endpoint. Loopback/private/link-local hosts are rejected.</param>
-    /// <returns><c>true</c> if the endpoint changed and the generator was re-registered; <c>false</c> if it was already active.</returns>
-    /// <exception cref="ArgumentException"><paramref name="endpoint"/> is not a valid, safe absolute http(s) URL.</exception>
-    /// <exception cref="InvalidOperationException">No endpoint updater is registered for <paramref name="provider"/>.</exception>
-    public bool ReconfigureProviderEndpoint(string provider, string endpoint)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(provider);
-        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
-
-        ValidateEndpoint(endpoint);
-
-        if (!_options.ProviderEndpointUpdaters.TryGetValue(provider, out var updater))
-        {
-            throw new InvalidOperationException(
-                $"No endpoint updater is registered for provider '{provider}'. " +
-                $"Register one via IronhiveOptions.ProviderEndpointUpdaters during setup.");
-        }
-
-        lock (_reconfigureLock)
-        {
-            if (_activeEndpoints.TryGetValue(provider, out var previousEndpoint)
-                && string.Equals(previousEndpoint, endpoint, StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            var newGenerator = updater(endpoint);
-            _hiveService.Providers.SetMessageGenerator(provider, newGenerator);
-            _activeEndpoints[provider] = endpoint;
-        }
-
-        if (_logger.IsEnabled(LogLevel.Information))
-        {
-            LogProviderEndpointUpdated(_logger, provider, endpoint);
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Validates that an endpoint is an absolute http(s) URL that does not target a loopback,
-    /// private, or link-local address (SSRF guard).
-    /// </summary>
-    private static void ValidateEndpoint(string endpoint)
-    {
-        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri)
-            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            throw new ArgumentException(
-                $"Endpoint must be an absolute http or https URL: '{endpoint}'.", nameof(endpoint));
-        }
-
-        if (IsLoopbackOrPrivate(uri))
-        {
-            throw new ArgumentException(
-                $"Endpoint host '{uri.Host}' is a loopback, private, or link-local address, which is not allowed.",
-                nameof(endpoint));
-        }
-    }
-
-    /// <summary>
-    /// Returns true when the URI targets a loopback host, or an IP literal in a private or link-local range.
-    /// Hostnames that are not IP literals are not resolved here; consumers should constrain those via an
-    /// allowlist at the registration boundary.
-    /// </summary>
-    private static bool IsLoopbackOrPrivate(Uri uri)
-    {
-        if (uri.IsLoopback)
-        {
-            return true;
-        }
-
-        if (!IPAddress.TryParse(uri.Host, out var ip))
-        {
-            return false;
-        }
-
-        if (IPAddress.IsLoopback(ip))
-        {
-            return true;
-        }
-
-        if (ip.AddressFamily == AddressFamily.InterNetwork)
-        {
-            var b = ip.GetAddressBytes();
-            // 10.0.0.0/8
-            if (b[0] == 10) return true;
-            // 172.16.0.0/12
-            if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) return true;
-            // 192.168.0.0/16
-            if (b[0] == 192 && b[1] == 168) return true;
-            // 169.254.0.0/16 (link-local)
-            if (b[0] == 169 && b[1] == 254) return true;
-            return false;
-        }
-
-        if (ip.AddressFamily == AddressFamily.InterNetworkV6)
-        {
-            // fe80::/10 link-local, fc00::/7 unique local
-            if (ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal) return true;
-            var b = ip.GetAddressBytes();
-            if ((b[0] & 0xFE) == 0xFC) return true;
-            return false;
-        }
-
-        return false;
     }
 
     /// <inheritdoc />
@@ -249,7 +112,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         {
             if (_logger.IsEnabled(LogLevel.Information))
             {
-                LogAgentUsage(_logger, agent.Name, response.Message.Model ?? "unknown",
+                LogAgentUsage(_logger, agent.Name, response.Model ?? "unknown",
                     response.TokenUsage.InputTokens, response.TokenUsage.OutputTokens);
             }
         }
@@ -321,10 +184,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     private static partial void LogAgentStreamingUsage(ILogger logger, string agentName, string? model, int input, int output);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "IronHive streaming error: Code={Code}, Message={ErrorMessage}")]
-    private static partial void LogIronHiveStreamingError(ILogger logger, int code, string? errorMessage);
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Provider {ProviderName} endpoint updated to {NewEndpoint}")]
-    private static partial void LogProviderEndpointUpdated(ILogger logger, string providerName, string newEndpoint);
+    private static partial void LogIronHiveStreamingError(ILogger logger, string? code, string? errorMessage);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Creating orchestrator type {OrchestratorType} with {AgentCount} agents")]
     private static partial void LogCreatingOrchestrator(ILogger logger, Core.Orchestration.OrchestratorType orchestratorType, int agentCount);
@@ -359,34 +219,25 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             {
                 if (historyMsg.Role == ChatRole.User)
                 {
-                    messages.Add(new UserMessage
-                    {
-                        Content = [new TextMessageContent { Value = historyMsg.Text ?? "" }]
-                    });
+                    messages.Add(Message.User(new TextMessageContent { Value = historyMsg.Text ?? "" }));
                 }
                 else if (historyMsg.Role == ChatRole.Assistant)
                 {
-                    messages.Add(new AssistantMessage
-                    {
-                        Content = [new TextMessageContent { Value = historyMsg.Text ?? "" }]
-                    });
+                    messages.Add(Message.Assistant(new TextMessageContent { Value = historyMsg.Text ?? "" }));
                 }
             }
         }
 
-        messages.Add(new UserMessage
-        {
-            Content = [new TextMessageContent { Value = input }]
-        });
+        messages.Add(Message.User(new TextMessageContent { Value = input }));
 
         return messages;
     }
 
     private static string ExtractText(MessageResponse response)
     {
-        var textParts = response.Message.Content
+        var textParts = response.Message?.Content
             .OfType<TextMessageContent>()
-            .Select(c => c.Value);
+            .Select(c => c.Value) ?? [];
 
         return string.Join("", textParts);
     }

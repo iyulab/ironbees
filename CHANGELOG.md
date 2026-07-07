@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-07
+
+### Changed - IronHive 0.10.0 pairing catch-up
+
+Ironbees now pairs with IronHive 0.10.0 (from 0.6.2), absorbing four minor versions of accumulated
+IronHive API changes. Consumers that reach IronHive through Ironbees can now consume IronHive's
+current-generation improvements (including `IronHive.Providers.OpenAI.Compatible` vLLM
+`reasoning_content` parsing).
+
+- **BREAKING (dependency):** `IronHive.Abstractions`/`IronHive.Core`/`IronHive.Providers.OpenAI`
+  bumped `0.6.2`/`0.4.1` → `0.10.0`. Transitive floors raised (YamlDotNet 18.1.0, OpenTelemetry 1.16.0,
+  Microsoft.Extensions.* 10.0.9, Microsoft.Extensions.AI.Abstractions 10.7.0).
+- **Message model migration:** IronHive removed the `Messages.Roles` namespace (role-typed
+  `UserMessage`/`AssistantMessage` subclasses) in favor of a flat `Message` + `MessageRole` enum with
+  `Message.User(...)`/`Message.Assistant(...)` factories. The Ironbees ↔ IronHive adapters
+  (`IronhiveAdapter`, `IronhiveCheckpointStoreAdapter`, `IronhiveEventAdapter`,
+  `IronhiveOrchestratorWrapper`) were migrated accordingly. `IHiveService.CreateAgent` →
+  `CreateAgentFrom`; `AddHiveServiceCore()` → `AddHiveService(configure)`.
+
+### Removed - Runtime provider endpoint reconfiguration
+
+- **BREAKING:** `IronhiveAdapter.ReconfigureProviderEndpoint(provider, endpoint)` and
+  `IronhiveOptions.ProviderEndpointUpdaters` are removed. IronHive 0.10.0 removed the runtime
+  message-generator mutation primitive (`IHiveService.Providers.SetMessageGenerator`) this feature was
+  built on — generators are now registered at build time only (`IHiveServiceBuilder.AddMessageGenerator`).
+  The feature had no external consumers and could not be reimplemented within Ironbees without an
+  upstream runtime-mutation API. `IronhiveAdapter`'s constructor no longer takes `IronhiveOptions`.
+
 ## [0.7.0] - 2026-06-16
 
 ### Added - Runtime model resolution

@@ -1,0 +1,13 @@
+<Project>
+
+  <!-- Inherit the repo-root shared settings, then mark every sample non-packable.
+       Samples are runnable demos, not shipped NuGet packages; without this they were
+       packed into output (polluting local feeds and failing NU5104 on prerelease deps
+       such as Azure.AI.OpenAI in WorkflowSample). -->
+  <Import Project="../Directory.Build.props" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

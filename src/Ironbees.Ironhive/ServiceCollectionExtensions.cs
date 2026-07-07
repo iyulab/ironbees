@@ -47,9 +47,14 @@ public static class ServiceCollectionExtensions
         }
         else if (options.ConfigureHive is not null)
         {
-            // Build via IHiveServiceBuilder
-            var builder = services.AddHiveServiceCore();
-            options.ConfigureHive(builder);
+            // Build via IHiveServiceBuilder (0.10.0: AddHiveService takes a configure delegate
+            // that returns the built IHiveService, replacing the old fluent AddHiveServiceCore()).
+            var configureHive = options.ConfigureHive;
+            services.AddHiveService((builder, _) =>
+            {
+                configureHive(builder);
+                return builder.Build();
+            });
         }
         else
         {

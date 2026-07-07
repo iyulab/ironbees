@@ -4,8 +4,8 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using IronHive.Abstractions.Agent.Orchestration;
+using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
-using IronHive.Abstractions.Messages.Roles;
 using IronHiveOrchestrationEventType = IronHive.Abstractions.Agent.Orchestration.OrchestrationEventType;
 using IronbeesOrchestrationStreamEvent = Ironbees.Core.Orchestration.OrchestrationStreamEvent;
 using IronbeesOrchestrationResult = Ironbees.Core.Orchestration.OrchestrationResult;
@@ -54,10 +54,7 @@ internal sealed class IronhiveOrchestratorWrapper : IronbeesIMultiAgentOrchestra
     {
         var messages = new[]
         {
-            new UserMessage
-            {
-                Content = [new TextMessageContent { Value = input }]
-            }
+            Message.User(new TextMessageContent { Value = input })
         };
 
         string? previousAgent = null;

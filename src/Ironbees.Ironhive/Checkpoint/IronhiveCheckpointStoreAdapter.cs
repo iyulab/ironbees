@@ -3,8 +3,8 @@
 
 using System.Text.Json;
 using Ironbees.Core.Orchestration;
+using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
-using IronHive.Abstractions.Messages.Roles;
 using Microsoft.Extensions.Logging;
 using IronHiveCheckpointStore = IronHive.Abstractions.Agent.Orchestration.ICheckpointStore;
 using IronHiveOrchestrationCheckpoint = IronHive.Abstractions.Agent.Orchestration.OrchestrationCheckpoint;
@@ -126,7 +126,7 @@ public partial class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
             .Where(s => s.IsSuccess && s.Response?.Message is not null)
             .ToDictionary(
                 s => s.AgentName,
-                s => ExtractMessageText(s.Response!.Message) ?? "");
+                s => ExtractMessageText(s.Response!.Message!) ?? "");
 
         return new IronbeesOrchestrationCheckpoint
         {
@@ -211,10 +211,10 @@ public partial class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
 
         foreach (var message in messages)
         {
-            var (role, content) = message switch
+            var (role, content) = message.Role switch
             {
-                UserMessage userMsg => ("user", GetMessageText(userMsg.Content)),
-                AssistantMessage assistantMsg => ("assistant", GetMessageText(assistantMsg.Content)),
+                MessageRole.User => ("user", GetMessageText(message.Content)),
+                MessageRole.Assistant => ("assistant", GetMessageText(message.Content)),
                 _ => ("unknown", "")
             };
 
@@ -231,10 +231,10 @@ public partial class IronhiveCheckpointStoreAdapter : IronHiveCheckpointStore
 
     private static string? ExtractMessageText(IronHiveMessage message)
     {
-        return message switch
+        return message.Role switch
         {
-            UserMessage userMsg => GetMessageText(userMsg.Content),
-            AssistantMessage assistantMsg => GetMessageText(assistantMsg.Content),
+            MessageRole.User => GetMessageText(message.Content),
+            MessageRole.Assistant => GetMessageText(message.Content),
             _ => null
         };
     }

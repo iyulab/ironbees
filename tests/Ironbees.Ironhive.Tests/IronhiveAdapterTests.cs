@@ -3,7 +3,6 @@ using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
-using IronHive.Abstractions.Messages.Roles;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -28,7 +27,6 @@ public class IronhiveAdapterTests
             _hiveServiceMock,
             _orchestratorFactoryMock,
             _eventMapper,
-            new IronhiveOptions(),
             NullLogger<IronhiveAdapter>.Instance);
     }
 
@@ -39,7 +37,7 @@ public class IronhiveAdapterTests
         var config = CreateTestConfig();
         var mockAgent = Substitute.For<IronHiveAgent>();
         _hiveServiceMock
-            .CreateAgent(Arg.Any<Action<IronHive.Abstractions.Agent.AgentConfig>>())
+            .CreateAgentFrom(Arg.Any<Action<IronHive.Abstractions.Agent.AgentConfig>>())
             .Returns(mockAgent);
 
         // Act
@@ -50,7 +48,7 @@ public class IronhiveAdapterTests
         Assert.Equal("test-agent", result.Name);
         Assert.Equal("Test agent", result.Description);
         Assert.Same(config, result.Config);
-        _hiveServiceMock.Received(1).CreateAgent(Arg.Any<Action<IronHive.Abstractions.Agent.AgentConfig>>());
+        _hiveServiceMock.Received(1).CreateAgentFrom(Arg.Any<Action<IronHive.Abstractions.Agent.AgentConfig>>());
     }
 
     [Fact]
@@ -80,9 +78,9 @@ public class IronhiveAdapterTests
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
         var response = new MessageResponse
         {
-            Id = "resp-1",
-            Message = new AssistantMessage
+            Message = new Message
             {
+                Role = MessageRole.Assistant,
                 Content = new List<MessageContent>
                 {
                     new TextMessageContent { Value = "Part 1 " },
@@ -125,7 +123,7 @@ public class IronhiveAdapterTests
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
         var streamingResponses = new List<StreamingMessageResponse>
         {
-            new StreamingMessageBeginResponse { Id = "msg-1" },
+            new StreamingMessageBeginResponse(),
             new StreamingContentDeltaResponse
             {
                 Index = 0,
@@ -138,7 +136,6 @@ public class IronhiveAdapterTests
             },
             new StreamingMessageDoneResponse
             {
-                Id = "msg-1",
                 Model = "gpt-4o",
                 Timestamp = DateTime.UtcNow
             }
@@ -210,7 +207,7 @@ public class IronhiveAdapterTests
         IronHive.Abstractions.Agent.AgentConfig? capturedConfig = null;
         var mockAgent = Substitute.For<IronHiveAgent>();
         _hiveServiceMock
-            .CreateAgent(Arg.Do<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
+            .CreateAgentFrom(Arg.Do<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
             {
                 capturedConfig = new IronHive.Abstractions.Agent.AgentConfig();
                 configure(capturedConfig);
@@ -243,7 +240,7 @@ public class IronhiveAdapterTests
         IronHive.Abstractions.Agent.AgentConfig? capturedConfig = null;
         var mockAgent = Substitute.For<IronHiveAgent>();
         _hiveServiceMock
-            .CreateAgent(Arg.Do<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
+            .CreateAgentFrom(Arg.Do<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
             {
                 capturedConfig = new IronHive.Abstractions.Agent.AgentConfig();
                 configure(capturedConfig);
@@ -280,7 +277,7 @@ public class IronhiveAdapterTests
         IronHive.Abstractions.Agent.AgentConfig? capturedConfig = null;
         var mockAgent = Substitute.For<IronHiveAgent>();
         _hiveServiceMock
-            .CreateAgent(Arg.Do<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
+            .CreateAgentFrom(Arg.Do<Action<IronHive.Abstractions.Agent.AgentConfig>>(configure =>
             {
                 capturedConfig = new IronHive.Abstractions.Agent.AgentConfig();
                 configure(capturedConfig);
@@ -322,9 +319,9 @@ public class IronhiveAdapterTests
         IEnumerable<Message>? capturedMessages = null;
         var response = new MessageResponse
         {
-            Id = "resp-1",
-            Message = new AssistantMessage
+            Message = new Message
             {
+                Role = MessageRole.Assistant,
                 Content = new List<MessageContent>
                 {
                     new TextMessageContent { Value = "response" }
@@ -354,13 +351,13 @@ public class IronhiveAdapterTests
         var messageList = capturedMessages!.ToList();
         Assert.Equal(5, messageList.Count); // 4 history + 1 current
 
-        Assert.IsType<UserMessage>(messageList[0]);
-        Assert.IsType<AssistantMessage>(messageList[1]);
-        Assert.IsType<UserMessage>(messageList[2]);
-        Assert.IsType<AssistantMessage>(messageList[3]);
-        Assert.IsType<UserMessage>(messageList[4]);
+        Assert.Equal(MessageRole.User, messageList[0].Role);
+        Assert.Equal(MessageRole.Assistant, messageList[1].Role);
+        Assert.Equal(MessageRole.User, messageList[2].Role);
+        Assert.Equal(MessageRole.Assistant, messageList[3].Role);
+        Assert.Equal(MessageRole.User, messageList[4].Role);
 
-        var lastMsg = (UserMessage)messageList[4];
+        var lastMsg = messageList[4];
         var lastText = lastMsg.Content.OfType<TextMessageContent>().First();
         Assert.Equal("What's new?", lastText.Value);
     }
@@ -373,9 +370,9 @@ public class IronhiveAdapterTests
         IEnumerable<Message>? capturedMessages = null;
         var response = new MessageResponse
         {
-            Id = "resp-1",
-            Message = new AssistantMessage
+            Message = new Message
             {
+                Role = MessageRole.Assistant,
                 Content = new List<MessageContent>
                 {
                     new TextMessageContent { Value = "response" }
@@ -396,7 +393,7 @@ public class IronhiveAdapterTests
         Assert.NotNull(capturedMessages);
         var messageList = capturedMessages!.ToList();
         Assert.Single(messageList);
-        Assert.IsType<UserMessage>(messageList[0]);
+        Assert.Equal(MessageRole.User, messageList[0].Role);
     }
 
     [Fact]
@@ -407,9 +404,9 @@ public class IronhiveAdapterTests
         IEnumerable<Message>? capturedMessages = null;
         var response = new MessageResponse
         {
-            Id = "resp-1",
-            Message = new AssistantMessage
+            Message = new Message
             {
+                Role = MessageRole.Assistant,
                 Content = new List<MessageContent>
                 {
                     new TextMessageContent { Value = "response" }
@@ -430,7 +427,7 @@ public class IronhiveAdapterTests
         Assert.NotNull(capturedMessages);
         var messageList = capturedMessages!.ToList();
         Assert.Single(messageList);
-        Assert.IsType<UserMessage>(messageList[0]);
+        Assert.Equal(MessageRole.User, messageList[0].Role);
     }
 
     [Fact]
@@ -474,9 +471,9 @@ public class IronhiveAdapterTests
         Assert.NotNull(capturedMessages);
         var messageList = capturedMessages!.ToList();
         Assert.Equal(3, messageList.Count); // 2 history + 1 current
-        Assert.IsType<UserMessage>(messageList[0]);
-        Assert.IsType<AssistantMessage>(messageList[1]);
-        Assert.IsType<UserMessage>(messageList[2]);
+        Assert.Equal(MessageRole.User, messageList[0].Role);
+        Assert.Equal(MessageRole.Assistant, messageList[1].Role);
+        Assert.Equal(MessageRole.User, messageList[2].Role);
     }
 
     [Fact]
@@ -493,7 +490,7 @@ public class IronhiveAdapterTests
             },
             new StreamingMessageErrorResponse
             {
-                Code = 500,
+                Code = "500",
                 Message = "Internal server error"
             },
             new StreamingContentDeltaResponse
@@ -533,15 +530,14 @@ public class IronhiveAdapterTests
             _hiveServiceMock,
             _orchestratorFactoryMock,
             _eventMapper,
-            new IronhiveOptions(),
             mockLogger);
 
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
         var response = new MessageResponse
         {
-            Id = "resp-1",
-            Message = new AssistantMessage
+            Message = new Message
             {
+                Role = MessageRole.Assistant,
                 Content = new List<MessageContent>
                 {
                     new TextMessageContent { Value = "response" }
@@ -587,7 +583,6 @@ public class IronhiveAdapterTests
             _hiveServiceMock,
             _orchestratorFactoryMock,
             _eventMapper,
-            new IronhiveOptions(),
             mockLogger);
 
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
@@ -600,7 +595,6 @@ public class IronhiveAdapterTests
             },
             new StreamingMessageDoneResponse
             {
-                Id = "msg-1",
                 Model = "gpt-4o",
                 Timestamp = DateTime.UtcNow,
                 TokenUsage = new MessageTokenUsage
@@ -645,9 +639,9 @@ public class IronhiveAdapterTests
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
         var response = new MessageResponse
         {
-            Id = "resp-1",
-            Message = new AssistantMessage
+            Message = new Message
             {
+                Role = MessageRole.Assistant,
                 Content = new List<MessageContent>
                 {
                     new TextMessageContent { Value = responseText }

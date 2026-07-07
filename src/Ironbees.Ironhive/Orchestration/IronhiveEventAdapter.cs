@@ -3,7 +3,6 @@
 
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
-using IronHive.Abstractions.Messages.Roles;
 using IronHiveOrchestrationStreamEvent = IronHive.Abstractions.Agent.Orchestration.OrchestrationStreamEvent;
 using IronHiveOrchestrationEventType = IronHive.Abstractions.Agent.Orchestration.OrchestrationEventType;
 using IronbeesOrchestrationStreamEvent = Ironbees.Core.Orchestration.OrchestrationStreamEvent;
@@ -280,10 +279,10 @@ public class IronhiveEventAdapter
             return null;
         }
 
-        ICollection<MessageContent>? content = message switch
+        ICollection<MessageContent>? content = message.Role switch
         {
-            IronHive.Abstractions.Messages.Roles.UserMessage userMsg => userMsg.Content,
-            IronHive.Abstractions.Messages.Roles.AssistantMessage assistantMsg => assistantMsg.Content,
+            MessageRole.User => message.Content,
+            MessageRole.Assistant => message.Content,
             _ => null
         };
 
