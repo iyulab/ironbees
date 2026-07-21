@@ -49,12 +49,14 @@ public static class ServiceCollectionExtensions
         {
             // Build via IHiveServiceBuilder (0.10.0: AddHiveService takes a configure delegate
             // that returns the built IHiveService, replacing the old fluent AddHiveServiceCore()).
+            // Lifetime must be Singleton: IronHive 0.10.0 defaults this overload to Scoped, which
+            // the singleton ILLMFrameworkAdapter below cannot legally consume (ValidateOnBuild fails).
             var configureHive = options.ConfigureHive;
             services.AddHiveService((builder, _) =>
             {
                 configureHive(builder);
                 return builder.Build();
-            });
+            }, ServiceLifetime.Singleton);
         }
         else
         {

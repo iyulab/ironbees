@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-07-22
+
+### Fixed
+
+- **`ConfigureHive` path boot failure with `ValidateOnBuild`:** `AddIronbeesIronhive` registered
+  `IHiveService` via IronHive 0.10.0's `AddHiveService` factory overload without a lifetime argument,
+  inheriting its new default of `Scoped`. The singleton `ILLMFrameworkAdapter` (`IronhiveAdapter`)
+  consumes `IHiveService`, so containers built with `ValidateOnBuild = true` failed at startup
+  (`Cannot consume scoped service ... from singleton`), and unvalidated containers silently captured
+  the first scope's instance (captive dependency). The registration now pins
+  `ServiceLifetime.Singleton`, consistent with the pre-built `IronhiveOptions.HiveService` branch.
+  Reported by SMI.AIMS dogfooding (Ironbees 0.7.1 → 0.8.0 migration boot smoke).
+
 ## [0.8.0] - 2026-07-07
 
 ### Changed - IronHive 0.10.0 pairing catch-up

@@ -165,6 +165,9 @@ services.AddIronbeesIronhive(opts =>
 });
 ```
 
+Both registration paths (`ConfigureHive` and a pre-built `HiveService` instance) register
+`IHiveService` as a **singleton**, matching the lifetime of the Ironbees services that consume it.
+
 **`LoadAgentsAsync()` must be called after DI build, before `app.Run()`:**
 
 ```csharp

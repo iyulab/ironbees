@@ -43,6 +43,46 @@ public class IronhiveServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddIronbeesIronhive_WithConfigureHive_BootsWithValidateOnBuild()
+    {
+        // Regression: IronHive 0.10.0's AddHiveService factory overload defaults to Scoped,
+        // while ILLMFrameworkAdapter is Singleton. The ConfigureHive path must register
+        // IHiveService with a lifetime the singleton adapter can legally consume.
+        var services = new ServiceCollection();
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+
+        services.AddIronbeesIronhive(options =>
+        {
+            options.ConfigureHive = builder => { };
+        });
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true,
+        });
+
+        Assert.NotNull(provider);
+    }
+
+    [Fact]
+    public void AddIronbeesIronhive_WithConfigureHive_RegistersHiveServiceAsSingleton()
+    {
+        // Both registration paths (HiveService instance / ConfigureHive factory) must agree
+        // on the Singleton lifetime consumed by the singleton IronhiveAdapter.
+        var services = new ServiceCollection();
+
+        services.AddIronbeesIronhive(options =>
+        {
+            options.ConfigureHive = builder => { };
+        });
+
+        var descriptor = Assert.Single(services, d => d.ServiceType == typeof(IHiveService));
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+    }
+
+    [Fact]
     public void AddIronbeesIronhive_NeitherConfigureNorService_Throws()
     {
         var services = new ServiceCollection();
