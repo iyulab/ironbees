@@ -141,6 +141,22 @@ await foreach (var chunk in orchestrator.StreamAsync(query, new ProcessOptions
 {
     Console.Write(chunk);
 }
+
+// Structured streaming with follow-up suggestions (adapter permitting, e.g. Ironbees.Ironhive)
+await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new ProcessOptions
+{
+    ConversationId = sessionId,
+    Suggestions = new SuggestionRequest { MaxCount = 1 }, // model-generated follow-up questions
+}))
+{
+    switch (chunk)
+    {
+        case TextChunk text: Console.Write(text.Content); break;
+        case SuggestionsChunk s: RenderSuggestions(s.Suggestions); break; // Question + Items
+    }
+}
+// Non-streaming: var result = await orchestrator.ProcessStructuredAsync(query, options);
+//                result.Text / result.Suggestions
 ```
 
 ### ASP.NET Core Integration

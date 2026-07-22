@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-22
+
+### Added - Structured surface with suggestions passthrough
+
+- **`ProcessOptions.Suggestions` (`SuggestionRequest`):** request model-generated follow-up
+  suggestions per request through the orchestrator path. `SuggestionRequest`
+  (`Mode`/`MaxCount`/`MinItems`/`MaxItems`) is a framework-neutral mirror; the IronHive adapter
+  maps it to `AgentInvokeOptions.Suggestions` (IronHive 0.14.0). Reported by SMI.AIMS dogfooding
+  (orchestrator-path consumers could not reach pairing IronHive request options).
+- **Structured surfaces:** `IAgentOrchestrator.ProcessStructuredAsync/StreamStructuredAsync` and
+  `ILLMFrameworkAdapter.RunStructuredAsync/StreamStructuredAsync`. Non-streaming returns
+  `AgentRunResult { Text, Suggestions }`; streaming yields typed `StreamChunk` events
+  (`TextChunk`, `SuggestionsChunk` (new), `UsageChunk`, `ErrorChunk`, `CompletionChunk`).
+  The pre-existing `StreamChunk` vocabulary gains its first producer.
+- **Fail-loud adapter defaults:** `ILLMFrameworkAdapter` default implementations delegate to the
+  text surface when no structured feature is requested and throw `NotSupportedException`
+  (eagerly for streaming) when suggestions are requested from an adapter that has not
+  implemented them — options are never silently dropped.
+
+### Changed
+
+- **IronHive pairing 0.10.0 → 0.14.0** (`AgentInvokeOptions` generation).
+- Text `ProcessAsync`/`StreamAsync`/`RunAsync` surfaces are now projections of the structured
+  core (behavior preserved; legacy streaming error string format retained).
+- `AgentOrchestrator` per-request preparation (history load, agent resolution, config override)
+  deduplicated into a single shared path across the four `ProcessOptions` surfaces.
+- Streaming conversation persistence now accumulates text chunks only — provider error strings
+  are no longer saved into conversation history as assistant text.
+
 ## [0.8.1] - 2026-07-22
 
 ### Fixed
