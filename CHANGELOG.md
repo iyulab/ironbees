@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-23
+
+### Fixed
+- **`IronhiveAdapter.StreamStructuredAsync` drops reasoning:** IronHive providers emit extended
+  thinking as `ThinkingDeltaContent`, but the adapter mapped only `TextDeltaContent` — structured
+  stream consumers never received `ThinkingChunk` even though the vocabulary already existed.
+  Thinking deltas are now mapped to `ThinkingChunk` in stream order; the legacy `StreamAsync`
+  string projection stays text-only (no reasoning leak). Reported by SMI.AIMS dogfooding
+  (orchestrator fallback path had `ThinkingChunk` pre-wired).
+
 ## [0.9.0] - 2026-07-22
 
 ### Added - Structured surface with suggestions passthrough
