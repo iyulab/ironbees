@@ -1,3 +1,4 @@
+using Ironbees.Core.Streaming;
 using Microsoft.Extensions.AI;
 
 namespace Ironbees.Core;
@@ -76,4 +77,78 @@ public interface ILLMFrameworkAdapter
         IReadOnlyList<ChatMessage>? conversationHistory,
         CancellationToken cancellationToken = default)
         => StreamAsync(agent, input, cancellationToken);
+
+    /// <summary>
+    /// Run agent and get a structured result (text plus optional structured data
+    /// such as suggestions). The text-only RunAsync surface is a projection of this.
+    /// Default implementation delegates to the text RunAsync and fails loud
+    /// (<see cref="NotSupportedException"/>) when <paramref name="options"/> requests
+    /// a feature the adapter has not implemented — options are never silently dropped.
+    /// </summary>
+    /// <param name="agent">Agent to run</param>
+    /// <param name="input">User input</param>
+    /// <param name="conversationHistory">Previous conversation messages (user/assistant pairs)</param>
+    /// <param name="options">Per-invoke options. Null applies adapter defaults.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Structured agent run result</returns>
+    async Task<AgentRunResult> RunStructuredAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<ChatMessage>? conversationHistory = null,
+        AgentRunOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfUnsupported(options);
+        var text = await RunAsync(agent, input, conversationHistory, cancellationToken).ConfigureAwait(false);
+        return new AgentRunResult { Text = text };
+    }
+
+    /// <summary>
+    /// Stream agent response as typed <see cref="StreamChunk"/> events (text deltas,
+    /// suggestions, usage, completion). The text-only StreamAsync surface is a
+    /// projection of this. Default implementation wraps the text StreamAsync in
+    /// <see cref="TextChunk"/> events and fails loud (<see cref="NotSupportedException"/>,
+    /// thrown eagerly at call time) when <paramref name="options"/> requests a feature
+    /// the adapter has not implemented — options are never silently dropped.
+    /// </summary>
+    /// <param name="agent">Agent to run</param>
+    /// <param name="input">User input</param>
+    /// <param name="conversationHistory">Previous conversation messages (user/assistant pairs)</param>
+    /// <param name="options">Per-invoke options. Null applies adapter defaults.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async stream of typed chunks</returns>
+    IAsyncEnumerable<StreamChunk> StreamStructuredAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<ChatMessage>? conversationHistory = null,
+        AgentRunOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfUnsupported(options);
+        return StreamAsTextChunksAsync(agent, input, conversationHistory, cancellationToken);
+    }
+
+    private async IAsyncEnumerable<StreamChunk> StreamAsTextChunksAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<ChatMessage>? conversationHistory,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await foreach (var chunk in StreamAsync(agent, input, conversationHistory, cancellationToken).ConfigureAwait(false))
+        {
+            yield return new TextChunk(chunk);
+        }
+
+        yield return new CompletionChunk();
+    }
+
+    private void ThrowIfUnsupported(AgentRunOptions? options)
+    {
+        if (options?.Suggestions is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support structured suggestions. " +
+                "Override RunStructuredAsync/StreamStructuredAsync to honor AgentRunOptions.Suggestions.");
+        }
+    }
 }

@@ -115,6 +115,14 @@ public sealed record ThinkingChunk(string Content, bool IsComplete = false) : St
 public sealed record MetadataChunk(string Key, object Value) : StreamChunk;
 
 /// <summary>
+/// Model-generated follow-up suggestions delivered at the end of a stream.
+/// Emitted only when requested via <see cref="AgentRunOptions.Suggestions"/>
+/// and supported by the adapter.
+/// </summary>
+/// <param name="Suggestions">Suggested follow-up question blocks.</param>
+public sealed record SuggestionsChunk(IReadOnlyList<AgentSuggestion> Suggestions) : StreamChunk;
+
+/// <summary>
 /// Indicates the stream has completed.
 /// </summary>
 /// <param name="Success">Whether the stream completed successfully.</param>
