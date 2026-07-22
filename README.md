@@ -152,6 +152,7 @@ await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new Proces
     switch (chunk)
     {
         case TextChunk text: Console.Write(text.Content); break;
+        case ThinkingChunk thinking: RenderReasoning(thinking.Content); break; // reasoning models (extended thinking)
         case SuggestionsChunk s: RenderSuggestions(s.Suggestions); break; // Question + Items
     }
 }

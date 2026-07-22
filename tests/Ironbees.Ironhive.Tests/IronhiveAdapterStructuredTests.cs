@@ -178,6 +178,69 @@ public class IronhiveAdapterStructuredTests
     }
 
     [Fact]
+    public async Task StreamStructuredAsync_Should_Map_ThinkingDeltas_To_ThinkingChunks()
+    {
+        // Arrange — reasoning models interleave thinking deltas with text deltas
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        mockAgent
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(Stream());
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        static async IAsyncEnumerable<StreamingMessageResponse> Stream()
+        {
+            yield return new StreamingContentDeltaResponse { Index = 0, Delta = new ThinkingDeltaContent { Data = "reason-1" } };
+            yield return new StreamingContentDeltaResponse { Index = 0, Delta = new ThinkingDeltaContent { Data = "reason-2" } };
+            yield return new StreamingContentDeltaResponse { Index = 1, Delta = new TextDeltaContent { Value = "answer" } };
+            yield return new StreamingMessageDoneResponse();
+            await Task.CompletedTask;
+        }
+
+        // Act
+        var chunks = new List<StreamChunk>();
+        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi"))
+        {
+            chunks.Add(chunk);
+        }
+
+        // Assert — thinking arrives as ThinkingChunk, in stream order, before text
+        Assert.Equal("reason-1", Assert.IsType<ThinkingChunk>(chunks[0]).Content);
+        Assert.Equal("reason-2", Assert.IsType<ThinkingChunk>(chunks[1]).Content);
+        Assert.Equal("answer", Assert.IsType<TextChunk>(chunks[2]).Content);
+        Assert.IsType<CompletionChunk>(chunks[3]);
+        Assert.Equal(4, chunks.Count);
+    }
+
+    [Fact]
+    public async Task StreamAsync_Text_Projection_Should_Not_Leak_Thinking()
+    {
+        // Arrange — legacy string projection must remain text-only
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        mockAgent
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(Stream());
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        static async IAsyncEnumerable<StreamingMessageResponse> Stream()
+        {
+            yield return new StreamingContentDeltaResponse { Index = 0, Delta = new ThinkingDeltaContent { Data = "hidden reasoning" } };
+            yield return new StreamingContentDeltaResponse { Index = 1, Delta = new TextDeltaContent { Value = "visible answer" } };
+            yield return new StreamingMessageDoneResponse();
+            await Task.CompletedTask;
+        }
+
+        // Act
+        var parts = new List<string>();
+        await foreach (var part in _adapter.StreamAsync(wrapper, "Hi", conversationHistory: null))
+        {
+            parts.Add(part);
+        }
+
+        // Assert
+        Assert.Equal(["visible answer"], parts);
+    }
+
+    [Fact]
     public async Task StreamStructuredAsync_Should_Yield_Fatal_ErrorChunk_And_Stop()
     {
         // Arrange

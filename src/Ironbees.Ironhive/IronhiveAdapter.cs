@@ -189,10 +189,19 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
 
         await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, MapInvokeOptions(options), cancellationToken))
         {
-            if (chunk is StreamingContentDeltaResponse delta
-                && delta.Delta is TextDeltaContent textDelta)
+            if (chunk is StreamingContentDeltaResponse delta)
             {
-                yield return new TextChunk(textDelta.Value);
+                if (delta.Delta is TextDeltaContent textDelta)
+                {
+                    yield return new TextChunk(textDelta.Value);
+                }
+                else if (delta.Delta is ThinkingDeltaContent thinkingDelta)
+                {
+                    // Reasoning models (extended thinking) emit ThinkingDeltaContent;
+                    // map to Ironbees' own ThinkingChunk vocabulary so structured
+                    // stream consumers receive reasoning alongside text.
+                    yield return new ThinkingChunk(thinkingDelta.Data);
+                }
             }
             else if (chunk is StreamingMessageDoneResponse done)
             {
