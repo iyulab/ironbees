@@ -43,4 +43,14 @@ public record ProcessOptions
     /// When null, the value from <c>agent.yaml</c> is used as-is.
     /// </summary>
     public string? ModelOverride { get; init; }
+
+    /// <summary>
+    /// Requests model-generated follow-up suggestions for this request.
+    /// Suggestions are returned via the structured surface
+    /// (<see cref="IAgentOrchestrator.ProcessStructuredAsync"/> /
+    /// <see cref="IAgentOrchestrator.StreamStructuredAsync"/>); the text-only
+    /// surface ignores structured payloads. Null disables the feature.
+    /// Adapters that do not support suggestions fail loud (<see cref="NotSupportedException"/>).
+    /// </summary>
+    public SuggestionRequest? Suggestions { get; init; }
 }

@@ -56,8 +56,7 @@ public class ModelOverrideTests
             Arg.Is<AgentConfig>(c => c.Model.Deployment == "runtime-model"),
             Arg.Any<CancellationToken>())
             .Returns(tempAgent);
-        adapter.RunAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<CancellationToken>())
-            .Returns("response");
+        adapter.RunStructuredAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 
@@ -73,11 +72,11 @@ public class ModelOverrideTests
         await adapter.Received(1).CreateAgentAsync(
             Arg.Is<AgentConfig>(c => c.Model.Deployment == "runtime-model"),
             Arg.Any<CancellationToken>());
-        await adapter.Received(1).RunAsync(
+        await adapter.Received(1).RunStructuredAsync(
             tempAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -102,8 +101,7 @@ public class ModelOverrideTests
                 capturedConfig = callInfo.ArgAt<AgentConfig>(0);
                 return tempAgent;
             });
-        adapter.RunAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<CancellationToken>())
-            .Returns("response");
+        adapter.RunStructuredAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 
@@ -131,8 +129,7 @@ public class ModelOverrideTests
 
         var registryAgent = MakeRegistryAgent("rag-agent", "yaml-model");
         registry.GetAgent("rag-agent").Returns(registryAgent);
-        adapter.RunAsync(registryAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<CancellationToken>())
-            .Returns("response");
+        adapter.RunStructuredAsync(registryAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 
@@ -158,8 +155,7 @@ public class ModelOverrideTests
         tempAgent.Name.Returns("rag-agent");
         adapter.CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>())
             .Returns(tempAgent);
-        adapter.RunAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<CancellationToken>())
-            .Returns("response");
+        adapter.RunStructuredAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 
@@ -196,8 +192,8 @@ public class ModelOverrideTests
             Arg.Is<AgentConfig>(c => c.Model.Deployment == "runtime-model"),
             Arg.Any<CancellationToken>())
             .Returns(tempAgent);
-        adapter.StreamAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<CancellationToken>())
-            .Returns(AsyncEnumerable.Empty<string>());
+        adapter.StreamStructuredAsync(tempAgent, Arg.Any<string>(), Arg.Any<IReadOnlyList<ChatMessage>?>(), Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(AsyncEnumerable.Empty<Core.Streaming.StreamChunk>());
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 

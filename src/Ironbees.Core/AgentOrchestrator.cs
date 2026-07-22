@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Ironbees.Core.Conversation;
+using Ironbees.Core.Streaming;
 using Microsoft.Extensions.AI;
 
 namespace Ironbees.Core;
@@ -119,7 +120,18 @@ public class AgentOrchestrator : IAgentOrchestrator
     }
 
     /// <inheritdoc />
+    /// <remarks>Text projection of <see cref="ProcessStructuredAsync"/>.</remarks>
     public async Task<string> ProcessAsync(
+        string input,
+        ProcessOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await ProcessStructuredAsync(input, options, cancellationToken);
+        return result.Text;
+    }
+
+    /// <inheritdoc />
+    public async Task<AgentRunResult> ProcessStructuredAsync(
         string input,
         ProcessOptions options,
         CancellationToken cancellationToken = default)
@@ -127,45 +139,21 @@ public class AgentOrchestrator : IAgentOrchestrator
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         ArgumentNullException.ThrowIfNull(options);
 
-        // Load conversation history if ConversationId is provided
-        IReadOnlyList<ChatMessage>? history = null;
-        ConversationState? conversationState = null;
-        string? previousAgentName = null;
-
-        if (options.ConversationId is not null && _conversationStore is not null)
-        {
-            conversationState = await _conversationStore.LoadAsync(options.ConversationId, cancellationToken);
-            previousAgentName = conversationState?.AgentName;
-            history = BuildHistory(conversationState, options.MaxHistoryTurns);
-        }
-
-        // Select agent
-        var agent = await ResolveAgentAsync(input, options, previousAgentName, cancellationToken);
-        var resolvedAgentName = agent.Name;
-
-        // Apply per-request config overrides (system prompt and/or model deployment)
-        if (options.SystemPromptOverride is not null || options.ModelOverride is not null)
-        {
-            var overriddenConfig = agent.Config;
-            if (options.SystemPromptOverride is not null)
-                overriddenConfig = overriddenConfig with { SystemPrompt = options.SystemPromptOverride };
-            if (options.ModelOverride is not null)
-                overriddenConfig = overriddenConfig with { Model = overriddenConfig.Model with { Deployment = options.ModelOverride } };
-            agent = await _frameworkAdapter.CreateAgentAsync(overriddenConfig, cancellationToken);
-        }
+        var context = await PrepareInvocationAsync(input, options, cancellationToken);
 
         // Execute
-        var response = await _frameworkAdapter.RunAsync(agent, input, history, cancellationToken);
+        var result = await _frameworkAdapter.RunStructuredAsync(
+            context.Agent, input, context.History, MapRunOptions(options), cancellationToken);
 
-        // Save conversation
+        // Save conversation (text only — structured payloads are ephemeral)
         if (options.ConversationId is not null && _conversationStore is not null)
         {
             await SaveConversationTurnAsync(
-                options.ConversationId, resolvedAgentName, previousAgentName,
-                input, response, conversationState, cancellationToken);
+                options.ConversationId, context.ResolvedAgentName, context.PreviousAgentName,
+                input, result.Text, context.State, cancellationToken);
         }
 
-        return response;
+        return result;
     }
 
     /// <inheritdoc />
@@ -240,7 +228,31 @@ public class AgentOrchestrator : IAgentOrchestrator
     }
 
     /// <inheritdoc />
+    /// <remarks>Text projection of <see cref="StreamStructuredAsync"/>.</remarks>
     public async IAsyncEnumerable<string> StreamAsync(
+        string input,
+        ProcessOptions options,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var chunk in StreamStructuredAsync(input, options, cancellationToken))
+        {
+            if (chunk is TextChunk text)
+            {
+                yield return text.Content;
+            }
+            else if (chunk is ErrorChunk error)
+            {
+                yield return $"[Error {error.ErrorCode}]: {error.Error}";
+                if (error.IsFatal)
+                {
+                    yield break;
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<StreamChunk> StreamStructuredAsync(
         string input,
         ProcessOptions options,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -248,6 +260,40 @@ public class AgentOrchestrator : IAgentOrchestrator
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
         ArgumentNullException.ThrowIfNull(options);
 
+        var context = await PrepareInvocationAsync(input, options, cancellationToken);
+
+        // Stream with history, accumulating text for conversation persistence
+        var responseBuilder = new System.Text.StringBuilder();
+        await foreach (var chunk in _frameworkAdapter.StreamStructuredAsync(
+            context.Agent, input, context.History, MapRunOptions(options), cancellationToken))
+        {
+            if (chunk is TextChunk text)
+            {
+                responseBuilder.Append(text.Content);
+            }
+
+            yield return chunk;
+        }
+
+        // Save conversation after streaming completes (text only — structured payloads are ephemeral)
+        if (options.ConversationId is not null && _conversationStore is not null)
+        {
+            await SaveConversationTurnAsync(
+                options.ConversationId, context.ResolvedAgentName, context.PreviousAgentName,
+                input, responseBuilder.ToString(), context.State, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Shared per-request preparation for the ProcessOptions surfaces:
+    /// conversation-history load, agent resolution (stickiness-aware), and
+    /// per-request config overrides.
+    /// </summary>
+    private async Task<InvocationContext> PrepareInvocationAsync(
+        string input,
+        ProcessOptions options,
+        CancellationToken cancellationToken)
+    {
         // Load conversation history if ConversationId is provided
         IReadOnlyList<ChatMessage>? history = null;
         ConversationState? conversationState = null;
@@ -275,22 +321,27 @@ public class AgentOrchestrator : IAgentOrchestrator
             agent = await _frameworkAdapter.CreateAgentAsync(overriddenConfig, cancellationToken);
         }
 
-        // Stream with history
-        var responseBuilder = new System.Text.StringBuilder();
-        await foreach (var chunk in _frameworkAdapter.StreamAsync(agent, input, history, cancellationToken))
-        {
-            responseBuilder.Append(chunk);
-            yield return chunk;
-        }
-
-        // Save conversation after streaming completes
-        if (options.ConversationId is not null && _conversationStore is not null)
-        {
-            await SaveConversationTurnAsync(
-                options.ConversationId, resolvedAgentName, previousAgentName,
-                input, responseBuilder.ToString(), conversationState, cancellationToken);
-        }
+        return new InvocationContext(agent, resolvedAgentName, previousAgentName, history, conversationState);
     }
+
+    /// <summary>
+    /// Maps per-request ProcessOptions to the adapter-level neutral options.
+    /// Null when no adapter-level option is requested, so adapter defaults apply.
+    /// </summary>
+    private static AgentRunOptions? MapRunOptions(ProcessOptions options)
+        => options.Suggestions is null
+            ? null
+            : new AgentRunOptions { Suggestions = options.Suggestions };
+
+    /// <summary>
+    /// Resolved per-request invocation state shared by the ProcessOptions surfaces.
+    /// </summary>
+    private sealed record InvocationContext(
+        IAgent Agent,
+        string ResolvedAgentName,
+        string? PreviousAgentName,
+        IReadOnlyList<ChatMessage>? History,
+        ConversationState? State);
 
     /// <inheritdoc />
     public IReadOnlyCollection<string> ListAgents()

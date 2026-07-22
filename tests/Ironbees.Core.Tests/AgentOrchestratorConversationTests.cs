@@ -79,12 +79,11 @@ public class AgentOrchestratorConversationTests
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             agent,
             "Hello",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Hi there!");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Hi there!" });
 
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns((ConversationState?)null);
@@ -137,15 +136,15 @@ public class AgentOrchestratorConversationTests
             .Returns(existingState);
 
         IReadOnlyList<ChatMessage>? capturedHistory = null;
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             agent,
             "Tell me more",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
                 capturedHistory = callInfo.ArgAt<IReadOnlyList<ChatMessage>?>(2);
-                return "C# supports OOP, generics, and more.";
+                return new AgentRunResult { Text = "C# supports OOP, generics, and more." };
             });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
@@ -177,12 +176,11 @@ public class AgentOrchestratorConversationTests
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             agent,
             "Hello",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Hi!");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Hi!" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions(); // No ConversationId
@@ -209,12 +207,11 @@ public class AgentOrchestratorConversationTests
 
         registry.GetAgent("specific-agent").Returns(agent);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             agent,
             "Hello",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Response from specific agent");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Response from specific agent" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
         var options = new ProcessOptions { AgentName = "specific-agent" };
@@ -263,15 +260,15 @@ public class AgentOrchestratorConversationTests
             .Returns(existingState);
 
         IReadOnlyList<ChatMessage>? capturedHistory = null;
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             agent,
             "Turn 4",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
                 capturedHistory = callInfo.ArgAt<IReadOnlyList<ChatMessage>?>(2);
-                return "Response 4";
+                return new AgentRunResult { Text = "Response 4" };
             });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
@@ -309,12 +306,12 @@ public class AgentOrchestratorConversationTests
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns((ConversationState?)null);
 
-        adapter.StreamAsync(
+        adapter.StreamStructuredAsync(
             agent,
             "Hello",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns(ToAsyncEnumerable("Hi", " there", "!"));
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(ToAsyncEnumerable<Core.Streaming.StreamChunk>(new Core.Streaming.TextChunk("Hi"), new Core.Streaming.TextChunk(" there"), new Core.Streaming.TextChunk("!")));
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -359,12 +356,11 @@ public class AgentOrchestratorConversationTests
         SetupRegistryWithAgent(registry, agent);
         SetupSelectorForAgent(selector, agent);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             agent,
             "Hello",
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Hi!");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Hi!" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore: null);
         var options = new ProcessOptions { ConversationId = "conv-1" };

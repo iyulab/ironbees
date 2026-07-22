@@ -72,12 +72,11 @@ public class AgentStickinessTests
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns(existingState);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             codeAgent, // Should keep the code agent
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Sticky response");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Sticky response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -87,16 +86,16 @@ public class AgentStickinessTests
 
         // Assert — should have called code-agent (sticky), not math-agent
         Assert.Equal("Sticky response", result);
-        await adapter.Received(1).RunAsync(
+        await adapter.Received(1).RunStructuredAsync(
             codeAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
-        await adapter.DidNotReceive().RunAsync(
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
+        await adapter.DidNotReceive().RunStructuredAsync(
             mathAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -141,12 +140,11 @@ public class AgentStickinessTests
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns(existingState);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             mathAgent, // Should switch to math agent
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Math response");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Math response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -156,11 +154,11 @@ public class AgentStickinessTests
 
         // Assert — should have switched to math-agent
         Assert.Equal("Math response", result);
-        await adapter.Received(1).RunAsync(
+        await adapter.Received(1).RunStructuredAsync(
             mathAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -204,12 +202,11 @@ public class AgentStickinessTests
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns(existingState);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             codeAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Code response");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Code response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };
@@ -219,11 +216,11 @@ public class AgentStickinessTests
 
         // Assert — should keep code-agent (marginal difference)
         Assert.Equal("Code response", result);
-        await adapter.Received(1).RunAsync(
+        await adapter.Received(1).RunStructuredAsync(
             codeAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -257,12 +254,11 @@ public class AgentStickinessTests
         conversationStore.LoadAsync("conv-new", Arg.Any<CancellationToken>())
             .Returns((ConversationState?)null);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             mathAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Math response");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Math response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-new" };
@@ -272,11 +268,11 @@ public class AgentStickinessTests
 
         // Assert — first turn, no stickiness, should select best agent (math)
         Assert.Equal("Math response", result);
-        await adapter.Received(1).RunAsync(
+        await adapter.Received(1).RunStructuredAsync(
             mathAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -320,12 +316,11 @@ public class AgentStickinessTests
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns(existingState);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             codeAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Code response");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Code response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions
@@ -339,11 +334,11 @@ public class AgentStickinessTests
 
         // Assert — delta 0.3 < threshold 0.5, should keep code-agent
         Assert.Equal("Code response", result);
-        await adapter.Received(1).RunAsync(
+        await adapter.Received(1).RunStructuredAsync(
             codeAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>());
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -387,12 +382,11 @@ public class AgentStickinessTests
         conversationStore.LoadAsync("conv-1", Arg.Any<CancellationToken>())
             .Returns(existingState);
 
-        adapter.RunAsync(
+        adapter.RunStructuredAsync(
             mathAgent,
             Arg.Any<string>(),
             Arg.Any<IReadOnlyList<ChatMessage>?>(),
-            Arg.Any<CancellationToken>())
-            .Returns("Math response");
+            Arg.Any<AgentRunOptions?>(), Arg.Any<CancellationToken>()).Returns(new AgentRunResult { Text = "Math response" });
 
         var orchestrator = CreateOrchestrator(registry, adapter, selector, conversationStore);
         var options = new ProcessOptions { ConversationId = "conv-1" };

@@ -1,3 +1,5 @@
+using Ironbees.Core.Streaming;
+
 namespace Ironbees.Core;
 
 /// <summary>
@@ -75,6 +77,36 @@ public interface IAgentOrchestrator
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Async stream of response chunks</returns>
     IAsyncEnumerable<string> StreamAsync(
+        string input,
+        ProcessOptions options,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Process input with conversation context and options, returning a structured
+    /// result (text plus optional structured data such as suggestions).
+    /// The text-only <see cref="ProcessAsync(string, ProcessOptions, CancellationToken)"/>
+    /// surface is a projection of this.
+    /// </summary>
+    /// <param name="input">User input</param>
+    /// <param name="options">Processing options including conversation context</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Structured agent run result</returns>
+    Task<AgentRunResult> ProcessStructuredAsync(
+        string input,
+        ProcessOptions options,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stream response with conversation context and options as typed
+    /// <see cref="StreamChunk"/> events (text deltas, suggestions, usage, completion).
+    /// The text-only <see cref="StreamAsync(string, ProcessOptions, CancellationToken)"/>
+    /// surface is a projection of this.
+    /// </summary>
+    /// <param name="input">User input</param>
+    /// <param name="options">Processing options including conversation context</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async stream of typed chunks</returns>
+    IAsyncEnumerable<StreamChunk> StreamStructuredAsync(
         string input,
         ProcessOptions options,
         CancellationToken cancellationToken = default);
