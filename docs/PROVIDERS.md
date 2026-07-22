@@ -120,17 +120,29 @@ Implement `ILLMFrameworkAdapter` for custom integrations:
 ```csharp
 public class CustomAdapter : ILLMFrameworkAdapter
 {
+    public Task<IAgent> CreateAgentAsync(
+        AgentConfig config, CancellationToken ct = default)
+    {
+        // Create your framework's agent and wrap it as an Ironbees IAgent
+    }
+
     public Task<string> RunAsync(
         IAgent agent, string input, CancellationToken ct = default)
     {
         // Your implementation
     }
 
-    public IAsyncEnumerable<string> RunStreamingAsync(
+    public IAsyncEnumerable<string> StreamAsync(
         IAgent agent, string input, CancellationToken ct = default)
     {
         // Your streaming implementation
     }
+
+    // Optional: conversation-history overloads (default to the base methods) and
+    // structured surfaces RunStructuredAsync/StreamStructuredAsync. The structured
+    // defaults delegate to your text methods and fail loud (NotSupportedException)
+    // when AgentRunOptions requests a feature (e.g. Suggestions) you haven't
+    // implemented — override them to support structured output.
 }
 
 // Register
