@@ -106,7 +106,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogRunningIronHiveAgent(_logger, agent.Name, input.Length);
         }
 
-        var response = await ironhiveAgent.InvokeAsync(messages, cancellationToken);
+        var response = await ironhiveAgent.InvokeAsync(messages, options: null, cancellationToken);
 
         if (response.TokenUsage is not null)
         {
@@ -144,7 +144,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogStreamingIronHiveAgent(_logger, agent.Name, input.Length);
         }
 
-        await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, cancellationToken))
+        await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, options: null, cancellationToken))
         {
             if (chunk is StreamingContentDeltaResponse delta
                 && delta.Delta is TextDeltaContent textDelta)

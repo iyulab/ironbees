@@ -2,6 +2,7 @@ using Ironbees.Core;
 using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
+using AgentInvokeOptions = IronHive.Abstractions.Agent.AgentInvokeOptions;
 using IronHive.Abstractions.Messages.Content;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -89,7 +90,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var config = CreateTestConfig();
@@ -142,7 +143,7 @@ public class IronhiveAdapterTests
         };
 
         mockIronhiveAgent
-            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(streamingResponses.ToAsyncEnumerable());
 
         var config = CreateTestConfig();
@@ -181,7 +182,7 @@ public class IronhiveAdapterTests
         };
 
         mockIronhiveAgent
-            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(streamingResponses.ToAsyncEnumerable());
 
         var config = CreateTestConfig();
@@ -329,7 +330,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<CancellationToken>())
+            .InvokeAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var config = CreateTestConfig();
@@ -380,7 +381,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<CancellationToken>())
+            .InvokeAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var config = CreateTestConfig();
@@ -414,7 +415,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<CancellationToken>())
+            .InvokeAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var config = CreateTestConfig();
@@ -445,7 +446,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeStreamingAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<CancellationToken>())
+            .InvokeStreamingAsync(Arg.Do<IEnumerable<Message>>(msgs => capturedMessages = msgs.ToList()), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(streamingResponses.ToAsyncEnumerable());
 
         var config = CreateTestConfig();
@@ -501,7 +502,7 @@ public class IronhiveAdapterTests
         };
 
         mockIronhiveAgent
-            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(streamingResponses.ToAsyncEnumerable());
 
         var config = CreateTestConfig();
@@ -550,7 +551,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var config = CreateTestConfig();
@@ -606,7 +607,7 @@ public class IronhiveAdapterTests
         };
 
         mockIronhiveAgent
-            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(streamingResponses.ToAsyncEnumerable());
 
         var config = CreateTestConfig();
@@ -649,7 +650,7 @@ public class IronhiveAdapterTests
             }
         };
         mockIronhiveAgent
-            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<CancellationToken>())
+            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
             .Returns(response);
 
         var config = CreateTestConfig();
