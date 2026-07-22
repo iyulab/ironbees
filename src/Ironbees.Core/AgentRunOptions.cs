@@ -13,4 +13,12 @@ public record AgentRunOptions
     /// Null disables the feature.
     /// </summary>
     public SuggestionRequest? Suggestions { get; init; }
+
+    /// <summary>
+    /// Reasoning (extended thinking) effort for this invocation.
+    /// Null leaves the adapter/framework default; <see cref="ThinkingEffort.None"/>
+    /// explicitly disables reasoning. When enabled, adapters surface reasoning
+    /// deltas as <see cref="Streaming.ThinkingChunk"/> on the structured stream.
+    /// </summary>
+    public ThinkingEffort? ThinkingEffort { get; init; }
 }

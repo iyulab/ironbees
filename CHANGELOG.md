@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-23
+
+### Added
+- **`ProcessOptions.ThinkingEffort` / `AgentRunOptions.ThinkingEffort` (neutral `ThinkingEffort` enum):**
+  per-run reasoning (extended thinking) control through the orchestrator path. The IronHive adapter
+  maps it to `AgentInvokeOptions.ThinkingEffort` (existing in IronHive 0.14). Null (not set) keeps
+  the framework default; `ThinkingEffort.None` is an explicit off. Closes the activation gap left
+  after 0.9.1: IronHive's OpenAI-Compatible provider sends `enable_thinking:false` when the effort
+  is null, so `ThinkingChunk` could never fire on GPUStack-class reasoning models via the
+  orchestrator path. Reported by SMI.AIMS dogfooding
+  (ISSUE-Ironbees-20260723-agentrunoptions-thinking-effort-passthrough).
+
 ## [0.9.1] - 2026-07-23
 
 ### Fixed

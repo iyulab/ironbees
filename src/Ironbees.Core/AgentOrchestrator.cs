@@ -329,9 +329,13 @@ public class AgentOrchestrator : IAgentOrchestrator
     /// Null when no adapter-level option is requested, so adapter defaults apply.
     /// </summary>
     private static AgentRunOptions? MapRunOptions(ProcessOptions options)
-        => options.Suggestions is null
+        => options.Suggestions is null && options.ThinkingEffort is null
             ? null
-            : new AgentRunOptions { Suggestions = options.Suggestions };
+            : new AgentRunOptions
+            {
+                Suggestions = options.Suggestions,
+                ThinkingEffort = options.ThinkingEffort,
+            };
 
     /// <summary>
     /// Resolved per-request invocation state shared by the ProcessOptions surfaces.

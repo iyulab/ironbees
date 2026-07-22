@@ -53,4 +53,14 @@ public record ProcessOptions
     /// Adapters that do not support suggestions fail loud (<see cref="NotSupportedException"/>).
     /// </summary>
     public SuggestionRequest? Suggestions { get; init; }
+
+    /// <summary>
+    /// Reasoning (extended thinking) effort for this request.
+    /// Null leaves the adapter/framework default; <see cref="Core.ThinkingEffort.None"/>
+    /// explicitly disables reasoning. When enabled, reasoning deltas surface as
+    /// <see cref="Streaming.ThinkingChunk"/> on the structured stream
+    /// (<see cref="IAgentOrchestrator.StreamStructuredAsync"/>); the text-only
+    /// surface never leaks reasoning into text.
+    /// </summary>
+    public ThinkingEffort? ThinkingEffort { get; init; }
 }

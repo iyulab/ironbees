@@ -108,6 +108,81 @@ public class IronhiveAdapterStructuredTests
     }
 
     [Fact]
+    public async Task RunStructuredAsync_Should_Map_ThinkingEffort_To_InvokeOptions_Without_Suggestions()
+    {
+        // Arrange
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? captured = null;
+        mockAgent
+            .InvokeAsync(
+                Arg.Any<IEnumerable<Message>>(),
+                Arg.Do<AgentInvokeOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(TextResponse("answer"));
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        // Act — ThinkingEffort alone must be enough to produce invoke options
+        await _adapter.RunStructuredAsync(wrapper, "Hi",
+            options: new AgentRunOptions { ThinkingEffort = ThinkingEffort.Medium });
+
+        // Assert
+        Assert.NotNull(captured);
+        Assert.Equal(MessageThinkingEffort.Medium, captured!.ThinkingEffort);
+        Assert.Null(captured.Suggestions);
+    }
+
+    [Fact]
+    public async Task RunStructuredAsync_Should_Map_ThinkingEffort_None_As_Explicit_Off()
+    {
+        // Arrange
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? captured = null;
+        mockAgent
+            .InvokeAsync(
+                Arg.Any<IEnumerable<Message>>(),
+                Arg.Do<AgentInvokeOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(TextResponse("answer"));
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        // Act
+        await _adapter.RunStructuredAsync(wrapper, "Hi",
+            options: new AgentRunOptions { ThinkingEffort = ThinkingEffort.None });
+
+        // Assert — None is an explicit off request, distinct from "option not set" (null options)
+        Assert.NotNull(captured);
+        Assert.Equal(MessageThinkingEffort.None, captured!.ThinkingEffort);
+    }
+
+    [Fact]
+    public async Task RunStructuredAsync_Should_Map_ThinkingEffort_And_Suggestions_Together()
+    {
+        // Arrange
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? captured = null;
+        mockAgent
+            .InvokeAsync(
+                Arg.Any<IEnumerable<Message>>(),
+                Arg.Do<AgentInvokeOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(TextResponse("answer"));
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        // Act
+        await _adapter.RunStructuredAsync(wrapper, "Hi", options: new AgentRunOptions
+        {
+            ThinkingEffort = ThinkingEffort.High,
+            Suggestions = new SuggestionRequest { MaxCount = 1 },
+        });
+
+        // Assert
+        Assert.NotNull(captured);
+        Assert.Equal(MessageThinkingEffort.High, captured!.ThinkingEffort);
+        Assert.NotNull(captured.Suggestions);
+        Assert.Equal(1, captured.Suggestions!.MaxCount);
+    }
+
+    [Fact]
     public async Task RunStructuredAsync_Should_Extract_Suggestions_From_Response()
     {
         // Arrange

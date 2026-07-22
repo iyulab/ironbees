@@ -63,6 +63,30 @@ public class AgentOrchestratorStructuredTests
     }
 
     [Fact]
+    public async Task ProcessStructuredAsync_Should_Pass_ThinkingEffort_To_Adapter_Without_Suggestions()
+    {
+        // Arrange
+        AgentRunOptions? captured = null;
+        _adapter.RunStructuredAsync(
+                _agent, "Hi",
+                Arg.Any<IReadOnlyList<ChatMessage>?>(),
+                Arg.Do<AgentRunOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(new AgentRunResult { Text = "answer" });
+
+        var orchestrator = CreateOrchestrator();
+
+        // Act — ThinkingEffort alone must reach the adapter (no Suggestions required)
+        await orchestrator.ProcessStructuredAsync(
+            "Hi", new ProcessOptions { AgentName = "test-agent", ThinkingEffort = ThinkingEffort.Medium });
+
+        // Assert
+        Assert.NotNull(captured);
+        Assert.Equal(ThinkingEffort.Medium, captured!.ThinkingEffort);
+        Assert.Null(captured.Suggestions);
+    }
+
+    [Fact]
     public async Task ProcessStructuredAsync_Should_Pass_Null_RunOptions_When_Not_Requested()
     {
         // Arrange

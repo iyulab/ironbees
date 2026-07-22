@@ -239,15 +239,19 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     /// </summary>
     private static IronHiveInvokeOptions? MapInvokeOptions(AgentRunOptions? options)
     {
-        if (options?.Suggestions is null)
+        if (options is null || (options.Suggestions is null && options.ThinkingEffort is null))
         {
             return null;
         }
 
-        var request = options.Suggestions;
-        return new IronHiveInvokeOptions
+        var mapped = new IronHiveInvokeOptions
         {
-            Suggestions = new SuggestionOptions
+            ThinkingEffort = MapThinkingEffort(options.ThinkingEffort),
+        };
+
+        if (options.Suggestions is { } request)
+        {
+            mapped.Suggestions = new SuggestionOptions
             {
                 Mode = request.Mode == Core.SuggestionMode.Always
                     ? IronHiveSuggestionMode.Always
@@ -255,9 +259,29 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
                 MaxCount = request.MaxCount,
                 MinItems = request.MinItems,
                 MaxItems = request.MaxItems,
-            },
-        };
+            };
+        }
+
+        return mapped;
     }
+
+    /// <summary>
+    /// Maps the neutral <see cref="Core.ThinkingEffort"/> to IronHive
+    /// <see cref="MessageThinkingEffort"/>. Null (option not set) stays null so the
+    /// framework default applies; <see cref="Core.ThinkingEffort.None"/> maps to the
+    /// explicit-off value.
+    /// </summary>
+    private static MessageThinkingEffort? MapThinkingEffort(Core.ThinkingEffort? effort) => effort switch
+    {
+        null => null,
+        Core.ThinkingEffort.None => MessageThinkingEffort.None,
+        Core.ThinkingEffort.Minimal => MessageThinkingEffort.Minimal,
+        Core.ThinkingEffort.Low => MessageThinkingEffort.Low,
+        Core.ThinkingEffort.Medium => MessageThinkingEffort.Medium,
+        Core.ThinkingEffort.High => MessageThinkingEffort.High,
+        Core.ThinkingEffort.XHigh => MessageThinkingEffort.XHigh,
+        _ => MessageThinkingEffort.Medium,
+    };
 
     /// <summary>
     /// Maps IronHive suggestions to the neutral <see cref="AgentSuggestion"/> model.
