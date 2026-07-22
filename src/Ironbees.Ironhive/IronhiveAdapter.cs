@@ -2,11 +2,14 @@ using System.Runtime.CompilerServices;
 using Ironbees.AgentMode.Goals;
 using Ironbees.Core;
 using Ironbees.Core.Orchestration;
+using Ironbees.Core.Streaming;
 using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
 using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
+using IronHiveInvokeOptions = IronHive.Abstractions.Agent.AgentInvokeOptions;
+using IronHiveSuggestionMode = IronHive.Abstractions.Messages.SuggestionMode;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
@@ -92,10 +95,23 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
+    /// <remarks>Text projection of <see cref="RunStructuredAsync"/>.</remarks>
     public async Task<string> RunAsync(
         IAgent agent,
         string input,
         IReadOnlyList<ChatMessage>? conversationHistory,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await RunStructuredAsync(agent, input, conversationHistory, options: null, cancellationToken);
+        return result.Text;
+    }
+
+    /// <inheritdoc />
+    public async Task<AgentRunResult> RunStructuredAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<ChatMessage>? conversationHistory = null,
+        AgentRunOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         var ironhiveAgent = GetIronhiveAgent(agent);
@@ -106,7 +122,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogRunningIronHiveAgent(_logger, agent.Name, input.Length);
         }
 
-        var response = await ironhiveAgent.InvokeAsync(messages, options: null, cancellationToken);
+        var response = await ironhiveAgent.InvokeAsync(messages, MapInvokeOptions(options), cancellationToken);
 
         if (response.TokenUsage is not null)
         {
@@ -117,7 +133,11 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             }
         }
 
-        return ExtractText(response);
+        return new AgentRunResult
+        {
+            Text = ExtractText(response),
+            Suggestions = MapSuggestions(response.Suggestions),
+        };
     }
 
     /// <inheritdoc />
@@ -130,10 +150,33 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
+    /// <remarks>Text projection of <see cref="StreamStructuredAsync"/>.</remarks>
     public async IAsyncEnumerable<string> StreamAsync(
         IAgent agent,
         string input,
         IReadOnlyList<ChatMessage>? conversationHistory,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var chunk in StreamStructuredAsync(agent, input, conversationHistory, options: null, cancellationToken))
+        {
+            if (chunk is TextChunk text)
+            {
+                yield return text.Content;
+            }
+            else if (chunk is ErrorChunk error)
+            {
+                yield return $"[Error {error.ErrorCode}]: {error.Error}";
+                yield break;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<StreamChunk> StreamStructuredAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<ChatMessage>? conversationHistory = null,
+        AgentRunOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var ironhiveAgent = GetIronhiveAgent(agent);
@@ -144,28 +187,83 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogStreamingIronHiveAgent(_logger, agent.Name, input.Length);
         }
 
-        await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, options: null, cancellationToken))
+        await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, MapInvokeOptions(options), cancellationToken))
         {
             if (chunk is StreamingContentDeltaResponse delta
                 && delta.Delta is TextDeltaContent textDelta)
             {
-                yield return textDelta.Value;
+                yield return new TextChunk(textDelta.Value);
             }
-            else if (chunk is StreamingMessageDoneResponse done && done.TokenUsage is not null)
+            else if (chunk is StreamingMessageDoneResponse done)
             {
-                if (_logger.IsEnabled(LogLevel.Information))
+                if (done.TokenUsage is not null)
                 {
-                    LogAgentStreamingUsage(_logger, agent.Name, done.Model,
-                        done.TokenUsage.InputTokens, done.TokenUsage.OutputTokens);
+                    if (_logger.IsEnabled(LogLevel.Information))
+                    {
+                        LogAgentStreamingUsage(_logger, agent.Name, done.Model,
+                            done.TokenUsage.InputTokens, done.TokenUsage.OutputTokens);
+                    }
+
+                    yield return new UsageChunk(done.TokenUsage.InputTokens, done.TokenUsage.OutputTokens);
+                }
+
+                var suggestions = MapSuggestions(done.Suggestions);
+                if (suggestions is not null)
+                {
+                    yield return new SuggestionsChunk(suggestions);
                 }
             }
             else if (chunk is StreamingMessageErrorResponse error)
             {
                 LogIronHiveStreamingError(_logger, error.Code, error.Message);
-                yield return $"[Error {error.Code}]: {error.Message}";
+                yield return new ErrorChunk(error.Message ?? "", IsFatal: true, ErrorCode: error.Code);
                 yield break;
             }
         }
+
+        yield return new CompletionChunk();
+    }
+
+    /// <summary>
+    /// Maps neutral per-invoke options to IronHive <see cref="IronHiveInvokeOptions"/>.
+    /// Null options (or all-null fields) map to null so agent defaults apply.
+    /// </summary>
+    private static IronHiveInvokeOptions? MapInvokeOptions(AgentRunOptions? options)
+    {
+        if (options?.Suggestions is null)
+        {
+            return null;
+        }
+
+        var request = options.Suggestions;
+        return new IronHiveInvokeOptions
+        {
+            Suggestions = new SuggestionOptions
+            {
+                Mode = request.Mode == Core.SuggestionMode.Always
+                    ? IronHiveSuggestionMode.Always
+                    : IronHiveSuggestionMode.Auto,
+                MaxCount = request.MaxCount,
+                MinItems = request.MinItems,
+                MaxItems = request.MaxItems,
+            },
+        };
+    }
+
+    /// <summary>
+    /// Maps IronHive suggestions to the neutral <see cref="AgentSuggestion"/> model.
+    /// Empty or null lists map to null.
+    /// </summary>
+    private static List<AgentSuggestion>? MapSuggestions(List<Suggestion>? suggestions)
+    {
+        if (suggestions is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        return suggestions
+            .Select(s => new AgentSuggestion(s.Question, s.Items))
+            .ToList();
     }
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Creating IronHive agent: {AgentName} with provider {Provider}, model {Model}")]
