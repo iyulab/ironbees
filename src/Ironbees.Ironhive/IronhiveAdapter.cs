@@ -66,19 +66,18 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             cfg.Model = deployment;
             cfg.Instructions = config.SystemPrompt;
 
-            if (config.Model.MaxTokens != 4000 ||
-                config.Model.Temperature != 0.7 ||
-                config.Model.TopP.HasValue)
+            // MaxTokens/Temperature 는 무조건 전달한다. 예전에는 ModelConfig 의 기본값(4000 / 0.7)과
+            // 비교해 "다르면 설정된 것"으로 추론했는데, 그러면 사용자가 그 값을 **명시적으로** 지정한
+            // 경우까지 미설정으로 간주해 조용히 버렸다. ModelConfig 는 두 필드가 non-nullable 이라
+            // "미설정"을 표현할 수단 자체가 없으므로, 무조건 전달해도 잃는 표현력이 없고 대신
+            // ModelConfig 가 문서화한 기본값이 실제로 적용된다.
+            cfg.Parameters = new IronHiveAgentParametersConfig
             {
-                cfg.Parameters = new IronHiveAgentParametersConfig();
-
-                if (config.Model.MaxTokens != 4000)
-                    cfg.Parameters.MaxTokens = config.Model.MaxTokens;
-                if (config.Model.Temperature != 0.7)
-                    cfg.Parameters.Temperature = (float)config.Model.Temperature;
-                if (config.Model.TopP.HasValue)
-                    cfg.Parameters.TopP = (float)config.Model.TopP.Value;
-            }
+                MaxTokens = config.Model.MaxTokens,
+                Temperature = (float)config.Model.Temperature,
+                // TopP 는 double? 이라 미설정을 정직하게 표현할 수 있다 — 있을 때만 전달.
+                TopP = config.Model.TopP.HasValue ? (float)config.Model.TopP.Value : null,
+            };
         });
         var wrapper = new IronhiveAgentWrapper(ironhiveAgent, config);
 

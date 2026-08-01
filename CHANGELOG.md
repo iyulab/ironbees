@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-01
+
+### Fixed
+- **Sampling parameters configured in `agent.yaml` now actually reach the provider.** Two independent
+  silent no-ops stacked on top of each other:
+  1. The pinned IronHive version had dropped `Temperature`/`TopP`/`TopK`/`StopSequences` from its
+     request model while still advertising them on the agent parameter config. Re-pinned to
+     IronHive `0.15.0`, which restores them and wires them through to the providers.
+  2. `IronhiveAdapter` decided whether a value was "set" by comparing it against `ModelConfig`'s own
+     defaults (`maxTokens: 4000`, `temperature: 0.7`). Configuring either field to exactly that value
+     — a perfectly ordinary choice — was therefore read as "unset" and dropped. `ModelConfig` makes
+     both fields non-nullable, so there was never an "unset" state to detect; they are now forwarded
+     unconditionally and the documented defaults finally apply. `topP` stays nullable and is
+     forwarded only when present.
+
+  Neither failure produced an error, a warning, or a test failure — an agent configured with
+  `temperature: 0.2` simply sampled at the provider default. `SamplingParameterWiringTests` now locks
+  the whole path, including a cross-boundary check that every knob the agent parameter config
+  advertises has a sink on the pinned IronHive request type.
+
+### Changed
+- **Behavior:** agents that previously ran at the provider's default sampling settings now run at the
+  values declared in `agent.yaml` (or `ModelConfig`'s documented defaults when unspecified). This is
+  the intended behavior of the existing configuration surface, but it is an observable change for any
+  agent that was relying on the values being ignored.
+
 ## [0.10.0] - 2026-07-23
 
 ### Added
