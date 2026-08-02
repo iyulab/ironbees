@@ -52,8 +52,13 @@
     <!-- Documentation -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- CS1591: missing XML doc comments -->
-    <!-- NU1903: known high vulnerability in transitive Microsoft.Bcl.Memory (no fix available) -->
-    <NoWarn>$(NoWarn);CS1591;NU1903</NoWarn>
+    <!-- NU1903 is deliberately NOT suppressed. A repo-wide suppression of a high-severity
+         advisory blinds every project to future ones, and the reason this one carried
+         ("no fix available" for a transitive dependency) had gone stale: the advisory it named
+         no longer fires, while a *different* high-severity one did and was being hidden by it.
+         Vulnerable dependencies are lifted to a patched version instead — see the version pins
+         in Directory.Packages.props. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
 
     <!-- Package README -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
