@@ -58,6 +58,14 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogCreatingIronHiveAgent(_logger, config.Name, config.Model.Provider, deployment);
         }
 
+        // FrequencyPenalty/PresencePenalty 는 이 경로에서 전달할 수 없다 — IronHive 의
+        // AgentParametersConfig/MessageRequest 에 받을 곳이 없다. 조용히 버리면 소비자는 값이 적용된
+        // 줄 알기에, 최소한 관측 가능하게 만든다. 지원 범위 표는 ModelConfig 의 XML doc 참조.
+        if (config.Model.FrequencyPenalty.HasValue || config.Model.PresencePenalty.HasValue)
+        {
+            LogUnsupportedPenaltyParameters(_logger, config.Name);
+        }
+
         var ironhiveAgent = _hiveService.CreateAgentFrom(cfg =>
         {
             cfg.Name = config.Name;
@@ -300,6 +308,9 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Creating IronHive agent: {AgentName} with provider {Provider}, model {Model}")]
     private static partial void LogCreatingIronHiveAgent(ILogger logger, string agentName, string provider, string model);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent {AgentName}: frequencyPenalty/presencePenalty are configured but the IronHive backend cannot apply them - the agent parameter contract has no field for either. The values are ignored. Use the Agent Framework backend if these parameters are required.")]
+    private static partial void LogUnsupportedPenaltyParameters(ILogger logger, string agentName);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Running IronHive agent {AgentName} with input length {InputLength}")]
     private static partial void LogRunningIronHiveAgent(ILogger logger, string agentName, int inputLength);

@@ -27,6 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the whole path, including a cross-boundary check that every knob the agent parameter config
   advertises has a sink on the pinned IronHive request type.
 
+- **`frequencyPenalty`/`presencePenalty` no longer disappear without a trace on the IronHive backend.**
+  These two are supported by the Agent Framework backend but have no field on the IronHive agent
+  parameter contract, so the same `agent.yaml` behaved differently depending on which backend ran it —
+  silently. The adapter now emits a warning at agent creation when either value is configured, naming
+  the agent and stating that the values are ignored. The values are still not applied on that path;
+  what changes is that you find out. `ModelConfig` carries the support matrix for all five sampling
+  parameters, and `SamplingParameterWiringTests` now checks every knob `ModelConfig` advertises — not
+  just the ones the adapter happens to write — so a knob added without wiring fails the build. A
+  companion test fails if the contract ever gains these fields, which is the signal to forward them
+  for real and drop the warning.
+
 ### Changed
 - **Behavior:** agents that previously ran at the provider's default sampling settings now run at the
   values declared in `agent.yaml` (or `ModelConfig`'s documented defaults when unspecified). This is
