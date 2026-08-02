@@ -83,6 +83,27 @@ model:
 You are an expert software developer specializing in C# and .NET...
 ```
 
+#### Sampling parameters
+
+`model:` accepts five sampling parameters. Support differs by backend — a parameter marked
+*ignored* is accepted by configuration binding but never reaches the provider:
+
+| Parameter | Agent Framework | IronHive |
+|---|---|---|
+| `temperature` | applied | applied |
+| `maxTokens` | applied | applied |
+| `topP` | applied | applied |
+| `frequencyPenalty` | applied | **ignored** (warns at agent creation) |
+| `presencePenalty` | applied | **ignored** (warns at agent creation) |
+
+The last two have no field on the IronHive agent parameter contract, so the adapter has nothing
+to forward them to; it logs a warning naming the agent rather than dropping them silently. If
+you need them, run that agent on the Agent Framework backend.
+
+`temperature` and `maxTokens` are always sent — including when you set them to the same value as
+the documented default. Provider support applies on top of this: a backend marked *applied* still
+depends on the selected provider honouring the parameter.
+
 ## Quick Start
 
 ### With IronHive
