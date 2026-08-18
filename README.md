@@ -104,6 +104,41 @@ you need them, run that agent on the Agent Framework backend.
 the documented default. Provider support applies on top of this: a backend marked *applied* still
 depends on the selected provider honouring the parameter.
 
+### Tools (function calling)
+
+An agent may declare tool names it can call; each name is resolved against a pool registered once
+at startup, not per agent:
+
+**agents/coding-agent/agent.yaml:**
+```yaml
+name: coding-agent
+description: Expert software developer
+model:
+  provider: openai
+  deployment: gpt-4o
+tools: [search-code, run-tests]
+```
+
+```csharp
+services.AddIronbeesIronhive(options =>
+{
+    options.AgentsDirectory = "./agents";
+    options.ConfigureHive = hive => hive.AddOpenAIProviders("openai", new OpenAIConfig { ApiKey = apiKey });
+    options.Tools = new ToolCollection([mySearchCodeTool, myRunTestsTool]); // IronHive.Abstractions.Tools.ITool instances
+});
+```
+
+A tool name with no match in the registered pool fails agent creation loud, at
+`orchestrator.LoadAgentsAsync()` time, rather than silently running the agent without it. Tools
+are a fixed per-agent property (like `model`), not a per-request option — there is no
+`ProcessOptions.Tools`. Tool execution surfaces on the structured stream as
+`ToolCallStartChunk`/`ToolCallCompleteChunk` (see the streaming example below); the text-only
+`StreamAsync` surface only sees the resulting answer text, not the intermediate tool calls.
+
+Currently supported by the `Ironbees.Ironhive` adapter. The Agent Framework/Azure OpenAI backend
+(`AddIronbees`) does not yet resolve `tools:` — an agent declaring tools on that backend runs
+without them (no `ITool`/pool concept exists there today).
+
 ## Quick Start
 
 ### With IronHive

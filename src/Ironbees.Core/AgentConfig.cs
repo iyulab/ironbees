@@ -41,6 +41,15 @@ public record AgentConfig
     public List<string> Tags { get; init; } = new();
 
     /// <summary>
+    /// Names of tools this agent may invoke. Each name is resolved against the tool pool
+    /// registered with the active <see cref="ILLMFrameworkAdapter"/> (e.g. IronHive's
+    /// <c>IronhiveOptions.Tools</c>). A name with no match in the pool fails agent creation
+    /// loud rather than silently running the agent without that tool. Null or empty means
+    /// no tools.
+    /// </summary>
+    public List<string>? Tools { get; init; }
+
+    /// <summary>
     /// Additional metadata for extensibility
     /// </summary>
     public Dictionary<string, object> Metadata { get; init; } = new();

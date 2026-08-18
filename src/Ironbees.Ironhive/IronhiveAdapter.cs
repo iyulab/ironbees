@@ -7,6 +7,7 @@ using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
+using IronHive.Abstractions.Tools;
 using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
 using IronHiveInvokeOptions = IronHive.Abstractions.Agent.AgentInvokeOptions;
 using IronHiveSuggestionMode = IronHive.Abstractions.Messages.SuggestionMode;
@@ -25,17 +26,20 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     private readonly IIronhiveOrchestratorFactory _orchestratorFactory;
     private readonly OrchestrationEventMapper _eventMapper;
     private readonly ILogger<IronhiveAdapter> _logger;
+    private readonly IToolCollection? _toolPool;
 
     public IronhiveAdapter(
         IHiveService hiveService,
         IIronhiveOrchestratorFactory orchestratorFactory,
         OrchestrationEventMapper eventMapper,
-        ILogger<IronhiveAdapter> logger)
+        ILogger<IronhiveAdapter> logger,
+        IronhiveOptions? options = null)
     {
         _hiveService = hiveService ?? throw new ArgumentNullException(nameof(hiveService));
         _orchestratorFactory = orchestratorFactory ?? throw new ArgumentNullException(nameof(orchestratorFactory));
         _eventMapper = eventMapper ?? throw new ArgumentNullException(nameof(eventMapper));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _toolPool = options?.Tools;
     }
 
     /// <inheritdoc />
@@ -87,9 +91,48 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
                 TopP = config.Model.TopP.HasValue ? (float)config.Model.TopP.Value : null,
             };
         });
+
+        ironhiveAgent.Tools = ResolveTools(config.Name, config.Tools);
+
         var wrapper = new IronhiveAgentWrapper(ironhiveAgent, config);
 
         return Task.FromResult<IAgent>(wrapper);
+    }
+
+    /// <summary>
+    /// Resolves an agent's declared tool names against the registered tool pool
+    /// (<see cref="IronhiveOptions.Tools"/>). Fails loud on an unresolvable name rather than
+    /// silently running the agent without that tool — matching this adapter's existing
+    /// unsupported-option convention (see <see cref="MapInvokeOptions"/>'s remarks).
+    /// </summary>
+    private IToolCollection? ResolveTools(string agentName, List<string>? toolNames)
+    {
+        if (toolNames is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        if (_toolPool is null)
+        {
+            throw new InvalidOperationException(
+                $"Agent '{agentName}' declares tools ({string.Join(", ", toolNames)}) but no tool " +
+                "pool is registered. Set IronhiveOptions.Tools when calling AddIronbeesIronhive.");
+        }
+
+        var missing = toolNames.Where(name => !_toolPool.ContainsKey(name)).ToList();
+        if (missing.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Agent '{agentName}' declares unknown tool(s): {string.Join(", ", missing)}. " +
+                $"Available in the registered pool: {string.Join(", ", _toolPool.Keys)}.");
+        }
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            LogResolvedAgentTools(_logger, agentName, toolNames.Count);
+        }
+
+        return _toolPool.FilterBy(toolNames);
     }
 
     /// <inheritdoc />
@@ -210,6 +253,22 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
                     yield return new ThinkingChunk(thinkingDelta.Data);
                 }
             }
+            else if (chunk is StreamingContentAddedResponse { Content: ToolMessageContent added })
+            {
+                // Arguments are still streaming in at this point (via ToolDeltaContent on
+                // subsequent delta chunks, not surfaced as their own chunk type today) - report
+                // the call starting, not its input.
+                yield return new ToolCallStartChunk(added.Name, added.Id);
+            }
+            else if (chunk is StreamingContentCompletedResponse { Content: ToolMessageContent { Output: { } output } completed })
+            {
+                yield return new ToolCallCompleteChunk(
+                    completed.Name,
+                    completed.Id,
+                    output.IsSuccess,
+                    output.IsSuccess ? output.Result : null,
+                    output.IsSuccess ? null : output.Result);
+            }
             else if (chunk is StreamingMessageDoneResponse done)
             {
                 if (done.TokenUsage is not null)
@@ -308,6 +367,9 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Creating IronHive agent: {AgentName} with provider {Provider}, model {Model}")]
     private static partial void LogCreatingIronHiveAgent(ILogger logger, string agentName, string provider, string model);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Agent {AgentName}: resolved {ToolCount} tool(s) from the registered pool")]
+    private static partial void LogResolvedAgentTools(ILogger logger, string agentName, int toolCount);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Agent {AgentName}: frequencyPenalty/presencePenalty are configured but the IronHive backend cannot apply them - the agent parameter contract has no field for either. The values are ignored. Use the Agent Framework backend if these parameters are required.")]
     private static partial void LogUnsupportedPenaltyParameters(ILogger logger, string agentName);

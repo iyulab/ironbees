@@ -1,6 +1,7 @@
 using Ironbees.AgentMode.Goals;
 using Ironbees.Core.Orchestration;
 using IronHive.Abstractions;
+using IronHive.Abstractions.Tools;
 
 namespace Ironbees.Ironhive;
 
@@ -62,4 +63,15 @@ public class IronhiveOptions
     /// <c>ProcessOptions.ModelOverride</c>, that agent fails to load with an actionable error.
     /// </summary>
     public string? DefaultModelDeployment { get; set; }
+
+    /// <summary>
+    /// Pool of tools available to agents. An agent draws from this pool by name via its
+    /// <c>agent.yaml</c> <see cref="Core.AgentConfig.Tools"/> list; the resolved subset is
+    /// assigned to the underlying IronHive <see cref="IronHive.Abstractions.Agent.IAgent.Tools"/>
+    /// at agent-creation time (tools are a fixed per-agent property, not a per-invoke option —
+    /// see <see cref="IronHive.Abstractions.Agent.AgentInvokeOptions"/>'s own remarks). Null
+    /// means no tools are available to any agent; an agent naming a tool not in this pool fails
+    /// creation with an actionable error rather than silently running without it.
+    /// </summary>
+    public IToolCollection? Tools { get; set; }
 }

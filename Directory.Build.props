@@ -18,14 +18,18 @@
 
   <PropertyGroup Label="Package Information">
     <!-- Version -->
-    <!-- 0.10.0: ProcessOptions/AgentRunOptions.ThinkingEffort 패스스루(중립 enum) —
+    <!-- 0.12.0: AgentConfig.Tools(이름 목록) + IronhiveOptions.Tools(등록 풀) — 도구 호출
+         (function calling)을 IronHive 백엔드에 노출. 이름이 풀에 없으면 에이전트 생성 시점에
+         즉시 실패(조용한 무시 금지). ToolCallStartChunk/ToolCallCompleteChunk 스트리밍 표면
+         활성화(정의만 있고 발행되지 않던 상태 해소).
+         0.10.0: ProcessOptions/AgentRunOptions.ThinkingEffort 패스스루(중립 enum) —
          Ironhive 어댑터가 AgentInvokeOptions.ThinkingEffort로 매핑, 0.9.1의 ThinkingChunk
          어휘에 활성화 통로 제공(null=프레임워크 기본, None=명시적 비활성).
          0.9.1: IronhiveAdapter ThinkingDeltaContent→ThinkingChunk 매핑 (reasoning 표면 완성).
          0.9.0: IronHive 0.14.0 페어링 + 구조화 표면 신설 — ProcessOptions.Suggestions
          패스스루(중립 SuggestionRequest), IAgentOrchestrator/ILLMFrameworkAdapter의
          *StructuredAsync(AgentRunResult/StreamChunk), 텍스트 표면은 projection. -->
-    <Version>0.11.0</Version>
+    <Version>0.12.0</Version>
 
     <!-- Authors and Company -->
     <Authors>iyulab</Authors>

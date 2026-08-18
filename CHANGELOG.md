@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-18
+
+### Added
+- **Tool calling (function calling) exposed on the IronHive backend.** `AgentConfig.Tools` (a list
+  of tool names, mirroring `Capabilities`/`Tags`) lets an agent declare which tools it may call;
+  `IronhiveOptions.Tools` registers the pool those names resolve against, once at startup. A name
+  with no match in the pool fails agent creation loud rather than silently running without it.
+  Tool execution now surfaces on the structured stream as `ToolCallStartChunk`/
+  `ToolCallCompleteChunk` (`Ironbees.Core.Streaming`) — previously defined but never emitted, since
+  nothing could register a tool to call in the first place. See README's "Tools (function calling)"
+  section. `Ironbees.Ironhive` only; the Agent Framework backend does not yet resolve `tools:`.
+
 ## [0.11.0] - 2026-08-01
 
 ### Fixed
