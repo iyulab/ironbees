@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-08-24
+
+### Changed
+- Bumped `IronHive.Providers.OpenAI` 0.19.1 → 0.20.0 (unused pin — no `PackageReference` in this
+  repo — kept aligned with the sibling `IronHive.Abstractions`/`.Core` pins for consistency;
+  dependency freshness, no known breaking changes consumed).
+
 ## [0.13.0] - 2026-08-24
 
 ### Added
