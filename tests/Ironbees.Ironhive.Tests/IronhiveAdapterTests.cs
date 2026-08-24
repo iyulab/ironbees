@@ -118,6 +118,72 @@ public class IronhiveAdapterTests
     }
 
     [Fact]
+    public async Task RunStructuredAsync_WithRunOptionsTools_MapsToAgentInvokeOptionsToolsViaAIToolAdapter()
+    {
+        // Arrange
+        var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? capturedOptions = null;
+        var response = new MessageResponse
+        {
+            Message = new Message
+            {
+                Role = MessageRole.Assistant,
+                Content = new List<MessageContent> { new TextMessageContent { Value = "ok" } }
+            }
+        };
+        mockIronhiveAgent
+            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Do<AgentInvokeOptions?>(o => capturedOptions = o), Arg.Any<CancellationToken>())
+            .Returns(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
+
+        var deskTool = AIFunctionFactory.Create((string path) => $"listing {path}", name: "list_desk_files");
+        var runOptions = new AgentRunOptions { Tools = [deskTool] };
+
+        // Act
+        await _adapter.RunStructuredAsync(wrapper, "list files", options: runOptions);
+
+        // Assert — per-request tool reached IronHive as an executable ITool, not a declaration-only one
+        Assert.NotNull(capturedOptions);
+        var mappedTool = Assert.Single(capturedOptions!.Tools!);
+        Assert.Equal("list_desk_files", mappedTool.UniqueName);
+        var output = await mappedTool.InvokeAsync(new IronHive.Abstractions.Tools.ToolInput(
+            new Dictionary<string, object?> { ["path"] = "/desk-1" }));
+        Assert.True(output.IsSuccess);
+        Assert.Contains("listing /desk-1", output.Result);
+    }
+
+    [Fact]
+    public async Task RunStructuredAsync_WithoutRunOptionsTools_LeavesAgentInvokeOptionsToolsNull()
+    {
+        // Arrange
+        var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? capturedOptions = null;
+        var response = new MessageResponse
+        {
+            Message = new Message
+            {
+                Role = MessageRole.Assistant,
+                Content = new List<MessageContent> { new TextMessageContent { Value = "ok" } }
+            }
+        };
+        mockIronhiveAgent
+            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Do<AgentInvokeOptions?>(o => capturedOptions = o), Arg.Any<CancellationToken>())
+            .Returns(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
+
+        // Act — ThinkingEffort set so options is non-null, but Tools left unset
+        await _adapter.RunStructuredAsync(wrapper, "hi", options: new AgentRunOptions { ThinkingEffort = Core.ThinkingEffort.Low });
+
+        // Assert
+        Assert.NotNull(capturedOptions);
+        Assert.Null(capturedOptions!.Tools);
+    }
+
+    [Fact]
     public async Task StreamAsync_TextDeltas_YieldsTextOnly()
     {
         // Arrange

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-24
+
+### Added
+- **`ProcessOptions.Tools` / `AgentRunOptions.Tools`** — per-request tool override, filling the gap
+  left by 0.12.0's `AgentConfig.Tools` (a static, YAML-declared name list resolved once at agent
+  creation against the global `IronhiveOptions.Tools` pool). `AgentConfig.Tools` cannot express a
+  tool set that varies per request/session (e.g. a workspace-scoped tool bound to the current
+  request only) because `IAgent` instances are cached and shared by name (`AgentRegistry`) —
+  mutating a shared instance's `Tools` to vary it per call would race across concurrent requests
+  against that same agent. `ProcessOptions.Tools`/`AgentRunOptions.Tools` accept framework-neutral
+  M.E.AI `AITool`s; the IronHive backend (`Ironbees.Ironhive`) converts each to an IronHive `ITool`
+  via `AIToolAdapter` (see `IronHive.Core` 0.20.0) and passes them through
+  `AgentInvokeOptions.Tools`, overriding the agent's configured tools for that call only. When
+  set, the request's `Tools` take precedence over `AgentConfig.Tools`-resolved tools. Adapters that
+  do not honor it (currently `Ironbees.AgentFramework`) fail loud (`NotSupportedException`) rather
+  than silently dropping it.
+- Bumped `IronHive.Abstractions`/`.Core` 0.19.1 → 0.20.0 (adds `AgentInvokeOptions.Tools` and makes
+  `AIToolAdapter` public — the dependency this feature is built on).
+
+### Fixed
+- `ILLMFrameworkAdapter`'s default `RunStructuredAsync`/`StreamStructuredAsync` fail-loud check
+  (`ThrowIfUnsupported`) covered `AgentRunOptions.Suggestions` but not `.ThinkingEffort`, so an
+  adapter that doesn't override these methods (`Ironbees.AgentFramework`) silently dropped a
+  requested thinking-effort instead of failing loud as the type's own XML doc promises. Fixed
+  alongside adding the equivalent check for the new `.Tools` field.
+
 ## [0.12.1] - 2026-08-24
 
 ### Changed

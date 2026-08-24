@@ -8,6 +8,8 @@ using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
 using IronHive.Abstractions.Tools;
+using IronHive.Core.Microsoft;
+using IronHive.Core.Tools;
 using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
 using IronHiveInvokeOptions = IronHive.Abstractions.Agent.AgentInvokeOptions;
 using IronHiveSuggestionMode = IronHive.Abstractions.Messages.SuggestionMode;
@@ -305,7 +307,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     /// </summary>
     private static IronHiveInvokeOptions? MapInvokeOptions(AgentRunOptions? options)
     {
-        if (options is null || (options.Suggestions is null && options.ThinkingEffort is null))
+        if (options is null || (options.Suggestions is null && options.ThinkingEffort is null && options.Tools is null))
         {
             return null;
         }
@@ -326,6 +328,11 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
                 MinItems = request.MinItems,
                 MaxItems = request.MaxItems,
             };
+        }
+
+        if (options.Tools is { Count: > 0 } tools)
+        {
+            mapped.Tools = new ToolCollection(tools.Select(t => (ITool)new AIToolAdapter(t)));
         }
 
         return mapped;

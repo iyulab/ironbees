@@ -150,5 +150,19 @@ public interface ILLMFrameworkAdapter
                 $"{GetType().Name} does not support structured suggestions. " +
                 "Override RunStructuredAsync/StreamStructuredAsync to honor AgentRunOptions.Suggestions.");
         }
+
+        if (options?.ThinkingEffort is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support per-invoke thinking effort. " +
+                "Override RunStructuredAsync/StreamStructuredAsync to honor AgentRunOptions.ThinkingEffort.");
+        }
+
+        if (options?.Tools is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support per-invoke tools. " +
+                "Override RunStructuredAsync/StreamStructuredAsync to honor AgentRunOptions.Tools.");
+        }
     }
 }

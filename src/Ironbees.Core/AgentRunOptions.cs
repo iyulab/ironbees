@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace Ironbees.Core;
 
 /// <summary>
@@ -21,4 +23,18 @@ public record AgentRunOptions
     /// deltas as <see cref="Streaming.ThinkingChunk"/> on the structured stream.
     /// </summary>
     public ThinkingEffort? ThinkingEffort { get; init; }
+
+    /// <summary>
+    /// Tool set to use for this invocation only, overriding the agent's configured
+    /// <see cref="AgentConfig.Tools"/> for the duration of this call. Represented as
+    /// framework-neutral M.E.AI <see cref="AITool"/> so <c>Ironbees.Core</c> stays free
+    /// of a framework-specific tool-collection type; adapters convert to their own
+    /// invocable tool type (e.g. the IronHive adapter wraps each via its AITool→ITool
+    /// adapter). Use this for request/session-scoped tools (e.g. a workspace-bound tool)
+    /// that cannot be expressed as a static name in <see cref="AgentConfig.Tools"/> because
+    /// <see cref="IAgent"/> instances are cached and shared by name (<see cref="IAgentRegistry"/>)
+    /// — mutating a shared agent's tool set directly would race across concurrent requests.
+    /// Null leaves the agent's configured tools unchanged.
+    /// </summary>
+    public IReadOnlyList<AITool>? Tools { get; init; }
 }

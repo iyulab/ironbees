@@ -1,3 +1,5 @@
+using Microsoft.Extensions.AI;
+
 namespace Ironbees.Core;
 
 /// <summary>
@@ -63,4 +65,14 @@ public record ProcessOptions
     /// surface never leaks reasoning into text.
     /// </summary>
     public ThinkingEffort? ThinkingEffort { get; init; }
+
+    /// <summary>
+    /// Tool set to use for this request only, overriding the agent's configured
+    /// <see cref="AgentConfig.Tools"/> for the duration of this call — e.g. a
+    /// workspace/session-scoped tool that cannot be expressed as a static name in
+    /// <c>agent.yaml</c>. Represented as framework-neutral M.E.AI <see cref="AITool"/>.
+    /// Null leaves the agent's configured tools unchanged. Adapters that do not support
+    /// per-request tools fail loud (<see cref="NotSupportedException"/>).
+    /// </summary>
+    public IReadOnlyList<AITool>? Tools { get; init; }
 }

@@ -90,4 +90,32 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
         Assert.Contains("TextOnlyAdapter", ex.Message);
         Assert.Contains("suggestions", ex.Message);
     }
+
+    [Fact]
+    public async Task RunStructuredAsync_Default_Should_FailLoud_When_ThinkingEffort_Requested()
+    {
+        // Previously silently dropped — ThrowIfUnsupported only checked Suggestions,
+        // contradicting AgentRunOptions' own "never silently drop" contract.
+        ILLMFrameworkAdapter adapter = new TextOnlyAdapter();
+        var options = new AgentRunOptions { ThinkingEffort = ThinkingEffort.Low };
+
+        var ex = await Assert.ThrowsAsync<NotSupportedException>(
+            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options));
+
+        Assert.Contains("TextOnlyAdapter", ex.Message);
+        Assert.Contains("thinking effort", ex.Message);
+    }
+
+    [Fact]
+    public async Task RunStructuredAsync_Default_Should_FailLoud_When_Tools_Requested()
+    {
+        ILLMFrameworkAdapter adapter = new TextOnlyAdapter();
+        var options = new AgentRunOptions { Tools = [] };
+
+        var ex = await Assert.ThrowsAsync<NotSupportedException>(
+            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options));
+
+        Assert.Contains("TextOnlyAdapter", ex.Message);
+        Assert.Contains("tools", ex.Message);
+    }
 }
