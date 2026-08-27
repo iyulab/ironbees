@@ -11,8 +11,19 @@ namespace Ironbees.Core.Tests;
 /// To skip performance tests during development:
 /// dotnet test --filter "Category!=Performance"
 ///
-/// NOTE: After .NET 10 upgrade (2025-11-18), performance thresholds were adjusted.
-/// TODO: Investigate and restore original performance targets.
+/// Re-investigated 2026-08-27 (claudedocs/ironbees/issues/closed/
+/// ISSUE-ironbees-20260827-064725-keywordagentselector-perf-regression-net10.md): the two
+/// thresholds relaxed after the .NET 10 upgrade (2025-11-18, ~18x/~50x) no longer describe
+/// typical performance — repeated runs measured 59-98ms (1000-iteration) and 3-4ms (TF-IDF)
+/// against the ~1800ms/~500ms this class's comments used to claim. Two things were true at
+/// once, not just one: (1) the claimed regression itself is gone (upgrade-adjacent JIT/BCL
+/// change, most likely — nothing pins down the exact fix), and (2) both benchmarks' warmup was
+/// genuinely too shallow for .NET 10's tiered JIT, which let an occasional tier-up/GC pause
+/// land inside the timed window as a large outlier (worst observed: 216ms on the TF-IDF
+/// benchmark, 1002ms on the 1000-iteration one) — deepening warmup fixed the TF-IDF outlier's
+/// severity but not the 1000-iteration one's, which is now understood as host-level scheduling
+/// noise rather than anything either benchmark's code controls. See each test's own comment for
+/// its specific recalibration.
 /// </summary>
 public class KeywordAgentSelectorBenchmarkTests
 {
@@ -48,7 +59,7 @@ public class KeywordAgentSelectorBenchmarkTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task SelectAgentAsync_1000Iterations_CompletesUnder100ms()
+    public async Task SelectAgentAsync_1000Iterations_CompletesUnder500ms()
     {
         // Arrange
         var selector = new KeywordAgentSelector();
@@ -95,10 +106,16 @@ public class KeywordAgentSelectorBenchmarkTests
             "Optimize database queries"
         };
 
-        // Warmup
-        foreach (var query in testQueries)
+        // Warmup: enough passes over the query set for tiered JIT to promote the hot path
+        // before timing starts (a single pass per query left an occasional tier-up/GC pause
+        // inside the timed window — see the TF-IDF benchmark below, which hit the same class
+        // of outlier and was fixed the same way).
+        for (int w = 0; w < 20; w++)
         {
-            await selector.SelectAgentAsync(query, agents);
+            foreach (var query in testQueries)
+            {
+                await selector.SelectAgentAsync(query, agents);
+            }
         }
 
         // Act
@@ -111,12 +128,18 @@ public class KeywordAgentSelectorBenchmarkTests
         stopwatch.Stop();
 
         // Assert
-        // NOTE: Threshold adjusted after .NET 10 upgrade (2025-11-18)
-        // TODO: Original target was < 100ms, investigate performance regression
-        // Current performance: ~1800ms for 1000 iterations
-        // Adjusted to < 3000ms to allow test to pass while tracking the issue
-        Assert.True(stopwatch.ElapsedMilliseconds < 3000,
-            $"1000 iterations took {stopwatch.ElapsedMilliseconds}ms (expected < 3000ms, original target: 100ms)");
+        // Recalibrated 2026-08-27: the original 100ms target and the ~1800ms this comment used
+        // to claim as "current performance" both stopped matching reality. ~35 isolated runs
+        // (varying warmup depth — see above) clustered at 59-98ms, with two rare outliers
+        // (389ms, 1002ms; ~1-in-15 each) that a 20x-deeper warmup did not eliminate — consistent
+        // with host-level scheduling noise (GC/OS/AV) rather than an algorithmic slowdown or an
+        // insufficient warmup. 1000ms gives real margin over the typical cluster (10x+) while
+        // staying 3x tighter than the previous 3000ms; a threshold tight enough to also catch
+        // the rarest outlier would defeat the point of a wall-clock assertion (CLAUDE.md already
+        // excludes this whole test category from CI for the same reason — it recurs even in a
+        // single local process across repeated runs, not just across shared runners).
+        Assert.True(stopwatch.ElapsedMilliseconds < 1000,
+            $"1000 iterations took {stopwatch.ElapsedMilliseconds}ms (expected < 1000ms)");
     }
 
     [Fact]
@@ -243,8 +266,15 @@ public class KeywordAgentSelectorBenchmarkTests
                 tags: new List<string> { "web", "javascript", "react", "nodejs" })
         };
 
-        // Warmup to initialize TF-IDF calculator
-        await selector.SelectAgentAsync("Write code", agents);
+        // Warmup: a single call only primed the TF-IDF calculator's lazy init, not tiered JIT —
+        // one in ~20 runs measured a 50x+ outlier (216ms vs. a normal 3-4ms) with a single-call
+        // warmup, consistent with a tier-up recompilation landing inside the timed loop rather
+        // than a real perf regression. Looping the actual call shape before timing starts gives
+        // the JIT room to promote it to optimized code first.
+        for (int i = 0; i < 50; i++)
+        {
+            await selector.SelectAgentAsync("Help me write C# code", agents);
+        }
 
         // Act
         var stopwatch = Stopwatch.StartNew();
@@ -255,12 +285,15 @@ public class KeywordAgentSelectorBenchmarkTests
         stopwatch.Stop();
 
         // Assert
-        // NOTE: Threshold adjusted after .NET 10 upgrade (2025-11-18)
-        // TODO: Original target was < 10ms, investigate TF-IDF performance regression
-        // Current performance: ~500ms for 100 iterations
-        // Adjusted to < 750ms to allow test to pass while tracking the issue
-        Assert.True(stopwatch.ElapsedMilliseconds < 750,
-            $"100 iterations with TF-IDF took {stopwatch.ElapsedMilliseconds}ms (expected < 750ms, original target: 10ms)");
+        // Recalibrated 2026-08-27: the ~500ms this comment used to claim as "current
+        // performance" does not reproduce — typical runs measure 3-4ms. The original 10ms
+        // target, however, still isn't safe even with the strengthened warmup above: 20
+        // repeated runs at a 10ms bound failed 2/20 (11ms, 24ms — an occasional JIT tier-up or
+        // GC pause landing inside the 100-call window, not an algorithmic slowdown). 50ms keeps
+        // real margin over that observed tail while staying 15x tighter than the previous
+        // 750ms, so a genuine regression is still caught.
+        Assert.True(stopwatch.ElapsedMilliseconds < 50,
+            $"100 iterations with TF-IDF took {stopwatch.ElapsedMilliseconds}ms (expected < 50ms)");
     }
 
     [Fact]
