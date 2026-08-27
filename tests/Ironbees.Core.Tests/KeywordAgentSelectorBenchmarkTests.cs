@@ -59,7 +59,7 @@ public class KeywordAgentSelectorBenchmarkTests
 
     [Fact]
     [Trait("Category", "Performance")]
-    public async Task SelectAgentAsync_1000Iterations_CompletesUnder500ms()
+    public async Task SelectAgentAsync_1000Iterations_CompletesUnder1000ms()
     {
         // Arrange
         var selector = new KeywordAgentSelector();
