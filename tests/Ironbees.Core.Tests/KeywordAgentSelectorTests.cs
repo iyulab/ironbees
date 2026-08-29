@@ -56,9 +56,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent> { codingAgent, writingAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync(
-            "Write some code for me",
-            agents);
+        var result = await selector.SelectAgentAsync("Write some code for me", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -87,9 +85,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent> { codingAgent, writingAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync(
-            "I need help with documentation",
-            agents);
+        var result = await selector.SelectAgentAsync("I need help with documentation", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -112,9 +108,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent> { codingAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync(
-            "What's the weather like?",
-            agents);
+        var result = await selector.SelectAgentAsync("What's the weather like?", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.ConfidenceScore < 0.5);
@@ -128,9 +122,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent>();
 
         // Act
-        var result = await selector.SelectAgentAsync(
-            "Some input",
-            agents);
+        var result = await selector.SelectAgentAsync("Some input", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result.SelectedAgent);
@@ -160,9 +152,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent> { specializedAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync(
-            "Something completely different",
-            agents);
+        var result = await selector.SelectAgentAsync("Something completely different", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -191,9 +181,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent> { writingAgent, codingAgent };
 
         // Act
-        var scores = await selector.ScoreAgentsAsync(
-            "Help me write some code",
-            agents);
+        var scores = await selector.ScoreAgentsAsync("Help me write some code", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, scores.Count);
@@ -210,7 +198,7 @@ public class KeywordAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await selector.SelectAgentAsync(null!, agents));
+            async () => await selector.SelectAgentAsync(null!, agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -222,7 +210,7 @@ public class KeywordAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await selector.SelectAgentAsync("", agents));
+            async () => await selector.SelectAgentAsync("", agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -233,7 +221,7 @@ public class KeywordAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await selector.SelectAgentAsync("test", null!));
+            async () => await selector.SelectAgentAsync("test", null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -268,9 +256,7 @@ public class KeywordAgentSelectorTests
         var agents = new List<IAgent> { generalCodingAgent, pythonAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync(
-            "Help me with Python programming",
-            agents);
+        var result = await selector.SelectAgentAsync("Help me with Python programming", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -292,7 +278,7 @@ public class KeywordAgentSelectorTests
             capabilities: new List<string> { "파일" });
         var agents = new List<IAgent> { fileAgent };
 
-        var result = await selector.SelectAgentAsync("파일을", agents);
+        var result = await selector.SelectAgentAsync("파일을", agents, TestContext.Current.CancellationToken);
 
         // Custom tokenizer strips "을" → "파일" → matches capability
         Assert.NotNull(result.SelectedAgent);
@@ -309,8 +295,8 @@ public class KeywordAgentSelectorTests
             capabilities: new List<string> { "test" });
         var agents = new List<IAgent> { agent };
 
-        var r1 = await selectorDefault.SelectAgentAsync("test query", agents);
-        var r2 = await selectorNullTokenizer.SelectAgentAsync("test query", agents);
+        var r1 = await selectorDefault.SelectAgentAsync("test query", agents, TestContext.Current.CancellationToken);
+        var r2 = await selectorNullTokenizer.SelectAgentAsync("test query", agents, TestContext.Current.CancellationToken);
 
         Assert.Equal(r1.SelectedAgent?.Name, r2.SelectedAgent?.Name);
     }

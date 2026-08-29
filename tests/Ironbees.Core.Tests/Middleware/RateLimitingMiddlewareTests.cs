@@ -29,7 +29,7 @@ public class RateLimitingMiddlewareTests
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Act
-        var response = await middleware.GetResponseAsync(messages);
+        var response = await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(response);
@@ -54,12 +54,12 @@ public class RateLimitingMiddlewareTests
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Make initial requests to hit the limit
-        await middleware.GetResponseAsync(messages);
-        await middleware.GetResponseAsync(messages);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         // Act & Assert
         await Assert.ThrowsAsync<RateLimitExceededException>(() =>
-            middleware.GetResponseAsync(messages));
+            middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class RateLimitingMiddlewareTests
         var tasks = new List<Task<ChatResponse>>();
         for (int i = 0; i < 5; i++)
         {
-            tasks.Add(middleware.GetResponseAsync(messages));
+            tasks.Add(middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken));
         }
 
         var responses = await Task.WhenAll(tasks);
@@ -226,13 +226,13 @@ public class RateLimitingMiddlewareTests
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Make requests until token limit is exceeded (each uses 30 tokens)
-        await middleware.GetResponseAsync(messages); // 30 tokens
-        await middleware.GetResponseAsync(messages); // 60 tokens
-        await middleware.GetResponseAsync(messages); // 90 tokens
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken); // 30 tokens
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken); // 60 tokens
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken); // 90 tokens
 
         // Act & Assert - Next request should exceed 90 token limit (90 >= 90)
         await Assert.ThrowsAsync<RateLimitExceededException>(() =>
-            middleware.GetResponseAsync(messages));
+            middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public class RateLimitingMiddlewareTests
         var messages = new List<ChatMessage> { new(ChatRole.User, "Hello") };
 
         // Act
-        var response = await middleware.GetResponseAsync(messages);
+        var response = await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(response);

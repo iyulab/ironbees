@@ -65,7 +65,7 @@ public class ModelOverrideTests
         {
             AgentName = "rag-agent",
             ModelOverride = "runtime-model"
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("response", result);
@@ -110,7 +110,7 @@ public class ModelOverrideTests
         {
             AgentName = "rag-agent",
             ModelOverride = "runtime-model"
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Assert — only Deployment changes; Provider and other fields remain from original config
         Assert.NotNull(capturedConfig);
@@ -134,7 +134,7 @@ public class ModelOverrideTests
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 
         // Act
-        await orchestrator.ProcessAsync("question", new ProcessOptions { AgentName = "rag-agent" });
+        await orchestrator.ProcessAsync("question", new ProcessOptions { AgentName = "rag-agent" }, TestContext.Current.CancellationToken);
 
         // Assert — CreateAgentAsync should NOT be called (no override)
         await adapter.DidNotReceive().CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>());
@@ -165,7 +165,7 @@ public class ModelOverrideTests
             AgentName = "rag-agent",
             SystemPromptOverride = "injected context",
             ModelOverride = "runtime-model"
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Assert — CreateAgentAsync called exactly once with both overrides applied
         await adapter.Received(1).CreateAgentAsync(
@@ -202,7 +202,7 @@ public class ModelOverrideTests
         {
             AgentName = "rag-agent",
             ModelOverride = "runtime-model"
-        })) { }
+        }, TestContext.Current.CancellationToken)) { }
 
         // Assert
         await adapter.Received(1).CreateAgentAsync(

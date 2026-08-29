@@ -17,7 +17,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This is safe content");
+        var result = await guardrail.ValidateInputAsync("This is safe content", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -33,7 +33,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("My SSN is 123-45-6789");
+        var result = await guardrail.ValidateInputAsync("My SSN is 123-45-6789", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -53,7 +53,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Contact me at test@example.com");
+        var result = await guardrail.ValidateInputAsync("Contact me at test@example.com", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -73,7 +73,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Card number: 1234567890123456");
+        var result = await guardrail.ValidateInputAsync("Card number: 1234567890123456", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -90,7 +90,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("SSN 123-45-6789 and 987-65-4321");
+        var result = await guardrail.ValidateInputAsync("SSN 123-45-6789 and 987-65-4321", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -108,7 +108,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("SSN 123-45-6789 and 987-65-4321");
+        var result = await guardrail.ValidateInputAsync("SSN 123-45-6789 and 987-65-4321", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -126,7 +126,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("SSN is 123-45-6789");
+        var result = await guardrail.ValidateInputAsync("SSN is 123-45-6789", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("123-45-6789", result.Violations[0].MatchedContent);
@@ -145,7 +145,7 @@ public class RegexGuardrailTests
         var longString = new string('a', 200);
 
         // Act
-        var result = await guardrail.ValidateInputAsync(longString);
+        var result = await guardrail.ValidateInputAsync(longString, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("aaaaaaaaaa...", result.Violations[0].MatchedContent);
@@ -162,7 +162,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Contains 12345");
+        var result = await guardrail.ValidateInputAsync("Contains 12345", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -178,7 +178,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateOutputAsync("User SSN: 123-45-6789");
+        var result = await guardrail.ValidateOutputAsync("User SSN: 123-45-6789", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -195,7 +195,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateOutputAsync("Contains 12345");
+        var result = await guardrail.ValidateOutputAsync("Contains 12345", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -211,7 +211,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("");
+        var result = await guardrail.ValidateInputAsync("", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -228,7 +228,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This is SECRET information");
+        var result = await guardrail.ValidateInputAsync("This is SECRET information", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -244,7 +244,7 @@ public class RegexGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("SSN: 123-45-6789");
+        var result = await guardrail.ValidateInputAsync("SSN: 123-45-6789", TestContext.Current.CancellationToken);
 
         // Assert
         var violation = result.Violations[0];

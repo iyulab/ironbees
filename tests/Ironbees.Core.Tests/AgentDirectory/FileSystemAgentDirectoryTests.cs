@@ -61,7 +61,7 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task EnsureDirectoryStructureAsync_CreatesAllSubdirectories()
     {
         // Act
-        var result = await _directory.EnsureDirectoryStructureAsync();
+        var result = await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
@@ -76,7 +76,7 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task EnsureDirectoryStructureAsync_CreatesGitKeepFiles()
     {
         // Act
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         // Assert
         foreach (var subdirectory in Enum.GetValues<AgentSubdirectory>())
@@ -90,53 +90,53 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task WriteFileAsync_CreatesFile()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
         var content = "test content";
 
         // Act
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "test.txt", content);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "test.txt", content, TestContext.Current.CancellationToken);
 
         // Assert
         var filePath = Path.Combine(_directory.GetSubdirectoryPath(AgentSubdirectory.Memory), "test.txt");
         Assert.True(File.Exists(filePath));
-        Assert.Equal(content, await File.ReadAllTextAsync(filePath));
+        Assert.Equal(content, await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task WriteFileAsync_Binary_CreatesFile()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
         var content = new byte[] { 1, 2, 3, 4, 5 };
 
         // Act
-        await _directory.WriteFileAsync(AgentSubdirectory.Workspace, "test.bin", content);
+        await _directory.WriteFileAsync(AgentSubdirectory.Workspace, "test.bin", content, TestContext.Current.CancellationToken);
 
         // Assert
         var filePath = Path.Combine(_directory.GetSubdirectoryPath(AgentSubdirectory.Workspace), "test.bin");
         Assert.True(File.Exists(filePath));
-        Assert.Equal(content, await File.ReadAllBytesAsync(filePath));
+        Assert.Equal(content, await File.ReadAllBytesAsync(filePath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task WriteFileAsync_ThrowsOnPathTraversal()
     {
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _directory.WriteFileAsync(AgentSubdirectory.Memory, "../../../evil.txt", "content"));
+            _directory.WriteFileAsync(AgentSubdirectory.Memory, "../../../evil.txt", "content", TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task ReadFileAsync_ReturnsContent()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
         var content = "test content";
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "test.txt", content);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "test.txt", content, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _directory.ReadFileAsync(AgentSubdirectory.Memory, "test.txt");
+        var result = await _directory.ReadFileAsync(AgentSubdirectory.Memory, "test.txt", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(content, result);
@@ -146,10 +146,10 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task ReadFileAsync_ReturnsNullForNonexistentFile()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _directory.ReadFileAsync(AgentSubdirectory.Memory, "nonexistent.txt");
+        var result = await _directory.ReadFileAsync(AgentSubdirectory.Memory, "nonexistent.txt", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -159,12 +159,12 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task ListFilesAsync_ReturnsFileList()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file1.txt", "content1");
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file2.txt", "content2");
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file1.txt", "content1", TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file2.txt", "content2", TestContext.Current.CancellationToken);
 
         // Act
-        var files = await _directory.ListFilesAsync(AgentSubdirectory.Memory, "*.txt");
+        var files = await _directory.ListFilesAsync(AgentSubdirectory.Memory, "*.txt", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, files.Count);
@@ -176,10 +176,10 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task ListFilesAsync_ExcludesGitKeep()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var files = await _directory.ListFilesAsync(AgentSubdirectory.Memory);
+        var files = await _directory.ListFilesAsync(AgentSubdirectory.Memory, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.DoesNotContain(".gitkeep", files);
@@ -189,25 +189,25 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task DeleteFileAsync_DeletesFile()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "test.txt", "content");
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "test.txt", "content", TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _directory.DeleteFileAsync(AgentSubdirectory.Memory, "test.txt");
+        var result = await _directory.DeleteFileAsync(AgentSubdirectory.Memory, "test.txt", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
-        Assert.False(await _directory.FileExistsAsync(AgentSubdirectory.Memory, "test.txt"));
+        Assert.False(await _directory.FileExistsAsync(AgentSubdirectory.Memory, "test.txt", TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task DeleteFileAsync_ReturnsFalseForNonexistent()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _directory.DeleteFileAsync(AgentSubdirectory.Memory, "nonexistent.txt");
+        var result = await _directory.DeleteFileAsync(AgentSubdirectory.Memory, "nonexistent.txt", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -217,26 +217,26 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task FileExistsAsync_ReturnsCorrectResult()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "exists.txt", "content");
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "exists.txt", "content", TestContext.Current.CancellationToken);
 
         // Act & Assert
-        Assert.True(await _directory.FileExistsAsync(AgentSubdirectory.Memory, "exists.txt"));
-        Assert.False(await _directory.FileExistsAsync(AgentSubdirectory.Memory, "nonexistent.txt"));
+        Assert.True(await _directory.FileExistsAsync(AgentSubdirectory.Memory, "exists.txt", TestContext.Current.CancellationToken));
+        Assert.False(await _directory.FileExistsAsync(AgentSubdirectory.Memory, "nonexistent.txt", TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task AppendToLogAsync_AppendsWithTimestamp()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
 
         // Act
-        await _directory.AppendToLogAsync("test.log", "First entry");
-        await _directory.AppendToLogAsync("test.log", "Second entry");
+        await _directory.AppendToLogAsync("test.log", "First entry", TestContext.Current.CancellationToken);
+        await _directory.AppendToLogAsync("test.log", "Second entry", TestContext.Current.CancellationToken);
 
         // Assert
-        var logContent = await _directory.ReadFileAsync(AgentSubdirectory.Logs, "test.log");
+        var logContent = await _directory.ReadFileAsync(AgentSubdirectory.Logs, "test.log", TestContext.Current.CancellationToken);
         Assert.NotNull(logContent);
         Assert.Contains("First entry", logContent);
         Assert.Contains("Second entry", logContent);
@@ -247,16 +247,16 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task CleanWorkspaceAsync_RemovesAllFiles()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
-        await _directory.WriteFileAsync(AgentSubdirectory.Workspace, "temp1.txt", "content1");
-        await _directory.WriteFileAsync(AgentSubdirectory.Workspace, "temp2.txt", "content2");
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Workspace, "temp1.txt", "content1", TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Workspace, "temp2.txt", "content2", TestContext.Current.CancellationToken);
 
         // Act
-        var deleted = await _directory.CleanWorkspaceAsync();
+        var deleted = await _directory.CleanWorkspaceAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, deleted);
-        var files = await _directory.ListFilesAsync(AgentSubdirectory.Workspace);
+        var files = await _directory.ListFilesAsync(AgentSubdirectory.Workspace, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(files);
     }
 
@@ -264,12 +264,12 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task GetDirectoryInfoAsync_ReturnsCorrectInfo()
     {
         // Arrange
-        await _directory.EnsureDirectoryStructureAsync();
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file1.txt", "content");
-        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file2.txt", "more content");
+        await _directory.EnsureDirectoryStructureAsync(TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file1.txt", "content", TestContext.Current.CancellationToken);
+        await _directory.WriteFileAsync(AgentSubdirectory.Memory, "file2.txt", "more content", TestContext.Current.CancellationToken);
 
         // Act
-        var info = await _directory.GetDirectoryInfoAsync();
+        var info = await _directory.GetDirectoryInfoAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("test-agent", info.AgentName);
@@ -281,7 +281,7 @@ public class FileSystemAgentDirectoryTests : IDisposable
     public async Task CreateAsync_CreatesDirectoryWithStructure()
     {
         // Act
-        var directory = await FileSystemAgentDirectory.CreateAsync(_testRoot, "new-agent");
+        var directory = await FileSystemAgentDirectory.CreateAsync(_testRoot, "new-agent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(directory);

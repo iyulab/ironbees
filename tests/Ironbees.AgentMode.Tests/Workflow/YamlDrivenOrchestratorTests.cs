@@ -26,7 +26,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "test input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "test input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(states.Count >= 2); // At least initial and completed states
@@ -50,7 +50,7 @@ public class YamlDrivenOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<OrchestratorException>(async () =>
-            await orchestrator.ExecuteAsync(workflow, "input").ToListAsync());
+            await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "test input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "test input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(_executorFactory.CreateExecutorCalled);
@@ -106,7 +106,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(WorkflowExecutionStatus.Completed, states.Last().Status);
@@ -141,7 +141,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         var finalState = states.Last();
@@ -172,7 +172,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, _executorFactory.CreatedExecutorCount);
@@ -199,7 +199,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         var finalState = states.Last();
@@ -216,7 +216,7 @@ public class YamlDrivenOrchestratorTests
 
         // Start execution and capture ID
         string? executionId = null;
-        await foreach (var state in orchestrator.ExecuteAsync(workflow, "input"))
+        await foreach (var state in orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken))
         {
             executionId = state.ExecutionId;
             break; // Get first state only
@@ -280,7 +280,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         var agentState = states.FirstOrDefault(s => s.CurrentStateId == "AGENT" && s.IterationCount > 0);
@@ -303,7 +303,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(WorkflowExecutionStatus.Failed, states.Last().Status);
@@ -338,7 +338,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — MockAgentExecutor returns build_success=true, status is Running → both true
         var finalState = states.Last();
@@ -373,7 +373,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — should loop twice then exit
         var finalState = states.Last();
@@ -412,7 +412,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act — status is Running, so !failure = !false = true
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("SUCCESS", states.Last().CurrentStateId);
@@ -446,7 +446,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act — MockAgentExecutor returns build_success=true, test_success=true
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("PASS", states.Last().CurrentStateId);
@@ -480,7 +480,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act — status is Running, so success=true → OR short-circuits to true
-        var states = await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("MATCHED", states.Last().CurrentStateId);
@@ -497,7 +497,7 @@ public class YamlDrivenOrchestratorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("exec-1")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("exec-1", TestContext.Current.CancellationToken)) { }
         });
         Assert.Contains("ICheckpointStore", ex.Message);
     }
@@ -513,7 +513,7 @@ public class YamlDrivenOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync(null!)) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync(null!, TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -528,7 +528,7 @@ public class YamlDrivenOrchestratorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("non-existent")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("non-existent", TestContext.Current.CancellationToken)) { }
         });
         Assert.Contains("No checkpoint found", ex.Message);
     }
@@ -550,7 +550,7 @@ public class YamlDrivenOrchestratorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("exec-1")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("exec-1", TestContext.Current.CancellationToken)) { }
         });
         Assert.Contains("serialized state", ex.Message);
     }
@@ -586,7 +586,7 @@ public class YamlDrivenOrchestratorTests
 
         // Act
         var states = new List<WorkflowRuntimeState>();
-        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("exec-1"))
+        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("exec-1", TestContext.Current.CancellationToken))
         {
             states.Add(state);
         }
@@ -618,7 +618,7 @@ public class YamlDrivenOrchestratorTests
 
         // Act
         var states = new List<WorkflowRuntimeState>();
-        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("exec-1"))
+        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("exec-1", TestContext.Current.CancellationToken))
         {
             states.Add(state);
         }
@@ -646,7 +646,7 @@ public class YamlDrivenOrchestratorTests
             _loader, _triggerFactory, _executorFactory, checkpointStore);
 
         // Act
-        await orchestrator.ExecuteAsync(workflow, "input").ToListAsync();
+        await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - checkpoints should have been saved during execution
         Assert.True(checkpointStore.SaveCount > 0,

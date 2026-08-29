@@ -107,7 +107,7 @@ public class ResilientExecutorTests
             Task.FromResult(new TestResult("req-1", true, "ok")));
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings());
 
-        var result = await executor.ExecuteAsync(DefaultRequest);
+        var result = await executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal("ok", result.Output);
@@ -121,7 +121,7 @@ public class ResilientExecutorTests
         var inner = new ThrowingExecutor(succeedOnAttempt: 2);
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings());
 
-        var result = await executor.ExecuteAsync(DefaultRequest);
+        var result = await executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal(2, inner.CallCount);
@@ -134,7 +134,7 @@ public class ResilientExecutorTests
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings(maxRetries: 2));
 
         await Assert.ThrowsAsync<ExecutionFailedException>(() =>
-            executor.ExecuteAsync(DefaultRequest));
+            executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Equal(2, inner.CallCount);
     }
@@ -150,7 +150,7 @@ public class ResilientExecutorTests
                 : new TestResult(req.RequestId, true, "valid output"));
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings());
 
-        var result = await executor.ExecuteAsync(DefaultRequest);
+        var result = await executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal("valid output", result.Output);
@@ -167,7 +167,7 @@ public class ResilientExecutorTests
         var fallback = new SimpleFallback(canProvide: true, result: fallbackResult);
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings(maxRetries: 1), fallback);
 
-        var result = await executor.ExecuteAsync(DefaultRequest);
+        var result = await executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("fallback answer", result.Output);
     }
@@ -180,7 +180,7 @@ public class ResilientExecutorTests
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings(maxRetries: 1), fallback);
 
         await Assert.ThrowsAsync<ExecutionFailedException>(() =>
-            executor.ExecuteAsync(DefaultRequest));
+            executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public class ResilientExecutorTests
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings(maxRetries: 1), fallback);
 
         await Assert.ThrowsAsync<ExecutionFailedException>(() =>
-            executor.ExecuteAsync(DefaultRequest));
+            executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     // --- Cancellation ---
@@ -205,7 +205,7 @@ public class ResilientExecutorTests
         var executor = new ResilientExecutor<TestRequest, TestResult>(inner, FastSettings());
 
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
-            executor.ExecuteAsync(DefaultRequest));
+            executor.ExecuteAsync(DefaultRequest, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     // --- ResilienceSettings ---

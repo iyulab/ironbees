@@ -44,13 +44,15 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Test Core (CI - No API keys)
-      run: dotnet test tests/Ironbees.Core.Tests/Ironbees.Core.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey" --logger "trx;LogFileName=core-test-results.trx" --blame-hang --blame-hang-timeout 5m
+      # xUnit v3/MTP has no VSTest-style single-expression filter; repeated --filter-not-trait
+      # flags AND together (see plan doc's compound-filter translation, empirically verified).
+      run: dotnet test tests/Ironbees.Core.Tests/Ironbees.Core.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=Performance" --filter-not-trait "Category=Integration" --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename core-test-results.trx --hangdump --hangdump-timeout 5m
 
     - name: Test Agent Framework (CI - No API keys)
-      run: dotnet test tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey" --logger "trx;LogFileName=framework-test-results.trx" --blame-hang --blame-hang-timeout 5m
+      run: dotnet test tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=Performance" --filter-not-trait "Category=Integration" --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename framework-test-results.trx --hangdump --hangdump-timeout 5m
 
     - name: Test Agent Mode (CI - No API keys)
-      run: dotnet test tests/Ironbees.AgentMode.Tests/Ironbees.AgentMode.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=agentmode-test-results.trx" --blame-hang --blame-hang-timeout 5m
+      run: dotnet test tests/Ironbees.AgentMode.Tests/Ironbees.AgentMode.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename agentmode-test-results.trx --hangdump --hangdump-timeout 5m
 
     - name: Publish test results
       uses: EnricoMi/publish-unit-test-result-action@v2
@@ -60,10 +62,10 @@ jobs:
         check_name: 'Test Results'
 
     - name: Test Autonomous (CI - No API keys)
-      run: dotnet test tests/Ironbees.Autonomous.Tests/Ironbees.Autonomous.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=autonomous-test-results.trx" --blame-hang --blame-hang-timeout 5m
+      run: dotnet test tests/Ironbees.Autonomous.Tests/Ironbees.Autonomous.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename autonomous-test-results.trx --hangdump --hangdump-timeout 5m
 
     - name: Test Ironhive (CI - No API keys)
-      run: dotnet test tests/Ironbees.Ironhive.Tests/Ironbees.Ironhive.Tests.csproj --configuration Release --no-build --verbosity normal --filter "Category!=RequiresApiKey" --logger "trx;LogFileName=ironhive-test-results.trx" --blame-hang --blame-hang-timeout 5m
+      run: dotnet test tests/Ironbees.Ironhive.Tests/Ironbees.Ironhive.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename ironhive-test-results.trx --hangdump --hangdump-timeout 5m
 
     - name: Build samples
       run: |

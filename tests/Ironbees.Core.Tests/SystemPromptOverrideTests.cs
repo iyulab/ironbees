@@ -65,7 +65,7 @@ public class SystemPromptOverrideTests
         {
             AgentName = "rag-agent",
             SystemPromptOverride = "dynamic RAG context"
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("response", result);
@@ -94,7 +94,7 @@ public class SystemPromptOverrideTests
         var orchestrator = CreateOrchestrator(registry, adapter, selector);
 
         // Act
-        await orchestrator.ProcessAsync("question", new ProcessOptions { AgentName = "rag-agent" });
+        await orchestrator.ProcessAsync("question", new ProcessOptions { AgentName = "rag-agent" }, TestContext.Current.CancellationToken);
 
         // Assert — CreateAgentAsync should NOT be called (no override)
         await adapter.DidNotReceive().CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>());
@@ -127,7 +127,7 @@ public class SystemPromptOverrideTests
         {
             AgentName = "rag-agent",
             SystemPromptOverride = "injected prompt"
-        })) { }
+        }, TestContext.Current.CancellationToken)) { }
 
         // Assert
         await adapter.Received(1).CreateAgentAsync(

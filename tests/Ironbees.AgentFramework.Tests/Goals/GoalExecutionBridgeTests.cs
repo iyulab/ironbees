@@ -142,7 +142,7 @@ public class GoalExecutionBridgeTests
         // ArgumentNullException is a subclass of ArgumentException
         await Assert.ThrowsAnyAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in bridge.ExecuteGoalAsync((string)null!, "input"))
+            await foreach (var _ in bridge.ExecuteGoalAsync((string)null!, "input", cancellationToken: TestContext.Current.CancellationToken))
             {
             }
         });
@@ -157,7 +157,7 @@ public class GoalExecutionBridgeTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in bridge.ExecuteGoalAsync("goal-id", ""))
+            await foreach (var _ in bridge.ExecuteGoalAsync("goal-id", "", cancellationToken: TestContext.Current.CancellationToken))
             {
             }
         });
@@ -173,7 +173,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync("non-existent", "input"))
+        await foreach (var evt in bridge.ExecuteGoalAsync("non-existent", "input", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -210,7 +210,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -248,7 +248,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -274,7 +274,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -301,7 +301,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -338,7 +338,7 @@ public class GoalExecutionBridgeTests
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         // Act
-        await foreach (var _ in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var _ in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
         }
 
@@ -377,7 +377,7 @@ public class GoalExecutionBridgeTests
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
         // Act
-        await foreach (var _ in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var _ in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
         }
 
@@ -423,7 +423,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input"))
+        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -440,7 +440,7 @@ public class GoalExecutionBridgeTests
         var bridge = CreateBridge();
 
         // Act
-        var status = await bridge.GetExecutionStatusAsync("non-existent");
+        var status = await bridge.GetExecutionStatusAsync("non-existent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(status);
@@ -453,7 +453,7 @@ public class GoalExecutionBridgeTests
         var bridge = CreateBridge();
 
         // Act
-        var result = await bridge.CancelExecutionAsync("non-existent");
+        var result = await bridge.CancelExecutionAsync("non-existent", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -466,7 +466,7 @@ public class GoalExecutionBridgeTests
         var bridge = CreateBridge();
 
         // Act
-        var result = await bridge.GetExecutionResultAsync("non-existent");
+        var result = await bridge.GetExecutionResultAsync("non-existent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -501,7 +501,7 @@ public class GoalExecutionBridgeTests
             .Returns(checkpoints);
 
         // Act
-        var result = await bridge.GetCheckpointsAsync("exec-1");
+        var result = await bridge.GetCheckpointsAsync("exec-1", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -538,7 +538,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", options))
+        await foreach (var evt in bridge.ExecuteGoalAsync(goal, "test input", options, TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }
@@ -559,7 +559,7 @@ public class GoalExecutionBridgeTests
 
         // Act
         var events = new List<GoalExecutionEvent>();
-        await foreach (var evt in bridge.ResumeGoalAsync("exec-1"))
+        await foreach (var evt in bridge.ResumeGoalAsync("exec-1", cancellationToken: TestContext.Current.CancellationToken))
         {
             events.Add(evt);
         }

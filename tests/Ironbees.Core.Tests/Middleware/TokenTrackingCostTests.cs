@@ -39,14 +39,14 @@ public class TokenTrackingCostTests
             _mockInnerClient, _store, options, costCalculator);
 
         // Act
-        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
+        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        var stats = await _store.GetStatisticsAsync();
+        var stats = await _store.GetStatisticsAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, stats.TotalRequests);
         Assert.True(stats.TotalEstimatedCost > 0, "Expected cost > 0 when cost calculator is provided");
 
-        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue);
+        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue, TestContext.Current.CancellationToken);
         var usage = Assert.Single(usages);
         Assert.NotNull(usage.EstimatedCost);
         Assert.True(usage.EstimatedCost > 0);
@@ -72,10 +72,10 @@ public class TokenTrackingCostTests
         var middleware = new TokenTrackingMiddleware(_mockInnerClient, _store);
 
         // Act
-        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
+        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue);
+        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue, TestContext.Current.CancellationToken);
         var usage = Assert.Single(usages);
         Assert.Null(usage.EstimatedCost);
     }
@@ -103,10 +103,10 @@ public class TokenTrackingCostTests
             _mockInnerClient, _store, options, costCalculator);
 
         // Act
-        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
+        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue);
+        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue, TestContext.Current.CancellationToken);
         var usage = Assert.Single(usages);
         Assert.Null(usage.EstimatedCost);
     }
@@ -135,11 +135,11 @@ public class TokenTrackingCostTests
                     Arg.Any<CancellationToken>())
                 .Returns(response);
 
-            await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, $"Hi {i}")]);
+            await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, $"Hi {i}")], cancellationToken: TestContext.Current.CancellationToken);
         }
 
         // Act
-        var stats = await _store.GetStatisticsAsync();
+        var stats = await _store.GetStatisticsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, stats.TotalRequests);
@@ -171,10 +171,10 @@ public class TokenTrackingCostTests
             _mockInnerClient, _store, options, costCalculator);
 
         // Act
-        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")]);
+        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue);
+        var usages = await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue, TestContext.Current.CancellationToken);
         var usage = Assert.Single(usages);
         // CostCalculator returns null for unknown models
         Assert.Null(usage.EstimatedCost);

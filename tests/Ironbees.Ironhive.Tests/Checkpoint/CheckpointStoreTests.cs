@@ -37,10 +37,10 @@ public class CheckpointStoreTests : IDisposable
         var checkpoint = CreateTestCheckpoint("chk-1", orchestrationId);
 
         // Act
-        await _store.SaveCheckpointAsync(orchestrationId, checkpoint);
+        await _store.SaveCheckpointAsync(orchestrationId, checkpoint, TestContext.Current.CancellationToken);
 
         // Assert
-        var loaded = await _store.LoadCheckpointAsync(orchestrationId, "chk-1");
+        var loaded = await _store.LoadCheckpointAsync(orchestrationId, "chk-1", TestContext.Current.CancellationToken);
         Assert.NotNull(loaded);
         Assert.Equal("chk-1", loaded.CheckpointId);
         Assert.Equal(orchestrationId, loaded.OrchestrationId);
@@ -52,21 +52,21 @@ public class CheckpointStoreTests : IDisposable
         var checkpoint = CreateTestCheckpoint("chk-1", "orch-1");
 
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _store.SaveCheckpointAsync(null!, checkpoint));
+            _store.SaveCheckpointAsync(null!, checkpoint, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task SaveCheckpointAsync_NullCheckpoint_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _store.SaveCheckpointAsync("orch-1", null!));
+            _store.SaveCheckpointAsync("orch-1", null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task LoadCheckpointAsync_NonExistent_ReturnsNull()
     {
         // Act
-        var result = await _store.LoadCheckpointAsync("nonexistent", "chk-1");
+        var result = await _store.LoadCheckpointAsync("nonexistent", "chk-1", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -77,16 +77,14 @@ public class CheckpointStoreTests : IDisposable
     {
         // Arrange
         var orchestrationId = "orch-1";
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-1", orchestrationId, "State1"));
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-1", orchestrationId, "State1"), TestContext.Current.CancellationToken);
 
-        await Task.Delay(10); // Ensure different timestamps
+        await Task.Delay(10, TestContext.Current.CancellationToken); // Ensure different timestamps
 
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-2", orchestrationId, "State2"));
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-2", orchestrationId, "State2"), TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.LoadCheckpointAsync(orchestrationId);
+        var result = await _store.LoadCheckpointAsync(orchestrationId, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -99,15 +97,12 @@ public class CheckpointStoreTests : IDisposable
     {
         // Arrange
         var orchestrationId = "orch-1";
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-1", orchestrationId));
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-2", orchestrationId));
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-3", orchestrationId));
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-1", orchestrationId), TestContext.Current.CancellationToken);
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-2", orchestrationId), TestContext.Current.CancellationToken);
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-3", orchestrationId), TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.ListCheckpointsAsync(orchestrationId);
+        var result = await _store.ListCheckpointsAsync(orchestrationId, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, result.Count);
@@ -117,7 +112,7 @@ public class CheckpointStoreTests : IDisposable
     public async Task ListCheckpointsAsync_NoCheckpoints_ReturnsEmpty()
     {
         // Act
-        var result = await _store.ListCheckpointsAsync("nonexistent");
+        var result = await _store.ListCheckpointsAsync("nonexistent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(result);
@@ -128,14 +123,13 @@ public class CheckpointStoreTests : IDisposable
     {
         // Arrange
         var orchestrationId = "orch-1";
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-1", orchestrationId));
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-1", orchestrationId), TestContext.Current.CancellationToken);
 
         // Act
-        await _store.DeleteCheckpointAsync(orchestrationId, "chk-1");
+        await _store.DeleteCheckpointAsync(orchestrationId, "chk-1", TestContext.Current.CancellationToken);
 
         // Assert
-        var loaded = await _store.LoadCheckpointAsync(orchestrationId, "chk-1");
+        var loaded = await _store.LoadCheckpointAsync(orchestrationId, "chk-1", TestContext.Current.CancellationToken);
         Assert.Null(loaded);
     }
 
@@ -143,7 +137,7 @@ public class CheckpointStoreTests : IDisposable
     public async Task DeleteCheckpointAsync_NonExistent_DoesNotThrow()
     {
         // Act & Assert - should not throw
-        await _store.DeleteCheckpointAsync("orch-1", "nonexistent");
+        await _store.DeleteCheckpointAsync("orch-1", "nonexistent", TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -151,18 +145,15 @@ public class CheckpointStoreTests : IDisposable
     {
         // Arrange
         var orchestrationId = "orch-1";
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-1", orchestrationId));
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-2", orchestrationId));
-        await _store.SaveCheckpointAsync(orchestrationId,
-            CreateTestCheckpoint("chk-3", orchestrationId));
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-1", orchestrationId), TestContext.Current.CancellationToken);
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-2", orchestrationId), TestContext.Current.CancellationToken);
+        await _store.SaveCheckpointAsync(orchestrationId, CreateTestCheckpoint("chk-3", orchestrationId), TestContext.Current.CancellationToken);
 
         // Act
-        await _store.DeleteAllCheckpointsAsync(orchestrationId);
+        await _store.DeleteAllCheckpointsAsync(orchestrationId, TestContext.Current.CancellationToken);
 
         // Assert
-        var result = await _store.ListCheckpointsAsync(orchestrationId);
+        var result = await _store.ListCheckpointsAsync(orchestrationId, TestContext.Current.CancellationToken);
         Assert.Empty(result);
     }
 
@@ -196,8 +187,8 @@ public class CheckpointStoreTests : IDisposable
         };
 
         // Act
-        await _store.SaveCheckpointAsync(orchestrationId, checkpoint);
-        var loaded = await _store.LoadCheckpointAsync(orchestrationId, "full-chk");
+        await _store.SaveCheckpointAsync(orchestrationId, checkpoint, TestContext.Current.CancellationToken);
+        var loaded = await _store.LoadCheckpointAsync(orchestrationId, "full-chk", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(loaded);

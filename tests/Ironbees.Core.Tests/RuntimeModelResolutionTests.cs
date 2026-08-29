@@ -63,7 +63,7 @@ public class RuntimeModelResolutionTests
         var registry = new AgentRegistry();
         var orchestrator = CreateOrchestrator(loader, registry, adapter, defaultModelDeployment: "runtime-default");
 
-        await orchestrator.LoadAgentsAsync();
+        await orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken);
 
         await adapter.Received(1).CreateAgentAsync(
             Arg.Is<AgentConfig>(c => c.Model.Deployment == "runtime-default"),
@@ -85,7 +85,7 @@ public class RuntimeModelResolutionTests
         var registry = new AgentRegistry();
         var orchestrator = CreateOrchestrator(loader, registry, adapter, defaultModelDeployment: "runtime-default");
 
-        await orchestrator.LoadAgentsAsync();
+        await orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken);
 
         // yaml deployment wins; default is not applied
         await adapter.Received(1).CreateAgentAsync(
@@ -104,7 +104,7 @@ public class RuntimeModelResolutionTests
         var registry = new AgentRegistry();
         var orchestrator = CreateOrchestrator(loader, registry, adapter, defaultModelDeployment: null);
 
-        var ex = await Assert.ThrowsAsync<AgentLoadException>(() => orchestrator.LoadAgentsAsync());
+        var ex = await Assert.ThrowsAsync<AgentLoadException>(() => orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken));
 
         // The agent failed to load; the adapter was never asked to create it with an empty model.
         await adapter.DidNotReceive().CreateAgentAsync(Arg.Any<AgentConfig>(), Arg.Any<CancellationToken>());

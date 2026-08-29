@@ -67,7 +67,7 @@ tags:
         var goalPath = CreateTestGoal("test-goal");
 
         // Act
-        var goal = await _loader.LoadGoalAsync(goalPath);
+        var goal = await _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(goal);
@@ -87,7 +87,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<GoalLoadException>(
-            () => _loader.LoadGoalAsync(nonExistentPath));
+            () => _loader.LoadGoalAsync(nonExistentPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -99,7 +99,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<GoalLoadException>(
-            () => _loader.LoadGoalAsync(goalPath));
+            () => _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<GoalLoadException>(
-            () => _loader.LoadGoalAsync(goalPath));
+            () => _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -124,8 +124,8 @@ tags:
         });
 
         // Act
-        var goal1 = await loaderWithCache.LoadGoalAsync(goalPath);
-        var goal2 = await loaderWithCache.LoadGoalAsync(goalPath);
+        var goal1 = await loaderWithCache.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
+        var goal2 = await loaderWithCache.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(goal1, goal2); // Same reference from cache
@@ -141,7 +141,7 @@ tags:
         CreateTestGoal("goal-3");
 
         // Act
-        var goals = await _loader.LoadAllGoalsAsync(_testDirectory);
+        var goals = await _loader.LoadAllGoalsAsync(_testDirectory, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, goals.Count);
@@ -158,7 +158,7 @@ tags:
         Directory.CreateDirectory(emptyDir);
 
         // Act
-        var goals = await _loader.LoadAllGoalsAsync(emptyDir);
+        var goals = await _loader.LoadAllGoalsAsync(emptyDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(goals);
@@ -171,7 +171,7 @@ tags:
         var nonExistentDir = Path.Combine(_testDirectory, "non-existent");
 
         // Act
-        var goals = await _loader.LoadAllGoalsAsync(nonExistentDir);
+        var goals = await _loader.LoadAllGoalsAsync(nonExistentDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(goals);
@@ -192,7 +192,7 @@ tags:
         });
 
         // Act
-        var goals = await loader.LoadAllGoalsAsync(_testDirectory);
+        var goals = await loader.LoadAllGoalsAsync(_testDirectory, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Single(goals);
@@ -217,7 +217,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<GoalLoadException>(
-            () => loader.LoadAllGoalsAsync(_testDirectory));
+            () => loader.LoadAllGoalsAsync(_testDirectory, TestContext.Current.CancellationToken));
         loader.Dispose();
     }
 
@@ -228,7 +228,7 @@ tags:
         var goalPath = CreateTestGoal("valid-goal");
 
         // Act
-        var isValid = await _loader.ValidateGoalDirectoryAsync(goalPath);
+        var isValid = await _loader.ValidateGoalDirectoryAsync(goalPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(isValid);
@@ -243,7 +243,7 @@ tags:
         // No goal.yaml
 
         // Act
-        var isValid = await _loader.ValidateGoalDirectoryAsync(invalidPath);
+        var isValid = await _loader.ValidateGoalDirectoryAsync(invalidPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(isValid);
@@ -257,7 +257,7 @@ tags:
         CreateTestGoal("other-goal");
 
         // Act
-        var goal = await _loader.GetGoalByIdAsync("find-me", _testDirectory);
+        var goal = await _loader.GetGoalByIdAsync("find-me", _testDirectory, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(goal);
@@ -271,7 +271,7 @@ tags:
         CreateTestGoal("other-goal");
 
         // Act
-        var goal = await _loader.GetGoalByIdAsync("not-found", _testDirectory);
+        var goal = await _loader.GetGoalByIdAsync("not-found", _testDirectory, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(goal);
@@ -284,7 +284,7 @@ tags:
         CreateTestGoal("MyGoal");
 
         // Act
-        var goal = await _loader.GetGoalByIdAsync("MYGOAL", _testDirectory);
+        var goal = await _loader.GetGoalByIdAsync("MYGOAL", _testDirectory, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(goal);
@@ -315,7 +315,7 @@ tags:
         var goalPath = CreateTestGoal("source-path-test");
 
         // Act
-        var goal = await _loader.LoadGoalAsync(goalPath);
+        var goal = await _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(goalPath, goal.SourcePath);
@@ -337,7 +337,7 @@ parameters:
         var goalPath = CreateTestGoal("param-goal", yaml);
 
         // Act
-        var goal = await _loader.LoadGoalAsync(goalPath);
+        var goal = await _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, goal.Parameters.Count);
@@ -361,7 +361,7 @@ tags:
         var goalPath = CreateTestGoal("tag-goal", yaml);
 
         // Act
-        var goal = await _loader.LoadGoalAsync(goalPath);
+        var goal = await _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, goal.Tags.Count);

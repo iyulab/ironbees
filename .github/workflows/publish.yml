@@ -44,7 +44,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Run tests (CI - No API keys)
-      run: dotnet test --configuration Release --no-build --verbosity normal --filter "Category!=Performance&Category!=Integration&Category!=RequiresApiKey" --blame-hang --blame-hang-timeout 5m
+      run: dotnet test --configuration Release --no-build --verbosity normal --filter-not-trait "Category=Performance" --filter-not-trait "Category=Integration" --filter-not-trait "Category=RequiresApiKey" --hangdump --hangdump-timeout 5m
 
     - name: Extract version from Directory.Build.props
       id: extract_version

@@ -70,7 +70,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteAsync(null!, "input", CreateAgentResolver())) { }
+            await foreach (var _ in executor.ExecuteAsync(null!, "input", CreateAgentResolver(), TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -84,7 +84,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteAsync(definition, null!, CreateAgentResolver())) { }
+            await foreach (var _ in executor.ExecuteAsync(definition, null!, CreateAgentResolver(), TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -98,7 +98,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteAsync(definition, "", CreateAgentResolver())) { }
+            await foreach (var _ in executor.ExecuteAsync(definition, "", CreateAgentResolver(), TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -112,7 +112,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteAsync(definition, "   ", CreateAgentResolver())) { }
+            await foreach (var _ in executor.ExecuteAsync(definition, "   ", CreateAgentResolver(), TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -126,7 +126,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteAsync(definition, "input", null!)) { }
+            await foreach (var _ in executor.ExecuteAsync(definition, "input", null!, TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -240,7 +240,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteWorkflowAsync(null!, "input")) { }
+            await foreach (var _ in executor.ExecuteWorkflowAsync(null!, "input", TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -254,7 +254,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteWorkflowAsync(workflow, null!)) { }
+            await foreach (var _ in executor.ExecuteWorkflowAsync(workflow, null!, TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -268,7 +268,7 @@ public class MafWorkflowExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in executor.ExecuteWorkflowAsync(workflow, "")) { }
+            await foreach (var _ in executor.ExecuteWorkflowAsync(workflow, "", TestContext.Current.CancellationToken)) { }
         });
     }
 

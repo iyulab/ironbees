@@ -57,7 +57,7 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { codingAgent, writingAgent };
 
         // Act - Using synonym "script" for "code"
-        var result = await selector.SelectAgentAsync("Help me script something", agents);
+        var result = await selector.SelectAgentAsync("Help me script something", agents, TestContext.Current.CancellationToken);
 
         // Assert - Should match coding-agent through synonym mapping
         Assert.NotNull(result.SelectedAgent);
@@ -79,9 +79,9 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { codingAgent };
 
         // Act - Using different word forms
-        var result1 = await selector.SelectAgentAsync("I need coding help", agents);
-        var result2 = await selector.SelectAgentAsync("Help me develop", agents);
-        var result3 = await selector.SelectAgentAsync("I want to program", agents);
+        var result1 = await selector.SelectAgentAsync("I need coding help", agents, TestContext.Current.CancellationToken);
+        var result2 = await selector.SelectAgentAsync("Help me develop", agents, TestContext.Current.CancellationToken);
+        var result3 = await selector.SelectAgentAsync("I want to program", agents, TestContext.Current.CancellationToken);
 
         // Assert - All should match through stemming
         Assert.Equal("coding-agent", result1.SelectedAgent?.Name);
@@ -110,7 +110,7 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { dotnetAgent, javaAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync("Help with .NET code", agents);
+        var result = await selector.SelectAgentAsync("Help with .NET code", agents, TestContext.Current.CancellationToken);
 
         // Assert - Should match dotnet-agent, not be filtered
         Assert.NotNull(result.SelectedAgent);
@@ -138,7 +138,7 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { pythonAgent, generalAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync("Python programming", agents);
+        var result = await selector.SelectAgentAsync("Python programming", agents, TestContext.Current.CancellationToken);
 
         // Assert - TF-IDF should boost python-agent due to repeated "python" term
         Assert.NotNull(result.SelectedAgent);
@@ -161,9 +161,9 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { csharpAgent };
 
         // Act - Different C# variations
-        var result1 = await selector.SelectAgentAsync("Help with C# code", agents);
-        var result2 = await selector.SelectAgentAsync("Help with csharp code", agents);
-        var result3 = await selector.SelectAgentAsync("Help with cs code", agents);
+        var result1 = await selector.SelectAgentAsync("Help with C# code", agents, TestContext.Current.CancellationToken);
+        var result2 = await selector.SelectAgentAsync("Help with csharp code", agents, TestContext.Current.CancellationToken);
+        var result3 = await selector.SelectAgentAsync("Help with cs code", agents, TestContext.Current.CancellationToken);
 
         // Assert - All variations should match
         Assert.Equal("csharp-agent", result1.SelectedAgent?.Name);
@@ -186,8 +186,8 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { databaseAgent };
 
         // Act - Using synonyms: db, datastore
-        var result1 = await selector.SelectAgentAsync("Help with db queries", agents);
-        var result2 = await selector.SelectAgentAsync("Design a datastore", agents);
+        var result1 = await selector.SelectAgentAsync("Help with db queries", agents, TestContext.Current.CancellationToken);
+        var result2 = await selector.SelectAgentAsync("Design a datastore", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("database-agent", result1.SelectedAgent?.Name);
@@ -209,9 +209,9 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { securityAgent };
 
         // Act - Using synonyms
-        var result1 = await selector.SelectAgentAsync("Help with login", agents);
-        var result2 = await selector.SelectAgentAsync("Setup signin", agents);
-        var result3 = await selector.SelectAgentAsync("Add auth", agents);
+        var result1 = await selector.SelectAgentAsync("Help with login", agents, TestContext.Current.CancellationToken);
+        var result2 = await selector.SelectAgentAsync("Setup signin", agents, TestContext.Current.CancellationToken);
+        var result3 = await selector.SelectAgentAsync("Add auth", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("security-agent", result1.SelectedAgent?.Name);
@@ -240,9 +240,7 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { fullstackAgent, backendAgent };
 
         // Act - Complex query with synonyms, stemming, and TF-IDF
-        var result = await selector.SelectAgentAsync(
-            "I'm developing a C# backend API and React frontend for my web application",
-            agents);
+        var result = await selector.SelectAgentAsync("I'm developing a C# backend API and React frontend for my web application", agents, TestContext.Current.CancellationToken);
 
         // Assert - Should match fullstack-agent with meaningful confidence
         // Geometric mean scoring naturally produces lower absolute scores than simple coverage
@@ -268,10 +266,10 @@ public class KeywordAgentSelectorEnhancedTests
         var query = "Help me with testing";
 
         // Act - First call
-        var result1 = await selector.SelectAgentAsync(query, agents);
+        var result1 = await selector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
 
         // Act - Second call with same query (should use cache)
-        var result2 = await selector.SelectAgentAsync(query, agents);
+        var result2 = await selector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
 
         // Assert - Both should return same result
         Assert.Equal(result1.SelectedAgent?.Name, result2.SelectedAgent?.Name);
@@ -293,14 +291,14 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { agent };
 
         // Build cache
-        await selector.SelectAgentAsync("Query 1", agents);
-        await selector.SelectAgentAsync("Query 2", agents);
+        await selector.SelectAgentAsync("Query 1", agents, TestContext.Current.CancellationToken);
+        await selector.SelectAgentAsync("Query 2", agents, TestContext.Current.CancellationToken);
 
         // Act
         selector.ClearCache();
 
         // Assert - Should work after clearing cache
-        var result = await selector.SelectAgentAsync("Query 3", agents);
+        var result = await selector.SelectAgentAsync("Query 3", agents, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
     }
 
@@ -319,9 +317,7 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { codingAgent };
 
         // Act - Query with many stopwords
-        var result = await selector.SelectAgentAsync(
-            "I would like you to help me with the code that I am writing",
-            agents);
+        var result = await selector.SelectAgentAsync("I would like you to help me with the code that I am writing", agents, TestContext.Current.CancellationToken);
 
         // Assert - Should still match despite stopwords
         Assert.NotNull(result.SelectedAgent);
@@ -343,9 +339,9 @@ public class KeywordAgentSelectorEnhancedTests
         var agents = new List<IAgent> { apiAgent };
 
         // Act - Using synonyms: endpoint, service, webservice
-        var result1 = await selector.SelectAgentAsync("Create an endpoint", agents);
-        var result2 = await selector.SelectAgentAsync("Build a service", agents);
-        var result3 = await selector.SelectAgentAsync("Design webservice", agents);
+        var result1 = await selector.SelectAgentAsync("Create an endpoint", agents, TestContext.Current.CancellationToken);
+        var result2 = await selector.SelectAgentAsync("Build a service", agents, TestContext.Current.CancellationToken);
+        var result3 = await selector.SelectAgentAsync("Design webservice", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("api-agent", result1.SelectedAgent?.Name);

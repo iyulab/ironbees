@@ -399,7 +399,7 @@ public class MafWorkflowConverterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _converter.ConvertAsync(null!, resolver));
+            () => _converter.ConvertAsync(null!, resolver, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -410,7 +410,7 @@ public class MafWorkflowConverterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _converter.ConvertAsync(definition, null!));
+            () => _converter.ConvertAsync(definition, null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -427,7 +427,7 @@ public class MafWorkflowConverterTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<WorkflowConversionException>(
-            () => _converter.ConvertAsync(definition, resolver));
+            () => _converter.ConvertAsync(definition, resolver, TestContext.Current.CancellationToken));
         Assert.Contains("validation failed", ex.Message);
     }
 
@@ -450,7 +450,7 @@ public class MafWorkflowConverterTests
         };
 
         // Act
-        var workflow = await _converter.ConvertAsync(definition, resolver);
+        var workflow = await _converter.ConvertAsync(definition, resolver, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(workflow);
@@ -475,7 +475,7 @@ public class MafWorkflowConverterTests
         };
 
         // Act
-        var workflow = await _converter.ConvertAsync(definition, resolver);
+        var workflow = await _converter.ConvertAsync(definition, resolver, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(workflow);
@@ -502,7 +502,7 @@ public class MafWorkflowConverterTests
         };
 
         // Act
-        var workflow = await _converter.ConvertAsync(definition, resolver);
+        var workflow = await _converter.ConvertAsync(definition, resolver, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(workflow);
@@ -527,7 +527,7 @@ public class MafWorkflowConverterTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<WorkflowConversionException>(
-            () => _converter.ConvertAsync(definition, resolver));
+            () => _converter.ConvertAsync(definition, resolver, TestContext.Current.CancellationToken));
         Assert.Contains("No agents found", ex.Message);
     }
 
@@ -713,7 +713,7 @@ public class MafWorkflowConverterTests
             Task.FromResult(CreateMockAgent(name));
 
         // Act - Should complete without infinite loop
-        var workflow = await _converter.ConvertAsync(definition, resolver);
+        var workflow = await _converter.ConvertAsync(definition, resolver, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(workflow);

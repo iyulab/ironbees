@@ -176,7 +176,7 @@ public class GameConfigLoaderTests : IDisposable
     public async Task LoadGameAsync_FileNotFound_ShouldThrow()
     {
         await Assert.ThrowsAsync<FileNotFoundException>(() =>
-            _loader.LoadGameAsync(Path.Combine(_tempDir, "missing.yaml")));
+            _loader.LoadGameAsync(Path.Combine(_tempDir, "missing.yaml"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -189,9 +189,9 @@ public class GameConfigLoaderTests : IDisposable
               max_questions: 10
             """;
         var filePath = Path.Combine(_tempDir, "game.yaml");
-        await File.WriteAllTextAsync(filePath, yaml);
+        await File.WriteAllTextAsync(filePath, yaml, TestContext.Current.CancellationToken);
 
-        var game = await _loader.LoadGameAsync(filePath);
+        var game = await _loader.LoadGameAsync(filePath, TestContext.Current.CancellationToken);
 
         Assert.Equal("test-game", game.Id);
         Assert.Equal("Test Game", game.Name);

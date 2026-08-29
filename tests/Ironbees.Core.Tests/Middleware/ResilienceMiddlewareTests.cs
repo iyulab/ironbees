@@ -65,7 +65,7 @@ public class ResilienceMiddlewareTests
     {
         var middleware = CreateMiddleware(noResilience: true);
 
-        var response = await middleware.GetResponseAsync(Messages("Hello"));
+        var response = await middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("Test response", response.Messages[0].Text);
         await _innerClient.Received(1).GetResponseAsync(
@@ -80,7 +80,7 @@ public class ResilienceMiddlewareTests
         var pipeline = ResiliencePipeline<ChatResponse>.Empty;
         var middleware = new ResilienceMiddleware(_innerClient, pipeline);
 
-        var response = await middleware.GetResponseAsync(Messages("Hello"));
+        var response = await middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("Test response", response.Messages[0].Text);
     }
@@ -103,7 +103,7 @@ public class ResilienceMiddlewareTests
 
         var middleware = CreateMiddleware(retry: true);
 
-        var response = await middleware.GetResponseAsync(Messages("Hello"));
+        var response = await middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("Test response", response.Messages[0].Text);
         Assert.Equal(2, callCount);
@@ -127,7 +127,7 @@ public class ResilienceMiddlewareTests
 
         var middleware = CreateMiddleware(retry: true);
 
-        await middleware.GetResponseAsync(Messages("Hello"));
+        await middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(2, callCount);
     }
@@ -144,7 +144,7 @@ public class ResilienceMiddlewareTests
         var middleware = CreateMiddleware(noResilience: true);
 
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            middleware.GetResponseAsync(Messages("Hello")));
+            middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public class ResilienceMiddlewareTests
         var middleware = CreateMiddleware(retry: true);
 
         await Assert.ThrowsAsync<HttpRequestException>(() =>
-            middleware.GetResponseAsync(Messages("Hello")));
+            middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken));
     }
 
     // --- ResilienceOptions presets ---

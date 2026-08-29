@@ -85,7 +85,7 @@ public class ListBasedFallbackStrategyTests
     {
         var strategy = CreateStrategy(["apple", "banana", "cherry"]);
 
-        var result = await strategy.GetFallbackAsync(CreateContext());
+        var result = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("apple", result!.Output);
@@ -97,8 +97,8 @@ public class ListBasedFallbackStrategyTests
         var strategy = CreateStrategy(["apple", "banana", "cherry"]);
         var context = CreateContext();
 
-        var first = await strategy.GetFallbackAsync(context);
-        var second = await strategy.GetFallbackAsync(context);
+        var first = await strategy.GetFallbackAsync(context, TestContext.Current.CancellationToken);
+        var second = await strategy.GetFallbackAsync(context, TestContext.Current.CancellationToken);
 
         Assert.NotNull(first);
         Assert.NotNull(second);
@@ -111,8 +111,8 @@ public class ListBasedFallbackStrategyTests
         var strategy = CreateStrategy(["apple"]);
         var context = CreateContext();
 
-        var first = await strategy.GetFallbackAsync(context);
-        var second = await strategy.GetFallbackAsync(context);
+        var first = await strategy.GetFallbackAsync(context, TestContext.Current.CancellationToken);
+        var second = await strategy.GetFallbackAsync(context, TestContext.Current.CancellationToken);
 
         Assert.NotNull(first);
         Assert.Null(second);
@@ -126,7 +126,7 @@ public class ListBasedFallbackStrategyTests
         var strategy = CreateStrategy(["apple", "banana"]);
         var context = CreateContext(previousOutputs: ["apple"]);
 
-        var result = await strategy.GetFallbackAsync(context);
+        var result = await strategy.GetFallbackAsync(context, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("banana", result!.Output);
@@ -149,7 +149,7 @@ public class ListBasedFallbackStrategyTests
         var strategy = CreateStrategy(["apple"]);
         var context = CreateContext();
 
-        var first = await strategy.GetFallbackAsync(context);
+        var first = await strategy.GetFallbackAsync(context, TestContext.Current.CancellationToken);
         Assert.NotNull(first);
 
         // After use, cannot provide more
@@ -159,7 +159,7 @@ public class ListBasedFallbackStrategyTests
         strategy.Reset();
         Assert.True(strategy.CanProvideFallback(CreateContext()));
 
-        var after = await strategy.GetFallbackAsync(CreateContext());
+        var after = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
         Assert.NotNull(after);
         Assert.Equal("apple", after!.Output);
     }
@@ -173,7 +173,7 @@ public class ListBasedFallbackStrategyTests
             ["test_value"],
             (req, value) => new TestResult(req.RequestId, true, $"fallback:{value}"));
 
-        var result = await strategy.GetFallbackAsync(CreateContext("req-42"));
+        var result = await strategy.GetFallbackAsync(CreateContext("req-42"), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("req-42", result!.RequestId);
@@ -196,7 +196,7 @@ public class ListBasedFallbackStrategyTests
     {
         var noop = NoOpFallbackStrategy<TestRequest, TestResult>.Instance;
 
-        var result = await noop.GetFallbackAsync(CreateContext());
+        var result = await noop.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.Null(result);
     }

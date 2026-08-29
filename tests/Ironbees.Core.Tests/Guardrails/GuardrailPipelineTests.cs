@@ -16,7 +16,7 @@ public class GuardrailPipelineTests
         var pipeline = new GuardrailPipeline();
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test input");
+        var result = await pipeline.ValidateInputAsync("Test input", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -34,7 +34,7 @@ public class GuardrailPipelineTests
             inputGuardrails: [guardrail1, guardrail2]);
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test");
+        var result = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -51,7 +51,7 @@ public class GuardrailPipelineTests
             inputGuardrails: [guardrail1, guardrail2]);
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test");
+        var result = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -68,7 +68,7 @@ public class GuardrailPipelineTests
             options: new GuardrailPipelineOptions { FailFast = true });
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test");
+        var result = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -87,7 +87,7 @@ public class GuardrailPipelineTests
             options: new GuardrailPipelineOptions { FailFast = false });
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test");
+        var result = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -105,7 +105,7 @@ public class GuardrailPipelineTests
 
         // Act & Assert
         await Assert.ThrowsAsync<GuardrailViolationException>(
-            () => pipeline.ValidateInputAsync("Test"));
+            () => pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -119,8 +119,8 @@ public class GuardrailPipelineTests
             outputGuardrails: [outputGuardrail]);
 
         // Act
-        var inputResult = await pipeline.ValidateInputAsync("Test");
-        var outputResult = await pipeline.ValidateOutputAsync("Test");
+        var inputResult = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
+        var outputResult = await pipeline.ValidateOutputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(inputResult.IsAllowed);
@@ -163,7 +163,7 @@ public class GuardrailPipelineTests
             options: new GuardrailPipelineOptions { FailFast = false });
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test");
+        var result = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.AllViolations.Count);
@@ -198,7 +198,7 @@ public class GuardrailPipelineTests
             options: new GuardrailPipelineOptions { ThrowOnGuardrailError = false });
 
         // Act
-        var result = await pipeline.ValidateInputAsync("Test");
+        var result = await pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -221,7 +221,7 @@ public class GuardrailPipelineTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => pipeline.ValidateInputAsync("Test"));
+            () => pipeline.ValidateInputAsync("Test", TestContext.Current.CancellationToken));
     }
 
     private static IContentGuardrail CreateMockGuardrail(string name, bool allowed, string? reason = null)

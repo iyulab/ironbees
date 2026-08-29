@@ -71,7 +71,7 @@ public class MafWorkflowIntegrationTests
         };
 
         // Act
-        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver());
+        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(mafWorkflow);
@@ -178,7 +178,7 @@ public class MafWorkflowIntegrationTests
         };
 
         // Act
-        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver());
+        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(mafWorkflow);
@@ -204,7 +204,7 @@ public class MafWorkflowIntegrationTests
         };
 
         // Act
-        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver());
+        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(mafWorkflow);
@@ -243,7 +243,7 @@ public class MafWorkflowIntegrationTests
         Assert.True(validation.IsValid, $"Validation failed: {string.Join(", ", validation.Errors.Select(e => e.Message))}");
 
         // Act - Step 2: Convert
-        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver());
+        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver(), TestContext.Current.CancellationToken);
 
         // Assert - Step 2
         Assert.NotNull(mafWorkflow);
@@ -308,7 +308,7 @@ public class MafWorkflowIntegrationTests
         };
 
         // Act
-        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver());
+        var mafWorkflow = await _converter.ConvertAsync(workflow, CreateAgentResolver(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(mafWorkflow);

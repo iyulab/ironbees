@@ -63,7 +63,7 @@ tags:
         var agentPath = CreateTestAgent("test-agent");
 
         // Act
-        var config = await _loader.LoadConfigAsync(agentPath);
+        var config = await _loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(config);
@@ -83,7 +83,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidAgentDirectoryException>(
-            () => _loader.LoadConfigAsync(nonExistentPath));
+            () => _loader.LoadConfigAsync(nonExistentPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -96,7 +96,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidAgentDirectoryException>(
-            () => _loader.LoadConfigAsync(agentPath));
+            () => _loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidAgentDirectoryException>(
-            () => _loader.LoadConfigAsync(agentPath));
+            () => _loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -120,7 +120,7 @@ tags:
 
         // Act & Assert
         await Assert.ThrowsAsync<AgentConfigurationException>(
-            () => _loader.LoadConfigAsync(agentPath));
+            () => _loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -158,7 +158,7 @@ model:
         File.WriteAllText(Path.Combine(agent2Path, "system-prompt.md"), "You are agent2");
 
         // Act
-        var configs = await _loader.LoadAllConfigsAsync(agentsDir);
+        var configs = await _loader.LoadAllConfigsAsync(agentsDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, configs.Count);
@@ -173,7 +173,7 @@ model:
         var nonExistentDir = Path.Combine(_testDirectory, "non-existent");
 
         // Act
-        var configs = await _loader.LoadAllConfigsAsync(nonExistentDir);
+        var configs = await _loader.LoadAllConfigsAsync(nonExistentDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(configs);
@@ -210,7 +210,7 @@ model:
 ");
 
         // Act
-        var configs = await _loader.LoadAllConfigsAsync(agentsDir);
+        var configs = await _loader.LoadAllConfigsAsync(agentsDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Single(configs);
@@ -224,7 +224,7 @@ model:
         var agentPath = CreateTestAgent("valid-agent");
 
         // Act
-        var isValid = await _loader.ValidateAgentDirectoryAsync(agentPath);
+        var isValid = await _loader.ValidateAgentDirectoryAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(isValid);
@@ -237,7 +237,7 @@ model:
         var agentPath = CreateTestAgent("invalid-agent", includeSystemPrompt: false);
 
         // Act
-        var isValid = await _loader.ValidateAgentDirectoryAsync(agentPath);
+        var isValid = await _loader.ValidateAgentDirectoryAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(isValid);
@@ -250,7 +250,7 @@ model:
         var nonExistentPath = Path.Combine(_testDirectory, "non-existent");
 
         // Act
-        var isValid = await _loader.ValidateAgentDirectoryAsync(nonExistentPath);
+        var isValid = await _loader.ValidateAgentDirectoryAsync(nonExistentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(isValid);

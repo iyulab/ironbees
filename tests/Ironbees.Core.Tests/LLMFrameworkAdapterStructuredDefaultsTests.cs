@@ -41,7 +41,7 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
     {
         ILLMFrameworkAdapter adapter = new TextOnlyAdapter();
 
-        var result = await adapter.RunStructuredAsync(DummyAgent, "hi");
+        var result = await adapter.RunStructuredAsync(DummyAgent, "hi", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("echo:hi", result.Text);
         Assert.Null(result.Suggestions);
@@ -54,7 +54,7 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
         var options = new AgentRunOptions { Suggestions = new SuggestionRequest() };
 
         var ex = await Assert.ThrowsAsync<NotSupportedException>(
-            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options));
+            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Contains("TextOnlyAdapter", ex.Message);
         Assert.Contains("suggestions", ex.Message);
@@ -66,7 +66,7 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
         ILLMFrameworkAdapter adapter = new TextOnlyAdapter();
 
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in adapter.StreamStructuredAsync(DummyAgent, "hi"))
+        await foreach (var chunk in adapter.StreamStructuredAsync(DummyAgent, "hi", cancellationToken: TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -85,7 +85,7 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
 
         // Eager throw: the exception must surface at call time, before enumeration.
         var ex = Assert.Throws<NotSupportedException>(
-            () => adapter.StreamStructuredAsync(DummyAgent, "hi", options: options));
+            () => adapter.StreamStructuredAsync(DummyAgent, "hi", options: options, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Contains("TextOnlyAdapter", ex.Message);
         Assert.Contains("suggestions", ex.Message);
@@ -100,7 +100,7 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
         var options = new AgentRunOptions { ThinkingEffort = ThinkingEffort.Low };
 
         var ex = await Assert.ThrowsAsync<NotSupportedException>(
-            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options));
+            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Contains("TextOnlyAdapter", ex.Message);
         Assert.Contains("thinking effort", ex.Message);
@@ -113,7 +113,7 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
         var options = new AgentRunOptions { Tools = [] };
 
         var ex = await Assert.ThrowsAsync<NotSupportedException>(
-            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options));
+            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options, cancellationToken: TestContext.Current.CancellationToken));
 
         Assert.Contains("TextOnlyAdapter", ex.Message);
         Assert.Contains("tools", ex.Message);

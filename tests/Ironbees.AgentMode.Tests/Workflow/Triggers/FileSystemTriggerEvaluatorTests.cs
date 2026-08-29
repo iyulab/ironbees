@@ -33,12 +33,12 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
     public async Task FileExists_FilePresent_ShouldReturnTrue()
     {
         var filePath = Path.Combine(_tempDir, "test.txt");
-        await File.WriteAllTextAsync(filePath, "content");
+        await File.WriteAllTextAsync(filePath, "content", TestContext.Current.CancellationToken);
 
         var evaluator = new FileExistsTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.FileExists, Path = "test.txt" };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.True(result);
     }
@@ -49,7 +49,7 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
         var evaluator = new FileExistsTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.FileExists, Path = "nonexistent.txt" };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.False(result);
     }
@@ -58,12 +58,12 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
     public async Task FileExists_AbsolutePath_ShouldWork()
     {
         var filePath = Path.Combine(_tempDir, "absolute.txt");
-        await File.WriteAllTextAsync(filePath, "content");
+        await File.WriteAllTextAsync(filePath, "content", TestContext.Current.CancellationToken);
 
         var evaluator = new FileExistsTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.FileExists, Path = filePath };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.True(result);
     }
@@ -75,7 +75,7 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
         var trigger = new TriggerDefinition { Type = TriggerType.FileExists, Path = null };
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            evaluator.EvaluateAsync(trigger, CreateContext()));
+            evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -92,12 +92,12 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
     {
         var subDir = Path.Combine(_tempDir, "sub");
         Directory.CreateDirectory(subDir);
-        await File.WriteAllTextAsync(Path.Combine(subDir, "file.txt"), "content");
+        await File.WriteAllTextAsync(Path.Combine(subDir, "file.txt"), "content", TestContext.Current.CancellationToken);
 
         var evaluator = new DirectoryNotEmptyTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.DirectoryNotEmpty, Path = "sub" };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.True(result);
     }
@@ -111,7 +111,7 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
         var evaluator = new DirectoryNotEmptyTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.DirectoryNotEmpty, Path = "empty-sub" };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.False(result);
     }
@@ -122,7 +122,7 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
         var evaluator = new DirectoryNotEmptyTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.DirectoryNotEmpty, Path = "missing-dir" };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.False(result);
     }
@@ -134,7 +134,7 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
         var trigger = new TriggerDefinition { Type = TriggerType.DirectoryNotEmpty, Path = null };
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            evaluator.EvaluateAsync(trigger, CreateContext()));
+            evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class FileSystemTriggerEvaluatorTests : IDisposable
         var evaluator = new ImmediateTriggerEvaluator();
         var trigger = new TriggerDefinition { Type = TriggerType.Immediate };
 
-        var result = await evaluator.EvaluateAsync(trigger, CreateContext());
+        var result = await evaluator.EvaluateAsync(trigger, CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.True(result);
     }

@@ -279,7 +279,7 @@ public class SettingsLoaderTests : IDisposable
     public async Task LoadFromFileAsync_FileNotFound_ShouldThrow()
     {
         await Assert.ThrowsAsync<FileNotFoundException>(() =>
-            _loader.LoadFromFileAsync(Path.Combine(_tempDir, "missing.yaml")));
+            _loader.LoadFromFileAsync(Path.Combine(_tempDir, "missing.yaml"), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -290,9 +290,9 @@ public class SettingsLoaderTests : IDisposable
               model: "gpt-4"
             """;
         var filePath = Path.Combine(_tempDir, "settings.yaml");
-        await File.WriteAllTextAsync(filePath, yaml);
+        await File.WriteAllTextAsync(filePath, yaml, TestContext.Current.CancellationToken);
 
-        var settings = await _loader.LoadFromFileAsync(filePath);
+        var settings = await _loader.LoadFromFileAsync(filePath, TestContext.Current.CancellationToken);
 
         Assert.Equal("gpt-4", settings.Llm.Model);
     }

@@ -92,7 +92,7 @@ public class AgentOrchestratorConversationTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("Hello", options);
+        var result = await orchestrator.ProcessAsync("Hello", options, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Hi there!", result);
@@ -151,7 +151,7 @@ public class AgentOrchestratorConversationTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("Tell me more", options);
+        var result = await orchestrator.ProcessAsync("Tell me more", options, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("C# supports OOP, generics, and more.", result);
@@ -186,7 +186,7 @@ public class AgentOrchestratorConversationTests
         var options = new ProcessOptions(); // No ConversationId
 
         // Act
-        var result = await orchestrator.ProcessAsync("Hello", options);
+        var result = await orchestrator.ProcessAsync("Hello", options, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Hi!", result);
@@ -217,7 +217,7 @@ public class AgentOrchestratorConversationTests
         var options = new ProcessOptions { AgentName = "specific-agent" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("Hello", options);
+        var result = await orchestrator.ProcessAsync("Hello", options, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Response from specific agent", result);
@@ -279,7 +279,7 @@ public class AgentOrchestratorConversationTests
         };
 
         // Act
-        await orchestrator.ProcessAsync("Turn 4", options);
+        await orchestrator.ProcessAsync("Turn 4", options, TestContext.Current.CancellationToken);
 
         // Assert — should only include last 2 turns (Turn 2/Response 2, Turn 3/Response 3)
         Assert.NotNull(capturedHistory);
@@ -318,7 +318,7 @@ public class AgentOrchestratorConversationTests
 
         // Act
         var chunks = new List<string>();
-        await foreach (var chunk in orchestrator.StreamAsync("Hello", options))
+        await foreach (var chunk in orchestrator.StreamAsync("Hello", options, TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -341,7 +341,7 @@ public class AgentOrchestratorConversationTests
         var orchestrator = CreateOrchestrator();
 
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await orchestrator.ProcessAsync("Hello", (ProcessOptions)null!));
+            async () => await orchestrator.ProcessAsync("Hello", (ProcessOptions)null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -366,7 +366,7 @@ public class AgentOrchestratorConversationTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act — should work fine without conversation store
-        var result = await orchestrator.ProcessAsync("Hello", options);
+        var result = await orchestrator.ProcessAsync("Hello", options, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Hi!", result);

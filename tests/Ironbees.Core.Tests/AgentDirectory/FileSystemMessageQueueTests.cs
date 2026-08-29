@@ -48,11 +48,11 @@ public class FileSystemMessageQueueTests : IDisposable
         };
 
         // Act
-        var id = await _queue.EnqueueAsync(message);
+        var id = await _queue.EnqueueAsync(message, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(message.Id, id);
-        var files = await _directory.ListFilesAsync(AgentSubdirectory.Inbox, "*.json");
+        var files = await _directory.ListFilesAsync(AgentSubdirectory.Inbox, "*.json", TestContext.Current.CancellationToken);
         Assert.Single(files);
     }
 
@@ -63,12 +63,12 @@ public class FileSystemMessageQueueTests : IDisposable
         var message1 = new AgentMessage { ToAgent = "test-agent", MessageType = "first" };
         var message2 = new AgentMessage { ToAgent = "test-agent", MessageType = "second" };
 
-        await _queue.EnqueueAsync(message1);
-        await Task.Delay(50); // Ensure different timestamps
-        await _queue.EnqueueAsync(message2);
+        await _queue.EnqueueAsync(message1, TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken); // Ensure different timestamps
+        await _queue.EnqueueAsync(message2, TestContext.Current.CancellationToken);
 
         // Act
-        var dequeued = await _queue.DequeueAsync();
+        var dequeued = await _queue.DequeueAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(dequeued);
@@ -79,7 +79,7 @@ public class FileSystemMessageQueueTests : IDisposable
     [Fact]
     public async Task DequeueAsync_ReturnsNullWhenEmpty()
     {
-        var result = await _queue.DequeueAsync();
+        var result = await _queue.DequeueAsync(TestContext.Current.CancellationToken);
         Assert.Null(result);
     }
 
@@ -102,12 +102,12 @@ public class FileSystemMessageQueueTests : IDisposable
         };
 
         // Enqueue normal first, then high
-        await _queue.EnqueueAsync(normalMessage);
-        await Task.Delay(50);
-        await _queue.EnqueueAsync(highMessage);
+        await _queue.EnqueueAsync(normalMessage, TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        await _queue.EnqueueAsync(highMessage, TestContext.Current.CancellationToken);
 
         // Act - should get high priority first despite being enqueued later
-        var dequeued = await _queue.DequeueAsync();
+        var dequeued = await _queue.DequeueAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(dequeued);
@@ -119,11 +119,11 @@ public class FileSystemMessageQueueTests : IDisposable
     {
         // Arrange
         var message = new AgentMessage { ToAgent = "test-agent", MessageType = "test" };
-        await _queue.EnqueueAsync(message);
+        await _queue.EnqueueAsync(message, TestContext.Current.CancellationToken);
 
         // Act
-        var peeked1 = await _queue.PeekAsync();
-        var peeked2 = await _queue.PeekAsync();
+        var peeked1 = await _queue.PeekAsync(TestContext.Current.CancellationToken);
+        var peeked2 = await _queue.PeekAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(peeked1);
@@ -142,11 +142,11 @@ public class FileSystemMessageQueueTests : IDisposable
             {
                 ToAgent = "test-agent",
                 MessageType = $"message-{i}"
-            });
+            }, TestContext.Current.CancellationToken);
         }
 
         // Act
-        var pending = await _queue.GetPendingMessagesAsync();
+        var pending = await _queue.GetPendingMessagesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(5, pending.Count);
@@ -156,11 +156,11 @@ public class FileSystemMessageQueueTests : IDisposable
     public async Task GetPendingCountAsync_ReturnsCorrectCount()
     {
         // Arrange
-        await _queue.EnqueueAsync(new AgentMessage { ToAgent = "test-agent", MessageType = "msg1" });
-        await _queue.EnqueueAsync(new AgentMessage { ToAgent = "test-agent", MessageType = "msg2" });
+        await _queue.EnqueueAsync(new AgentMessage { ToAgent = "test-agent", MessageType = "msg1" }, TestContext.Current.CancellationToken);
+        await _queue.EnqueueAsync(new AgentMessage { ToAgent = "test-agent", MessageType = "msg2" }, TestContext.Current.CancellationToken);
 
         // Act
-        var count = await _queue.GetPendingCountAsync();
+        var count = await _queue.GetPendingCountAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, count);
@@ -171,14 +171,14 @@ public class FileSystemMessageQueueTests : IDisposable
     {
         // Arrange
         var message = new AgentMessage { ToAgent = "test-agent", MessageType = "test" };
-        await _queue.EnqueueAsync(message);
+        await _queue.EnqueueAsync(message, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _queue.CompleteAsync(message.Id);
+        var result = await _queue.CompleteAsync(message.Id, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
-        var pending = await _queue.GetPendingCountAsync();
+        var pending = await _queue.GetPendingCountAsync(TestContext.Current.CancellationToken);
         Assert.Equal(0, pending);
 
         // Check processed directory
@@ -193,14 +193,14 @@ public class FileSystemMessageQueueTests : IDisposable
     {
         // Arrange
         var message = new AgentMessage { ToAgent = "test-agent", MessageType = "test" };
-        await _queue.EnqueueAsync(message);
+        await _queue.EnqueueAsync(message, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _queue.FailAsync(message.Id, "Test error");
+        var result = await _queue.FailAsync(message.Id, "Test error", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
-        var pending = await _queue.GetPendingCountAsync();
+        var pending = await _queue.GetPendingCountAsync(TestContext.Current.CancellationToken);
         Assert.Equal(0, pending);
 
         // Check failed directory
@@ -220,10 +220,10 @@ public class FileSystemMessageQueueTests : IDisposable
         };
 
         // Act
-        var id = await _queue.PublishResultAsync(message);
+        var id = await _queue.PublishResultAsync(message, TestContext.Current.CancellationToken);
 
         // Assert
-        var files = await _directory.ListFilesAsync(AgentSubdirectory.Outbox, "*.json");
+        var files = await _directory.ListFilesAsync(AgentSubdirectory.Outbox, "*.json", TestContext.Current.CancellationToken);
         Assert.Single(files);
     }
 
@@ -231,11 +231,11 @@ public class FileSystemMessageQueueTests : IDisposable
     public async Task GetOutboxMessagesAsync_ReturnsPublishedMessages()
     {
         // Arrange
-        await _queue.PublishResultAsync(new AgentMessage { ToAgent = "agent1", MessageType = "result1" });
-        await _queue.PublishResultAsync(new AgentMessage { ToAgent = "agent2", MessageType = "result2" });
+        await _queue.PublishResultAsync(new AgentMessage { ToAgent = "agent1", MessageType = "result1" }, TestContext.Current.CancellationToken);
+        await _queue.PublishResultAsync(new AgentMessage { ToAgent = "agent2", MessageType = "result2" }, TestContext.Current.CancellationToken);
 
         // Act
-        var messages = await _queue.GetOutboxMessagesAsync();
+        var messages = await _queue.GetOutboxMessagesAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, messages.Count);
@@ -260,15 +260,15 @@ public class FileSystemMessageQueueTests : IDisposable
             TimeToLive = TimeSpan.FromHours(24)
         };
 
-        await _queue.EnqueueAsync(expiredMessage);
-        await _queue.EnqueueAsync(validMessage);
+        await _queue.EnqueueAsync(expiredMessage, TestContext.Current.CancellationToken);
+        await _queue.EnqueueAsync(validMessage, TestContext.Current.CancellationToken);
 
         // Act
-        var cleaned = await _queue.CleanupExpiredMessagesAsync();
+        var cleaned = await _queue.CleanupExpiredMessagesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(1, cleaned);
-        var pending = await _queue.GetPendingCountAsync();
+        var pending = await _queue.GetPendingCountAsync(TestContext.Current.CancellationToken);
         Assert.Equal(1, pending);
     }
 }

@@ -236,7 +236,7 @@ public class ServiceCollectionExtensionsTests
         var orchestrator = provider.GetRequiredService<IAgentOrchestrator>();
         var registry = provider.GetRequiredService<IAgentRegistry>();
 
-        await orchestrator.LoadAgentsAsync();
+        await orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken);
 
         Assert.Contains("rag-agent", registry.ListAgents());
     }
@@ -261,7 +261,7 @@ public class ServiceCollectionExtensionsTests
         var provider = services.BuildServiceProvider();
         var orchestrator = provider.GetRequiredService<IAgentOrchestrator>();
 
-        await Assert.ThrowsAsync<AgentLoadException>(() => orchestrator.LoadAgentsAsync());
+        await Assert.ThrowsAsync<AgentLoadException>(() => orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken));
     }
 
     private sealed class TempAgentsDirectory : IDisposable

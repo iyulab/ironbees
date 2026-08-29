@@ -200,7 +200,7 @@ public class AutoContinueBehaviorTests
 
         // Act
         orchestrator.EnqueuePrompt("Start task");
-        await orchestrator.StartAsync();
+        await orchestrator.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, executor.ExecutionCount); // Should run twice (auto-continued once)
@@ -233,7 +233,7 @@ public class AutoContinueBehaviorTests
 
         // Act
         orchestrator.EnqueuePrompt("Start task");
-        await orchestrator.StartAsync();
+        await orchestrator.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(1, executor.ExecutionCount); // Should only run once (no auto-continue)
@@ -269,7 +269,7 @@ public class AutoContinueBehaviorTests
 
         // Act
         orchestrator.EnqueuePrompt("Start task");
-        await orchestrator.StartAsync();
+        await orchestrator.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, executor.ExecutionCount); // Should run twice
@@ -303,7 +303,7 @@ public class AutoContinueBehaviorTests
 
         // Act
         orchestrator.EnqueuePrompt("Start task");
-        await orchestrator.StartAsync();
+        await orchestrator.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(1, executor.ExecutionCount); // Only once - task complete
@@ -338,7 +338,7 @@ public class AutoContinueBehaviorTests
 
         // Act
         orchestrator.EnqueuePrompt("Start task");
-        await orchestrator.StartAsync();
+        await orchestrator.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, executor.ExecutionCount);
@@ -374,7 +374,7 @@ public class AutoContinueBehaviorTests
 
         // Act
         orchestrator.EnqueuePrompt("Start task");
-        await orchestrator.StartAsync();
+        await orchestrator.StartAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, executor.ExecutionCount); // All three iterations run

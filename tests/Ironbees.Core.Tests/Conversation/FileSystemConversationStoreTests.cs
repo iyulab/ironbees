@@ -38,13 +38,13 @@ public class FileSystemConversationStoreTests : IDisposable
         };
 
         // Act
-        await _store.SaveAsync(state);
+        await _store.SaveAsync(state, TestContext.Current.CancellationToken);
 
         // Assert
         var filePath = Path.Combine(_testDirectory, "test-conv-1.json");
         Assert.True(File.Exists(filePath));
 
-        var content = await File.ReadAllTextAsync(filePath);
+        var content = await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken);
         Assert.Contains("test-conv-1", content);
         Assert.Contains("Hello", content);
     }
@@ -64,7 +64,7 @@ public class FileSystemConversationStoreTests : IDisposable
         };
 
         // Act
-        await _store.SaveAsync(state);
+        await _store.SaveAsync(state, TestContext.Current.CancellationToken);
 
         // Assert
         var filePath = Path.Combine(_testDirectory, "my-agent", "test-conv-2.json");
@@ -84,10 +84,10 @@ public class FileSystemConversationStoreTests : IDisposable
                 new ConversationMessage { Role = "assistant", Content = "Answer" }
             ]
         };
-        await _store.SaveAsync(originalState);
+        await _store.SaveAsync(originalState, TestContext.Current.CancellationToken);
 
         // Act
-        var loadedState = await _store.LoadAsync("test-conv-3");
+        var loadedState = await _store.LoadAsync("test-conv-3", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(loadedState);
@@ -101,7 +101,7 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task LoadAsync_NonExistentConversation_ReturnsNull()
     {
         // Act
-        var result = await _store.LoadAsync("non-existent-conv");
+        var result = await _store.LoadAsync("non-existent-conv", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -116,21 +116,21 @@ public class FileSystemConversationStoreTests : IDisposable
             ConversationId = "test-conv-4",
             Messages = []
         };
-        await _store.SaveAsync(state);
+        await _store.SaveAsync(state, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.DeleteAsync("test-conv-4");
+        var result = await _store.DeleteAsync("test-conv-4", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
-        Assert.False(await _store.ExistsAsync("test-conv-4"));
+        Assert.False(await _store.ExistsAsync("test-conv-4", TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task DeleteAsync_NonExistentConversation_ReturnsFalse()
     {
         // Act
-        var result = await _store.DeleteAsync("non-existent-conv");
+        var result = await _store.DeleteAsync("non-existent-conv", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -140,12 +140,12 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task ListAsync_MultipleConversations_ReturnsAll()
     {
         // Arrange
-        await _store.SaveAsync(new ConversationState { ConversationId = "conv-a", Messages = [] });
-        await _store.SaveAsync(new ConversationState { ConversationId = "conv-b", Messages = [] });
-        await _store.SaveAsync(new ConversationState { ConversationId = "conv-c", Messages = [] });
+        await _store.SaveAsync(new ConversationState { ConversationId = "conv-a", Messages = [] }, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(new ConversationState { ConversationId = "conv-b", Messages = [] }, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(new ConversationState { ConversationId = "conv-c", Messages = [] }, TestContext.Current.CancellationToken);
 
         // Act
-        var list = await _store.ListAsync();
+        var list = await _store.ListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, list.Count);
@@ -158,12 +158,12 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task ListAsync_WithAgentFilter_ReturnsFiltered()
     {
         // Arrange
-        await _store.SaveAsync(new ConversationState { ConversationId = "conv-1", AgentName = "agent-a", Messages = [] });
-        await _store.SaveAsync(new ConversationState { ConversationId = "conv-2", AgentName = "agent-a", Messages = [] });
-        await _store.SaveAsync(new ConversationState { ConversationId = "conv-3", AgentName = "agent-b", Messages = [] });
+        await _store.SaveAsync(new ConversationState { ConversationId = "conv-1", AgentName = "agent-a", Messages = [] }, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(new ConversationState { ConversationId = "conv-2", AgentName = "agent-a", Messages = [] }, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(new ConversationState { ConversationId = "conv-3", AgentName = "agent-b", Messages = [] }, TestContext.Current.CancellationToken);
 
         // Act
-        var list = await _store.ListAsync("agent-a");
+        var list = await _store.ListAsync("agent-a", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, list.Count);
@@ -175,10 +175,10 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task ExistsAsync_ExistingConversation_ReturnsTrue()
     {
         // Arrange
-        await _store.SaveAsync(new ConversationState { ConversationId = "test-conv-5", Messages = [] });
+        await _store.SaveAsync(new ConversationState { ConversationId = "test-conv-5", Messages = [] }, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.ExistsAsync("test-conv-5");
+        var result = await _store.ExistsAsync("test-conv-5", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
@@ -188,7 +188,7 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task ExistsAsync_NonExistentConversation_ReturnsFalse()
     {
         // Act
-        var result = await _store.ExistsAsync("non-existent");
+        var result = await _store.ExistsAsync("non-existent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -201,10 +201,10 @@ public class FileSystemConversationStoreTests : IDisposable
         var message = new ConversationMessage { Role = "user", Content = "First message" };
 
         // Act
-        await _store.AppendMessageAsync("new-conv", message);
+        await _store.AppendMessageAsync("new-conv", message, TestContext.Current.CancellationToken);
 
         // Assert
-        var loaded = await _store.LoadAsync("new-conv");
+        var loaded = await _store.LoadAsync("new-conv", TestContext.Current.CancellationToken);
         Assert.NotNull(loaded);
         Assert.Single(loaded.Messages);
         Assert.Equal("First message", loaded.Messages[0].Content);
@@ -221,15 +221,15 @@ public class FileSystemConversationStoreTests : IDisposable
             [
                 new ConversationMessage { Role = "user", Content = "Original message" }
             ]
-        });
+        }, TestContext.Current.CancellationToken);
 
         var newMessage = new ConversationMessage { Role = "assistant", Content = "New response" };
 
         // Act
-        await _store.AppendMessageAsync("existing-conv", newMessage);
+        await _store.AppendMessageAsync("existing-conv", newMessage, TestContext.Current.CancellationToken);
 
         // Assert
-        var loaded = await _store.LoadAsync("existing-conv");
+        var loaded = await _store.LoadAsync("existing-conv", TestContext.Current.CancellationToken);
         Assert.NotNull(loaded);
         Assert.Equal(2, loaded.Messages.Count);
         Assert.Equal("Original message", loaded.Messages[0].Content);
@@ -249,10 +249,10 @@ public class FileSystemConversationStoreTests : IDisposable
                 new ConversationMessage { Role = "assistant", Content = "2" },
                 new ConversationMessage { Role = "user", Content = "3" }
             ]
-        });
+        }, TestContext.Current.CancellationToken);
 
         // Act
-        var count = await _store.GetMessageCountAsync("count-conv");
+        var count = await _store.GetMessageCountAsync("count-conv", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, count);
@@ -262,7 +262,7 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task GetMessageCountAsync_NonExistentConversation_ReturnsZero()
     {
         // Act
-        var count = await _store.GetMessageCountAsync("non-existent");
+        var count = await _store.GetMessageCountAsync("non-existent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(0, count);
@@ -279,13 +279,13 @@ public class FileSystemConversationStoreTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
             LastUpdatedAt = DateTimeOffset.UtcNow.AddDays(-1)
         };
-        await _store.SaveAsync(originalState);
+        await _store.SaveAsync(originalState, TestContext.Current.CancellationToken);
 
         // Act
-        await _store.AppendMessageAsync("update-test", new ConversationMessage { Role = "user", Content = "New" });
+        await _store.AppendMessageAsync("update-test", new ConversationMessage { Role = "user", Content = "New" }, TestContext.Current.CancellationToken);
 
         // Assert
-        var loaded = await _store.LoadAsync("update-test");
+        var loaded = await _store.LoadAsync("update-test", TestContext.Current.CancellationToken);
         Assert.NotNull(loaded);
         Assert.True(loaded.LastUpdatedAt > originalState.LastUpdatedAt);
     }
@@ -303,14 +303,14 @@ public class FileSystemConversationStoreTests : IDisposable
     public async Task SaveAsync_NullState_ThrowsArgumentNullException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.SaveAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.SaveAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task LoadAsync_EmptyConversationId_ThrowsArgumentException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _store.LoadAsync(""));
-        await Assert.ThrowsAsync<ArgumentException>(() => _store.LoadAsync(null!));
+        await Assert.ThrowsAsync<ArgumentException>(() => _store.LoadAsync("", TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<ArgumentException>(() => _store.LoadAsync(null!, TestContext.Current.CancellationToken));
     }
 }

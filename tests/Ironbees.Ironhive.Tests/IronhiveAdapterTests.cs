@@ -42,7 +42,7 @@ public class IronhiveAdapterTests
             .Returns(mockAgent);
 
         // Act
-        var result = await _adapter.CreateAgentAsync(config);
+        var result = await _adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -56,7 +56,7 @@ public class IronhiveAdapterTests
     public async Task CreateAgentAsync_NullConfig_Throws()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _adapter.CreateAgentAsync(null!));
+            () => _adapter.CreateAgentAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class IronhiveAdapterTests
         var agent = CreateWrappedAgent("Hello, world!");
 
         // Act
-        var result = await _adapter.RunAsync(agent, "Hi");
+        var result = await _adapter.RunAsync(agent, "Hi", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Hello, world!", result);
@@ -97,7 +97,7 @@ public class IronhiveAdapterTests
         var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
 
         // Act
-        var result = await _adapter.RunAsync(wrapper, "test input");
+        var result = await _adapter.RunAsync(wrapper, "test input", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Part 1 Part 2", result);
@@ -112,7 +112,7 @@ public class IronhiveAdapterTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _adapter.RunAsync(mockAgent, "Hi"));
+            () => _adapter.RunAsync(mockAgent, "Hi", TestContext.Current.CancellationToken));
 
         Assert.Contains("not an IronHive agent", ex.Message);
     }
@@ -142,14 +142,14 @@ public class IronhiveAdapterTests
         var runOptions = new AgentRunOptions { Tools = [deskTool] };
 
         // Act
-        await _adapter.RunStructuredAsync(wrapper, "list files", options: runOptions);
+        await _adapter.RunStructuredAsync(wrapper, "list files", options: runOptions, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — per-request tool reached IronHive as an executable ITool, not a declaration-only one
         Assert.NotNull(capturedOptions);
         var mappedTool = Assert.Single(capturedOptions!.Tools!);
         Assert.Equal("list_desk_files", mappedTool.UniqueName);
         var output = await mappedTool.InvokeAsync(new IronHive.Abstractions.Tools.ToolInput(
-            new Dictionary<string, object?> { ["path"] = "/desk-1" }));
+            new Dictionary<string, object?> { ["path"] = "/desk-1" }), TestContext.Current.CancellationToken);
         Assert.True(output.IsSuccess);
         Assert.Contains("listing /desk-1", output.Result);
     }
@@ -176,7 +176,7 @@ public class IronhiveAdapterTests
         var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
 
         // Act — ThinkingEffort set so options is non-null, but Tools left unset
-        await _adapter.RunStructuredAsync(wrapper, "hi", options: new AgentRunOptions { ThinkingEffort = Core.ThinkingEffort.Low });
+        await _adapter.RunStructuredAsync(wrapper, "hi", options: new AgentRunOptions { ThinkingEffort = Core.ThinkingEffort.Low }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedOptions);
@@ -217,7 +217,7 @@ public class IronhiveAdapterTests
 
         // Act
         var chunks = new List<string>();
-        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test"))
+        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test", TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -256,7 +256,7 @@ public class IronhiveAdapterTests
 
         // Act
         var chunks = new List<string>();
-        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test"))
+        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test", TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -282,7 +282,7 @@ public class IronhiveAdapterTests
             .Returns(mockAgent);
 
         // Act
-        await _adapter.CreateAgentAsync(config);
+        await _adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedConfig);
@@ -315,7 +315,7 @@ public class IronhiveAdapterTests
             .Returns(mockAgent);
 
         // Act
-        await _adapter.CreateAgentAsync(config);
+        await _adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedConfig);
@@ -352,7 +352,7 @@ public class IronhiveAdapterTests
             .Returns(mockAgent);
 
         // Act
-        await _adapter.CreateAgentAsync(config);
+        await _adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedConfig);
@@ -411,7 +411,7 @@ public class IronhiveAdapterTests
         };
 
         // Act
-        await _adapter.RunAsync(wrapper, "What's new?", history);
+        await _adapter.RunAsync(wrapper, "What's new?", history, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedMessages);
@@ -454,7 +454,7 @@ public class IronhiveAdapterTests
         var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
 
         // Act
-        await _adapter.RunAsync(wrapper, "Hello", conversationHistory: null);
+        await _adapter.RunAsync(wrapper, "Hello", conversationHistory: null, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedMessages);
@@ -488,7 +488,7 @@ public class IronhiveAdapterTests
         var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
 
         // Act
-        await _adapter.RunAsync(wrapper, "Hello", new List<ChatMessage>());
+        await _adapter.RunAsync(wrapper, "Hello", new List<ChatMessage>(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(capturedMessages);
@@ -526,7 +526,7 @@ public class IronhiveAdapterTests
 
         // Act
         var chunks = new List<string>();
-        await foreach (var chunk in _adapter.StreamAsync(wrapper, "Second message", history))
+        await foreach (var chunk in _adapter.StreamAsync(wrapper, "Second message", history, TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -576,7 +576,7 @@ public class IronhiveAdapterTests
 
         // Act
         var chunks = new List<string>();
-        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test"))
+        await foreach (var chunk in _adapter.StreamAsync(wrapper, "test", TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -624,7 +624,7 @@ public class IronhiveAdapterTests
         var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
 
         // Act
-        var result = await adapter.RunAsync(wrapper, "test");
+        var result = await adapter.RunAsync(wrapper, "test", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("response", result);
@@ -681,7 +681,7 @@ public class IronhiveAdapterTests
 
         // Act
         var chunks = new List<string>();
-        await foreach (var chunk in adapter.StreamAsync(wrapper, "test"))
+        await foreach (var chunk in adapter.StreamAsync(wrapper, "test", TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }

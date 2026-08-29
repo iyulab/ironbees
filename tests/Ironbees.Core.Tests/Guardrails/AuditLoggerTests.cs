@@ -20,7 +20,7 @@ public class AuditLoggerTests
         };
 
         // Act & Assert - should complete without throwing
-        await logger.LogInputValidationAsync(entry);
+        await logger.LogInputValidationAsync(entry, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class AuditLoggerTests
         };
 
         // Act & Assert - should complete without throwing
-        await logger.LogOutputValidationAsync(entry);
+        await logger.LogOutputValidationAsync(entry, TestContext.Current.CancellationToken);
     }
 
     [Fact]

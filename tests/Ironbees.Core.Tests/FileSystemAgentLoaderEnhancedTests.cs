@@ -38,7 +38,7 @@ public class FileSystemAgentLoaderEnhancedTests : IDisposable
         var loader = new FileSystemAgentLoader();
 
         // Act
-        var config = await loader.LoadConfigAsync(agentPath);
+        var config = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(config);
@@ -58,7 +58,7 @@ public class FileSystemAgentLoaderEnhancedTests : IDisposable
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidAgentDirectoryException>(
-            () => loader.LoadConfigAsync(agentPath));
+            () => loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
 
         Assert.Contains("agent.yaml", exception.Message);
         Assert.Contains("Expected at:", exception.Message);
@@ -76,7 +76,7 @@ public class FileSystemAgentLoaderEnhancedTests : IDisposable
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidAgentDirectoryException>(
-            () => loader.LoadConfigAsync(agentPath));
+            () => loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
 
         Assert.Contains("system-prompt.md", exception.Message);
         Assert.Contains("Expected at:", exception.Message);
@@ -106,7 +106,7 @@ model:
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<YamlParsingException>(
-            () => loader.LoadConfigAsync(agentPath));
+            () => loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
 
         Assert.Contains("Failed to parse YAML", exception.Message);
         Assert.Contains("Common YAML issues", exception.Message);
@@ -125,7 +125,7 @@ model:
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AgentConfigurationException>(
-            () => loader.LoadConfigAsync(agentPath));
+            () => loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken));
 
         Assert.Contains("System prompt is empty", exception.Message);
     }
@@ -140,9 +140,9 @@ model:
         var loader = new FileSystemAgentLoader(options);
 
         // Act - First load
-        var config1 = await loader.LoadConfigAsync(agentPath);
+        var config1 = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
         // Act - Second load (should use cache)
-        var config2 = await loader.LoadConfigAsync(agentPath);
+        var config2 = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(config1, config2); // Should be exact same instance from cache
@@ -158,14 +158,14 @@ model:
         var loader = new FileSystemAgentLoader(options);
 
         // Act - First load
-        var config1 = await loader.LoadConfigAsync(agentPath);
+        var config1 = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Modify file
-        await Task.Delay(50); // Ensure different timestamp
+        await Task.Delay(50, TestContext.Current.CancellationToken); // Ensure different timestamp
         CreateAgentYaml(agentPath, agentName, "Modified description", "1.0.0");
 
         // Second load
-        var config2 = await loader.LoadConfigAsync(agentPath);
+        var config2 = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotSame(config1, config2);
@@ -188,7 +188,7 @@ model:
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AgentConfigurationException>(
-            () => loader.LoadAllConfigsAsync(_testAgentsDir));
+            () => loader.LoadAllConfigsAsync(_testAgentsDir, TestContext.Current.CancellationToken));
 
         Assert.Contains("Duplicate agent names", exception.Message);
     }
@@ -207,7 +207,7 @@ model:
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidAgentDirectoryException>(
-            () => loader.LoadAllConfigsAsync(_testAgentsDir));
+            () => loader.LoadAllConfigsAsync(_testAgentsDir, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -224,7 +224,7 @@ model:
         var loader = new FileSystemAgentLoader(options);
 
         // Act
-        var configs = await loader.LoadAllConfigsAsync(_testAgentsDir);
+        var configs = await loader.LoadAllConfigsAsync(_testAgentsDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, configs.Count);
@@ -241,13 +241,13 @@ model:
         var loader = new FileSystemAgentLoader(options);
 
         // Load config (should cache)
-        var config1 = await loader.LoadConfigAsync(agentPath);
+        var config1 = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Clear cache
         loader.ClearCache();
 
         // Load again (should not use cache)
-        var config2 = await loader.LoadConfigAsync(agentPath);
+        var config2 = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotSame(config1, config2);
@@ -267,7 +267,7 @@ model:
         var loader = new FileSystemAgentLoader(options);
 
         // Load all configs to start file watcher
-        await loader.LoadAllConfigsAsync(_testAgentsDir);
+        await loader.LoadAllConfigsAsync(_testAgentsDir, TestContext.Current.CancellationToken);
 
         var reloadEventRaised = false;
         AgentConfig? reloadedConfig = null;
@@ -279,11 +279,11 @@ model:
         };
 
         // Act - Modify file
-        await Task.Delay(200); // Wait for watcher to start
+        await Task.Delay(200, TestContext.Current.CancellationToken); // Wait for watcher to start
         CreateAgentYaml(agentPath, agentName, "Modified description", "1.0.0");
 
         // Wait for file watcher to detect change
-        await Task.Delay(500);
+        await Task.Delay(500, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(reloadEventRaised, "Reload event should have been raised");

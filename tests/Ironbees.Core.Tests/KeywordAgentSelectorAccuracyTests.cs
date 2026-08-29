@@ -128,7 +128,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -148,7 +148,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -168,7 +168,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -188,7 +188,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -207,7 +207,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -227,7 +227,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -246,7 +246,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -265,7 +265,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -284,7 +284,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -303,7 +303,7 @@ public class KeywordAgentSelectorAccuracyTests
         var selector = new KeywordAgentSelector();
 
         // Act
-        var result = await selector.SelectAgentAsync(query, _testAgents);
+        var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -392,7 +392,7 @@ public class KeywordAgentSelectorAccuracyTests
         var correctMatches = 0;
         foreach (var (query, expectedAgent) in testCases)
         {
-            var result = await selector.SelectAgentAsync(query, _testAgents);
+            var result = await selector.SelectAgentAsync(query, _testAgents, TestContext.Current.CancellationToken);
             if (result.SelectedAgent?.Name == expectedAgent)
             {
                 correctMatches++;

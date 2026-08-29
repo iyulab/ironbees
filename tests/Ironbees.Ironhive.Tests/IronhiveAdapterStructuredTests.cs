@@ -75,7 +75,7 @@ public class IronhiveAdapterStructuredTests
         };
 
         // Act
-        await _adapter.RunStructuredAsync(wrapper, "Hi", options: options);
+        await _adapter.RunStructuredAsync(wrapper, "Hi", options: options, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(captured);
@@ -101,7 +101,7 @@ public class IronhiveAdapterStructuredTests
         var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
 
         // Act
-        await _adapter.RunStructuredAsync(wrapper, "Hi");
+        await _adapter.RunStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — agent defaults apply, no synthetic options object
         Assert.Null(captured);
@@ -122,8 +122,7 @@ public class IronhiveAdapterStructuredTests
         var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
 
         // Act — ThinkingEffort alone must be enough to produce invoke options
-        await _adapter.RunStructuredAsync(wrapper, "Hi",
-            options: new AgentRunOptions { ThinkingEffort = ThinkingEffort.Medium });
+        await _adapter.RunStructuredAsync(wrapper, "Hi", options: new AgentRunOptions { ThinkingEffort = ThinkingEffort.Medium }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(captured);
@@ -146,8 +145,7 @@ public class IronhiveAdapterStructuredTests
         var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
 
         // Act
-        await _adapter.RunStructuredAsync(wrapper, "Hi",
-            options: new AgentRunOptions { ThinkingEffort = ThinkingEffort.None });
+        await _adapter.RunStructuredAsync(wrapper, "Hi", options: new AgentRunOptions { ThinkingEffort = ThinkingEffort.None }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert — None is an explicit off request, distinct from "option not set" (null options)
         Assert.NotNull(captured);
@@ -173,7 +171,7 @@ public class IronhiveAdapterStructuredTests
         {
             ThinkingEffort = ThinkingEffort.High,
             Suggestions = new SuggestionRequest { MaxCount = 1 },
-        });
+        }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(captured);
@@ -197,9 +195,7 @@ public class IronhiveAdapterStructuredTests
         var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
 
         // Act
-        var result = await _adapter.RunStructuredAsync(
-            wrapper, "Hi",
-            options: new AgentRunOptions { Suggestions = new SuggestionRequest() });
+        var result = await _adapter.RunStructuredAsync(wrapper, "Hi", options: new AgentRunOptions { Suggestions = new SuggestionRequest() }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("answer", result.Text);
@@ -232,9 +228,7 @@ public class IronhiveAdapterStructuredTests
 
         // Act
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in _adapter.StreamStructuredAsync(
-            wrapper, "Hi",
-            options: new AgentRunOptions { Suggestions = new SuggestionRequest() }))
+        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi", options: new AgentRunOptions { Suggestions = new SuggestionRequest() }, cancellationToken: TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -273,7 +267,7 @@ public class IronhiveAdapterStructuredTests
 
         // Act
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi"))
+        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -306,7 +300,7 @@ public class IronhiveAdapterStructuredTests
 
         // Act
         var parts = new List<string>();
-        await foreach (var part in _adapter.StreamAsync(wrapper, "Hi", conversationHistory: null))
+        await foreach (var part in _adapter.StreamAsync(wrapper, "Hi", conversationHistory: null, cancellationToken: TestContext.Current.CancellationToken))
         {
             parts.Add(part);
         }
@@ -334,7 +328,7 @@ public class IronhiveAdapterStructuredTests
 
         // Act
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi"))
+        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -365,7 +359,7 @@ public class IronhiveAdapterStructuredTests
 
         // Act
         var parts = new List<string>();
-        await foreach (var part in _adapter.StreamAsync(wrapper, "Hi", conversationHistory: null))
+        await foreach (var part in _adapter.StreamAsync(wrapper, "Hi", conversationHistory: null, cancellationToken: TestContext.Current.CancellationToken))
         {
             parts.Add(part);
         }

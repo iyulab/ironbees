@@ -31,7 +31,7 @@ public class AgentFrameworkAdapterTests
         };
 
         // Act
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(agent);
@@ -51,7 +51,7 @@ public class AgentFrameworkAdapterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await adapter.CreateAgentAsync(null!));
+            async () => await adapter.CreateAgentAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class AgentFrameworkAdapterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await adapter.RunAsync(null!, "test input"));
+            async () => await adapter.RunAsync(null!, "test input", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -91,11 +91,11 @@ public class AgentFrameworkAdapterTests
             }
         };
 
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await adapter.RunAsync(agent, ""));
+            async () => await adapter.RunAsync(agent, "", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class AgentFrameworkAdapterTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var chunk in adapter.StreamAsync(null!, "test input"))
+            await foreach (var chunk in adapter.StreamAsync(null!, "test input", TestContext.Current.CancellationToken))
             {
                 // Should not reach here
             }
@@ -140,12 +140,12 @@ public class AgentFrameworkAdapterTests
             }
         };
 
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var chunk in adapter.StreamAsync(agent, ""))
+            await foreach (var chunk in adapter.StreamAsync(agent, "", TestContext.Current.CancellationToken))
             {
                 // Should not reach here
             }

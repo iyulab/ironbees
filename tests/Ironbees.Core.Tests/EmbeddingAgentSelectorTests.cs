@@ -79,7 +79,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { codingAgent, writingAgent };
 
         // Act
-        var result = await selector.SelectAgentAsync("Write some code for me", agents);
+        var result = await selector.SelectAgentAsync("Write some code for me", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -95,7 +95,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent>();
 
         // Act
-        var result = await selector.SelectAgentAsync("Some input", agents);
+        var result = await selector.SelectAgentAsync("Some input", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result.SelectedAgent);
@@ -116,7 +116,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent };
 
         // Act
-        var result = await selector.SelectAgentAsync("Any query", agents);
+        var result = await selector.SelectAgentAsync("Any query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -134,7 +134,7 @@ public class EmbeddingAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAnyAsync<ArgumentException>(
-            async () => await selector.SelectAgentAsync(null!, agents));
+            async () => await selector.SelectAgentAsync(null!, agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class EmbeddingAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await selector.SelectAgentAsync("", agents));
+            async () => await selector.SelectAgentAsync("", agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -158,7 +158,7 @@ public class EmbeddingAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await selector.SelectAgentAsync("   ", agents));
+            async () => await selector.SelectAgentAsync("   ", agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public class EmbeddingAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await selector.SelectAgentAsync("test", null!));
+            async () => await selector.SelectAgentAsync("test", null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -198,7 +198,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2, agent3 };
 
         // Act
-        var scores = await selector.ScoreAgentsAsync("Test query", agents);
+        var scores = await selector.ScoreAgentsAsync("Test query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, scores.Count);
@@ -238,7 +238,7 @@ public class EmbeddingAgentSelectorTests
         agents = new List<IAgent> { agent, agent2 };
 
         // Act
-        var result = await selector.SelectAgentAsync("Query", agents);
+        var result = await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -268,7 +268,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await selector.SelectAgentAsync("Unrelated query", agents);
+        var result = await selector.SelectAgentAsync("Unrelated query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -291,7 +291,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent };
 
         // Act
-        await selector.WarmupCacheAsync(agents);
+        await selector.WarmupCacheAsync(agents, TestContext.Current.CancellationToken);
 
         // Verify embeddings were generated
         await _mockEmbeddingProvider.Received(1)
@@ -302,7 +302,7 @@ public class EmbeddingAgentSelectorTests
             .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
-        await selector.SelectAgentAsync("Query", agents);
+        await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Should still be only once (cached)
         await _mockEmbeddingProvider.Received(1)
@@ -332,13 +332,13 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Warm up cache
-        await selector.WarmupCacheAsync(agents);
+        await selector.WarmupCacheAsync(agents, TestContext.Current.CancellationToken);
 
         // Act
         selector.ClearCache();
 
         // Now selection should regenerate embeddings
-        await selector.SelectAgentAsync("Query", agents);
+        await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert - Should have called GenerateEmbeddingsAsync twice now
         await _mockEmbeddingProvider.Received(2)
@@ -366,7 +366,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await selector.SelectAgentAsync("Query", agents);
+        var result = await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Contains("semantic similarity", result.SelectionReason);
@@ -395,7 +395,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await selector.SelectAgentAsync("Query", agents);
+        var result = await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.AllScores.Count);
@@ -472,7 +472,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await selector.SelectAgentAsync("Opposite query", agents);
+        var result = await selector.SelectAgentAsync("Opposite query", agents, TestContext.Current.CancellationToken);
 
         // Assert - Negative similarity should be normalized to 0
         Assert.True(result.ConfidenceScore >= 0.0);
@@ -501,7 +501,7 @@ public class EmbeddingAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await selector.SelectAgentAsync("Query", agents);
+        var result = await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Contains("Runner-up", result.SelectionReason);

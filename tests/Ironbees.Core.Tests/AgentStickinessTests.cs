@@ -82,7 +82,7 @@ public class AgentStickinessTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("Tell me more about loops", options);
+        var result = await orchestrator.ProcessAsync("Tell me more about loops", options, TestContext.Current.CancellationToken);
 
         // Assert — should have called code-agent (sticky), not math-agent
         Assert.Equal("Sticky response", result);
@@ -150,7 +150,7 @@ public class AgentStickinessTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("What is the integral of x^2?", options);
+        var result = await orchestrator.ProcessAsync("What is the integral of x^2?", options, TestContext.Current.CancellationToken);
 
         // Assert — should have switched to math-agent
         Assert.Equal("Math response", result);
@@ -212,7 +212,7 @@ public class AgentStickinessTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("Something slightly mathy", options);
+        var result = await orchestrator.ProcessAsync("Something slightly mathy", options, TestContext.Current.CancellationToken);
 
         // Assert — should keep code-agent (marginal difference)
         Assert.Equal("Code response", result);
@@ -264,7 +264,7 @@ public class AgentStickinessTests
         var options = new ProcessOptions { ConversationId = "conv-new" };
 
         // Act
-        var result = await orchestrator.ProcessAsync("What is 2+2?", options);
+        var result = await orchestrator.ProcessAsync("What is 2+2?", options, TestContext.Current.CancellationToken);
 
         // Assert — first turn, no stickiness, should select best agent (math)
         Assert.Equal("Math response", result);
@@ -330,7 +330,7 @@ public class AgentStickinessTests
         };
 
         // Act
-        var result = await orchestrator.ProcessAsync("Math question", options);
+        var result = await orchestrator.ProcessAsync("Math question", options, TestContext.Current.CancellationToken);
 
         // Assert — delta 0.3 < threshold 0.5, should keep code-agent
         Assert.Equal("Code response", result);
@@ -392,7 +392,7 @@ public class AgentStickinessTests
         var options = new ProcessOptions { ConversationId = "conv-1" };
 
         // Act
-        await orchestrator.ProcessAsync("Calculate integral", options);
+        await orchestrator.ProcessAsync("Calculate integral", options, TestContext.Current.CancellationToken);
 
         // Assert — AppendMessageAsync should be called (agent switch updates existing state)
         await conversationStore.Received(1).AppendMessageAsync(

@@ -47,7 +47,7 @@ public class CachingMiddlewareTests : IDisposable
     {
         var middleware = CreateMiddleware();
 
-        await middleware.GetResponseAsync(Messages("Hello"));
+        await middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken);
 
         await _innerClient.Received(1).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -61,8 +61,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware();
         var messages = Messages("Hello");
 
-        var first = await middleware.GetResponseAsync(messages);
-        var second = await middleware.GetResponseAsync(messages);
+        var first = await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
+        var second = await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Same(first, second);
         await _innerClient.Received(1).GetResponseAsync(
@@ -76,8 +76,8 @@ public class CachingMiddlewareTests : IDisposable
     {
         var middleware = CreateMiddleware();
 
-        await middleware.GetResponseAsync(Messages("Hello"));
-        await middleware.GetResponseAsync(Messages("World"));
+        await middleware.GetResponseAsync(Messages("Hello"), cancellationToken: TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(Messages("World"), cancellationToken: TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -97,8 +97,8 @@ public class CachingMiddlewareTests : IDisposable
             AdditionalProperties = new AdditionalPropertiesDictionary { ["SkipCache"] = true }
         };
 
-        await middleware.GetResponseAsync(messages, opts);
-        await middleware.GetResponseAsync(messages, opts);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -116,8 +116,8 @@ public class CachingMiddlewareTests : IDisposable
             AdditionalProperties = new AdditionalPropertiesDictionary { ["SkipCache"] = "true" }
         };
 
-        await middleware.GetResponseAsync(messages, opts);
-        await middleware.GetResponseAsync(messages, opts);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -132,8 +132,8 @@ public class CachingMiddlewareTests : IDisposable
         var messages = Messages("Hello");
         var opts = new ChatOptions { Temperature = 0.7f };
 
-        await middleware.GetResponseAsync(messages, opts);
-        await middleware.GetResponseAsync(messages, opts);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -148,8 +148,8 @@ public class CachingMiddlewareTests : IDisposable
         var messages = Messages("Hello");
         var opts = new ChatOptions { Temperature = 0 };
 
-        await middleware.GetResponseAsync(messages, opts);
-        await middleware.GetResponseAsync(messages, opts);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(1).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -164,8 +164,8 @@ public class CachingMiddlewareTests : IDisposable
         var messages = Messages("Hello");
         var opts = new ChatOptions { Temperature = 0.7f };
 
-        await middleware.GetResponseAsync(messages, opts);
-        await middleware.GetResponseAsync(messages, opts);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(1).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -192,8 +192,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware();
         var messages = Messages("Hello");
 
-        await middleware.GetResponseAsync(messages);
-        await middleware.GetResponseAsync(messages);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -214,8 +214,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware();
         var messages = Messages("Hello");
 
-        await middleware.GetResponseAsync(messages);
-        await middleware.GetResponseAsync(messages);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -237,8 +237,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware();
         var messages = Messages("Hello");
 
-        await middleware.GetResponseAsync(messages);
-        await middleware.GetResponseAsync(messages);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -254,8 +254,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware(CachingOptions.Disabled);
         var messages = Messages("Hello");
 
-        await middleware.GetResponseAsync(messages);
-        await middleware.GetResponseAsync(messages);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, cancellationToken: TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -271,8 +271,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware(new CachingOptions { OnlyCacheDeterministic = false });
         var messages = Messages("Hello");
 
-        await middleware.GetResponseAsync(messages, new ChatOptions { ModelId = "gpt-4" });
-        await middleware.GetResponseAsync(messages, new ChatOptions { ModelId = "gpt-3.5" });
+        await middleware.GetResponseAsync(messages, new ChatOptions { ModelId = "gpt-4" }, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, new ChatOptions { ModelId = "gpt-3.5" }, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -287,8 +287,8 @@ public class CachingMiddlewareTests : IDisposable
         var messages = Messages("Hello");
         var opts = new ChatOptions { ModelId = "gpt-4" };
 
-        await middleware.GetResponseAsync(messages, opts);
-        await middleware.GetResponseAsync(messages, opts);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, opts, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(1).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),
@@ -302,8 +302,8 @@ public class CachingMiddlewareTests : IDisposable
         var middleware = CreateMiddleware(new CachingOptions { OnlyCacheDeterministic = false });
         var messages = Messages("Hello");
 
-        await middleware.GetResponseAsync(messages, new ChatOptions { MaxOutputTokens = 100 });
-        await middleware.GetResponseAsync(messages, new ChatOptions { MaxOutputTokens = 500 });
+        await middleware.GetResponseAsync(messages, new ChatOptions { MaxOutputTokens = 100 }, TestContext.Current.CancellationToken);
+        await middleware.GetResponseAsync(messages, new ChatOptions { MaxOutputTokens = 500 }, TestContext.Current.CancellationToken);
 
         await _innerClient.Received(2).GetResponseAsync(
             Arg.Any<IEnumerable<ChatMessage>>(),

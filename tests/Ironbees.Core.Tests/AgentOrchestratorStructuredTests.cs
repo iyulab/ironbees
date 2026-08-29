@@ -53,8 +53,7 @@ public class AgentOrchestratorStructuredTests
         var request = new SuggestionRequest { MaxCount = 2 };
 
         // Act
-        var result = await orchestrator.ProcessStructuredAsync(
-            "Hi", new ProcessOptions { AgentName = "test-agent", Suggestions = request });
+        var result = await orchestrator.ProcessStructuredAsync("Hi", new ProcessOptions { AgentName = "test-agent", Suggestions = request }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Same(request, captured?.Suggestions);
@@ -77,8 +76,7 @@ public class AgentOrchestratorStructuredTests
         var orchestrator = CreateOrchestrator();
 
         // Act — ThinkingEffort alone must reach the adapter (no Suggestions required)
-        await orchestrator.ProcessStructuredAsync(
-            "Hi", new ProcessOptions { AgentName = "test-agent", ThinkingEffort = ThinkingEffort.Medium });
+        await orchestrator.ProcessStructuredAsync("Hi", new ProcessOptions { AgentName = "test-agent", ThinkingEffort = ThinkingEffort.Medium }, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(captured);
@@ -101,7 +99,7 @@ public class AgentOrchestratorStructuredTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        await orchestrator.ProcessStructuredAsync("Hi", new ProcessOptions { AgentName = "test-agent" });
+        await orchestrator.ProcessStructuredAsync("Hi", new ProcessOptions { AgentName = "test-agent" }, TestContext.Current.CancellationToken);
 
         // Assert — adapter defaults apply
         Assert.Null(captured);
@@ -132,13 +130,12 @@ public class AgentOrchestratorStructuredTests
 
         // Act
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in orchestrator.StreamStructuredAsync(
-            "Hi", new ProcessOptions
+        await foreach (var chunk in orchestrator.StreamStructuredAsync("Hi", new ProcessOptions
             {
                 AgentName = "test-agent",
                 ConversationId = "conv-1",
                 Suggestions = new SuggestionRequest(),
-            }))
+            }, TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -176,7 +173,7 @@ public class AgentOrchestratorStructuredTests
 
         // Act
         var parts = new List<string>();
-        await foreach (var part in orchestrator.StreamAsync("Hi", new ProcessOptions { AgentName = "test-agent" }))
+        await foreach (var part in orchestrator.StreamAsync("Hi", new ProcessOptions { AgentName = "test-agent" }, TestContext.Current.CancellationToken))
         {
             parts.Add(part);
         }

@@ -14,8 +14,8 @@ public class DefaultContextManagerTests
         var manager = DefaultContextManager.Create();
 
         // Act
-        await manager.RecordOutputAsync("Test output", new ContextMetadata { OutputType = "test" });
-        var context = await manager.GetRelevantContextAsync("query", 1);
+        await manager.RecordOutputAsync("Test output", new ContextMetadata { OutputType = "test" }, TestContext.Current.CancellationToken);
+        var context = await manager.GetRelevantContextAsync("query", 1, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Single(context);
@@ -32,11 +32,11 @@ public class DefaultContextManagerTests
         // Act - Add 10 items
         for (int i = 1; i <= 10; i++)
         {
-            await manager.RecordOutputAsync($"Output {i}");
-            await Task.Delay(10); // Ensure different timestamps
+            await manager.RecordOutputAsync($"Output {i}", cancellationToken: TestContext.Current.CancellationToken);
+            await Task.Delay(10, TestContext.Current.CancellationToken); // Ensure different timestamps
         }
 
-        var context = await manager.GetRelevantContextAsync("query", 1);
+        var context = await manager.GetRelevantContextAsync("query", 1, TestContext.Current.CancellationToken);
 
         // Assert - Should return at most 7 (working memory limit)
         Assert.True(context.Count <= 7);
@@ -48,11 +48,11 @@ public class DefaultContextManagerTests
     {
         // Arrange
         var manager = DefaultContextManager.Create();
-        await manager.RecordOutputAsync("Test output");
+        await manager.RecordOutputAsync("Test output", cancellationToken: TestContext.Current.CancellationToken);
 
         // Act
-        await manager.ClearSessionAsync();
-        var context = await manager.GetRelevantContextAsync("query", 1);
+        await manager.ClearSessionAsync(TestContext.Current.CancellationToken);
+        var context = await manager.GetRelevantContextAsync("query", 1, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(context);
@@ -71,8 +71,8 @@ public class DefaultContextManagerTests
         };
 
         // Act
-        var id = await manager.StoreAsync(memory);
-        var retrieved = await manager.GetByIdAsync(id);
+        var id = await manager.StoreAsync(memory, TestContext.Current.CancellationToken);
+        var retrieved = await manager.GetByIdAsync(id, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(retrieved);
@@ -84,12 +84,12 @@ public class DefaultContextManagerTests
     {
         // Arrange
         var manager = DefaultContextManager.Create();
-        await manager.StoreAsync(new MemoryUnit { Content = "The elephant is a large mammal" });
-        await manager.StoreAsync(new MemoryUnit { Content = "Python is a programming language" });
-        await manager.StoreAsync(new MemoryUnit { Content = "Elephants have trunks" });
+        await manager.StoreAsync(new MemoryUnit { Content = "The elephant is a large mammal" }, TestContext.Current.CancellationToken);
+        await manager.StoreAsync(new MemoryUnit { Content = "Python is a programming language" }, TestContext.Current.CancellationToken);
+        await manager.StoreAsync(new MemoryUnit { Content = "Elephants have trunks" }, TestContext.Current.CancellationToken);
 
         // Act
-        var results = await manager.RetrieveAsync("elephant", maxResults: 5);
+        var results = await manager.RetrieveAsync("elephant", maxResults: 5, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, results.Count);
@@ -101,11 +101,11 @@ public class DefaultContextManagerTests
     {
         // Arrange
         var manager = DefaultContextManager.Create();
-        var id = await manager.StoreAsync(new MemoryUnit { Content = "Test memory" });
+        var id = await manager.StoreAsync(new MemoryUnit { Content = "Test memory" }, TestContext.Current.CancellationToken);
 
         // Act
-        var deleted = await manager.DeleteAsync(id);
-        var retrieved = await manager.GetByIdAsync(id);
+        var deleted = await manager.DeleteAsync(id, TestContext.Current.CancellationToken);
+        var retrieved = await manager.GetByIdAsync(id, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(deleted);
@@ -163,12 +163,12 @@ public class DefaultContextManagerTests
     {
         // Arrange
         var manager = DefaultContextManager.Create();
-        await manager.StoreAsync(new MemoryUnit { Content = "Memory 1", Tier = MemoryTier.Working });
-        await manager.StoreAsync(new MemoryUnit { Content = "Memory 2", Tier = MemoryTier.Session });
-        await manager.StoreAsync(new MemoryUnit { Content = "Memory 3", Tier = MemoryTier.Session });
+        await manager.StoreAsync(new MemoryUnit { Content = "Memory 1", Tier = MemoryTier.Working }, TestContext.Current.CancellationToken);
+        await manager.StoreAsync(new MemoryUnit { Content = "Memory 2", Tier = MemoryTier.Session }, TestContext.Current.CancellationToken);
+        await manager.StoreAsync(new MemoryUnit { Content = "Memory 3", Tier = MemoryTier.Session }, TestContext.Current.CancellationToken);
 
         // Act
-        var stats = await manager.GetStatisticsAsync();
+        var stats = await manager.GetStatisticsAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, stats.TotalCount);
@@ -181,11 +181,11 @@ public class DefaultContextManagerTests
     {
         // Arrange
         var manager = DefaultContextManager.Create();
-        var id = await manager.StoreAsync(new MemoryUnit { Content = "Original content" });
+        var id = await manager.StoreAsync(new MemoryUnit { Content = "Original content" }, TestContext.Current.CancellationToken);
 
         // Act
-        await manager.UpdateAsync(id, new MemoryUpdate { Content = "Updated content" });
-        var memory = await manager.GetByIdAsync(id);
+        await manager.UpdateAsync(id, new MemoryUpdate { Content = "Updated content" }, TestContext.Current.CancellationToken);
+        var memory = await manager.GetByIdAsync(id, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Updated content", memory?.Content);
@@ -200,10 +200,10 @@ public class DefaultContextManagerTests
         // Act - Add 5 memories
         for (int i = 1; i <= 5; i++)
         {
-            await manager.StoreAsync(new MemoryUnit { Content = $"Memory {i}" });
+            await manager.StoreAsync(new MemoryUnit { Content = $"Memory {i}" }, TestContext.Current.CancellationToken);
         }
 
-        var stats = await manager.GetStatisticsAsync();
+        var stats = await manager.GetStatisticsAsync(TestContext.Current.CancellationToken);
 
         // Assert - Should only have 3 (max)
         Assert.Equal(3, stats.TotalCount);
@@ -216,11 +216,11 @@ public class DefaultContextManagerTests
         var manager = DefaultContextManager.Create();
         for (int i = 1; i <= 20; i++)
         {
-            await manager.RecordOutputAsync(new string('x', 100));
+            await manager.RecordOutputAsync(new string('x', 100), cancellationToken: TestContext.Current.CancellationToken);
         }
 
         // Act - Limit to 100 tokens (truncation should occur)
-        var summary = await manager.GetExecutionSummaryAsync(maxTokens: 100);
+        var summary = await manager.GetExecutionSummaryAsync(maxTokens: 100, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - Should be truncated (not all 20 items included)
         var lineCount = summary.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length;
@@ -232,12 +232,12 @@ public class DefaultContextManagerTests
     {
         // Arrange
         var manager = DefaultContextManager.Create();
-        await manager.StoreAsync(new MemoryUnit { Content = "Working memory item", Tier = MemoryTier.Working });
-        await manager.StoreAsync(new MemoryUnit { Content = "Session memory item", Tier = MemoryTier.Session });
-        await manager.StoreAsync(new MemoryUnit { Content = "Long-term memory item", Tier = MemoryTier.LongTerm });
+        await manager.StoreAsync(new MemoryUnit { Content = "Working memory item", Tier = MemoryTier.Working }, TestContext.Current.CancellationToken);
+        await manager.StoreAsync(new MemoryUnit { Content = "Session memory item", Tier = MemoryTier.Session }, TestContext.Current.CancellationToken);
+        await manager.StoreAsync(new MemoryUnit { Content = "Long-term memory item", Tier = MemoryTier.LongTerm }, TestContext.Current.CancellationToken);
 
         // Act
-        var results = await manager.RetrieveAsync("memory", filter: new MemoryFilter { Tier = MemoryTier.Session });
+        var results = await manager.RetrieveAsync("memory", filter: new MemoryFilter { Tier = MemoryTier.Session }, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Single(results);

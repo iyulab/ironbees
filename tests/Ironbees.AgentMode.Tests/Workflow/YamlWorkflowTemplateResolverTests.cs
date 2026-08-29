@@ -91,7 +91,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         var goal = CreateTestGoal("my-goal");
 
         // Act
-        var result = await _resolver.ResolveAsync("test-template", goal);
+        var result = await _resolver.ResolveAsync("test-template", goal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("my-goal-workflow", result.Name);
@@ -121,7 +121,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         };
 
         // Act
-        var result = await _resolver.ResolveAsync("dict-template", parameters);
+        var result = await _resolver.ResolveAsync("dict-template", parameters, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("ironbees-workflow", result.Name);
@@ -136,7 +136,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<WorkflowTemplateNotFoundException>(
-            () => _resolver.ResolveAsync("non-existent", goal));
+            () => _resolver.ResolveAsync("non-existent", goal, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<WorkflowTemplateResolutionException>(
-            () => _resolver.ResolveAsync("strict-template", goal));
+            () => _resolver.ResolveAsync("strict-template", goal, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         var goal = CreateTestGoal("test");
 
         // Act
-        var result = await resolver.ResolveAsync("non-strict-template", goal);
+        var result = await resolver.ResolveAsync("non-strict-template", goal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("test-{{missing.param}}", result.Name);
@@ -209,7 +209,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         var goal = CreateTestGoal("test");
 
         // Act
-        var result = await resolver.ResolveAsync("default-template", goal);
+        var result = await resolver.ResolveAsync("default-template", goal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("test-default", result.Name);
@@ -378,7 +378,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         var goal = CreateTestGoal();
 
         // Act
-        var result = await _resolver.ResolveAsync("complex", goal);
+        var result = await _resolver.ResolveAsync("complex", goal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("test-goal-workflow", result.Name);
@@ -407,7 +407,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         var goal = CreateTestGoal();
 
         // Act
-        var result = await _resolver.ResolveAsync("spaces", goal);
+        var result = await _resolver.ResolveAsync("spaces", goal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("test-goal-workflow", result.Name);
@@ -428,7 +428,7 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         var goal = CreateTestGoal("my-goal");
 
         // Act
-        var result = await _resolver.ResolveAsync("case", goal);
+        var result = await _resolver.ResolveAsync("case", goal, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("my-goal-workflow", result.Name);

@@ -24,7 +24,7 @@ public class IntegrationTests
         }
 
         // Act
-        var config = await loader.LoadConfigAsync(agentPath);
+        var config = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(config);
@@ -50,7 +50,7 @@ public class IntegrationTests
         }
 
         // Act
-        var configs = await loader.LoadAllConfigsAsync(agentsDir);
+        var configs = await loader.LoadAllConfigsAsync(agentsDir, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotEmpty(configs);
@@ -78,7 +78,7 @@ public class IntegrationTests
             return;
         }
 
-        var config = await loader.LoadConfigAsync(agentPath);
+        var config = await loader.LoadConfigAsync(agentPath, TestContext.Current.CancellationToken);
         var agent = new TestAgent(config);
 
         // Act

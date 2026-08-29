@@ -55,7 +55,7 @@ public class AzureContentSafetyGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Any content");
+        var result = await guardrail.ValidateInputAsync("Any content", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -73,7 +73,7 @@ public class AzureContentSafetyGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateOutputAsync("Any content");
+        var result = await guardrail.ValidateOutputAsync("Any content", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -87,7 +87,7 @@ public class AzureContentSafetyGuardrailTests
         var guardrail = new AzureContentSafetyGuardrail(mockClient);
 
         // Act
-        var result = await guardrail.ValidateInputAsync("");
+        var result = await guardrail.ValidateInputAsync("", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -101,7 +101,7 @@ public class AzureContentSafetyGuardrailTests
         var guardrail = new AzureContentSafetyGuardrail(mockClient);
 
         // Act
-        var result = await guardrail.ValidateInputAsync(null!);
+        var result = await guardrail.ValidateInputAsync(null!, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -122,7 +122,7 @@ public class AzureContentSafetyGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Test content");
+        var result = await guardrail.ValidateInputAsync("Test content", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -146,7 +146,7 @@ public class AzureContentSafetyGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Test content");
+        var result = await guardrail.ValidateInputAsync("Test content", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);

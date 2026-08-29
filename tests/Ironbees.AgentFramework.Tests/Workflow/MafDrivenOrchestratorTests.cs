@@ -148,7 +148,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in orchestrator.ExecuteAsync(null!, "input")) { }
+            await foreach (var _ in orchestrator.ExecuteAsync(null!, "input", cancellationToken: TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -162,7 +162,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in orchestrator.ExecuteAsync(workflow, null!)) { }
+            await foreach (var _ in orchestrator.ExecuteAsync(workflow, null!, cancellationToken: TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -176,7 +176,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in orchestrator.ExecuteAsync(workflow, "")) { }
+            await foreach (var _ in orchestrator.ExecuteAsync(workflow, "", cancellationToken: TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -196,7 +196,7 @@ public class MafDrivenOrchestratorTests
 
         // Act
         var states = new List<WorkflowRuntimeState>();
-        await foreach (var state in orchestrator.ExecuteAsync(workflow, "test input"))
+        await foreach (var state in orchestrator.ExecuteAsync(workflow, "test input", cancellationToken: TestContext.Current.CancellationToken))
         {
             states.Add(state);
         }
@@ -512,7 +512,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("checkpoint-1")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("checkpoint-1", TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -525,7 +525,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync(null!)) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync(null!, TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -538,7 +538,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("", TestContext.Current.CancellationToken)) { }
         });
     }
 
@@ -553,7 +553,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("checkpoint-1")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("checkpoint-1", TestContext.Current.CancellationToken)) { }
         });
         Assert.Contains("not found", ex.Message);
     }
@@ -570,7 +570,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("cp-1")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("cp-1", TestContext.Current.CancellationToken)) { }
         });
         Assert.Contains("MAF checkpoint data", ex.Message);
     }
@@ -589,7 +589,7 @@ public class MafDrivenOrchestratorTests
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("cp-1")) { }
+            await foreach (var _ in orchestrator.ResumeFromCheckpointAsync("cp-1", TestContext.Current.CancellationToken)) { }
         });
         Assert.Contains("workflow definition context", ex.Message);
     }
@@ -632,7 +632,7 @@ public class MafDrivenOrchestratorTests
 
         // Act
         var states = new List<WorkflowRuntimeState>();
-        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("cp-1"))
+        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("cp-1", TestContext.Current.CancellationToken))
         {
             states.Add(state);
         }
@@ -678,7 +678,7 @@ public class MafDrivenOrchestratorTests
 
         // Act
         var states = new List<WorkflowRuntimeState>();
-        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("cp-1"))
+        await foreach (var state in orchestrator.ResumeFromCheckpointAsync("cp-1", TestContext.Current.CancellationToken))
         {
             states.Add(state);
         }

@@ -84,7 +84,7 @@ public class ContextAwareFallbackStrategyTests
         };
         var strategy = new ContextAwareFallbackStrategy<TestRequest, TestResult>(config, null, Factory);
 
-        var result = await strategy.GetFallbackAsync(CreateContext());
+        var result = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("Is it alive?", result.Output);
@@ -101,9 +101,9 @@ public class ContextAwareFallbackStrategyTests
         var strategy = new ContextAwareFallbackStrategy<TestRequest, TestResult>(config, null, Factory);
 
         // First call uses "Is it alive?"
-        await strategy.GetFallbackAsync(CreateContext());
+        await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
         // Second call should skip "Is it alive?"
-        var result = await strategy.GetFallbackAsync(CreateContext());
+        var result = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("Is it man-made?", result.Output);
@@ -119,8 +119,8 @@ public class ContextAwareFallbackStrategyTests
         };
         var strategy = new ContextAwareFallbackStrategy<TestRequest, TestResult>(config, null, Factory);
 
-        await strategy.GetFallbackAsync(CreateContext()); // uses the only item
-        var result = await strategy.GetFallbackAsync(CreateContext());
+        await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken); // uses the only item
+        var result = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.Null(result);
     }
@@ -136,7 +136,7 @@ public class ContextAwareFallbackStrategyTests
         var strategy = new ContextAwareFallbackStrategy<TestRequest, TestResult>(config, null, Factory);
 
         // "alive" was already asked (in previousOutputs)
-        var result = await strategy.GetFallbackAsync(CreateContext(previousOutputs: ["alive"]));
+        var result = await strategy.GetFallbackAsync(CreateContext(previousOutputs: ["alive"]), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("man-made", result.Output);
@@ -154,9 +154,9 @@ public class ContextAwareFallbackStrategyTests
         };
         var strategy = new ContextAwareFallbackStrategy<TestRequest, TestResult>(config, null, Factory);
 
-        await strategy.GetFallbackAsync(CreateContext()); // uses the item
+        await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken); // uses the item
         strategy.Reset();
-        var result = await strategy.GetFallbackAsync(CreateContext());
+        var result = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("Is it alive?", result.Output);
@@ -174,7 +174,7 @@ public class ContextAwareFallbackStrategyTests
         };
         var strategy = new ContextAwareFallbackStrategy<TestRequest, TestResult>(config, null, Factory);
 
-        var result = await strategy.GetFallbackAsync(CreateContext());
+        var result = await strategy.GetFallbackAsync(CreateContext(), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("default question", result.Output);
@@ -206,7 +206,7 @@ public class ContextAwareFallbackStrategyTests
             ["yes_answers"] = new List<string> { "Is it a living thing: yes" }
         };
 
-        var result = await strategy.GetFallbackAsync(CreateContext(metadata: metadata));
+        var result = await strategy.GetFallbackAsync(CreateContext(metadata: metadata), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("Is it a mammal?", result.Output);
@@ -239,7 +239,7 @@ public class ContextAwareFallbackStrategyTests
             ["yes_answers"] = new List<string> { "living creature", "large animal" }
         };
 
-        var result = await strategy.GetFallbackAsync(CreateContext(metadata: metadata));
+        var result = await strategy.GetFallbackAsync(CreateContext(metadata: metadata), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("elephant", result.Output);
@@ -270,7 +270,7 @@ public class ContextAwareFallbackStrategyTests
             ["yes_answers"] = new List<string> { "some answer" }
         };
 
-        var result = await strategy.GetFallbackAsync(CreateContext(metadata: metadata));
+        var result = await strategy.GetFallbackAsync(CreateContext(metadata: metadata), TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("fallback guess", result.Output);

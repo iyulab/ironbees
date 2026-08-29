@@ -79,7 +79,7 @@ public class AgentOrchestratorTests
             mockSelector);
 
         // Act
-        await orchestrator.LoadAgentsAsync();
+        await orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken);
 
         // Assert
         await mockLoader.Received(1).LoadAllConfigsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
@@ -108,7 +108,7 @@ public class AgentOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await orchestrator.LoadAgentsAsync());
+            async () => await orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public class AgentOrchestratorTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await orchestrator.LoadAgentsAsync());
+            async () => await orchestrator.LoadAgentsAsync(TestContext.Current.CancellationToken));
         Assert.NotNull(ex.FailedAgents);
         Assert.Single(ex.FailedAgents);
     }
@@ -184,7 +184,7 @@ public class AgentOrchestratorTests
             mockSelector);
 
         // Act
-        var result = await orchestrator.ProcessAsync("test input", "test-agent");
+        var result = await orchestrator.ProcessAsync("test input", "test-agent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Test response", result);
@@ -212,7 +212,7 @@ public class AgentOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<AgentNotFoundException>(
-            async () => await orchestrator.ProcessAsync("test input", "nonexistent-agent"));
+            async () => await orchestrator.ProcessAsync("test input", "nonexistent-agent", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -232,7 +232,7 @@ public class AgentOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await orchestrator.ProcessAsync("", "test-agent"));
+            async () => await orchestrator.ProcessAsync("", "test-agent", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -275,7 +275,7 @@ public class AgentOrchestratorTests
             mockSelector);
 
         // Act
-        var result = await orchestrator.ProcessAsync("test input");
+        var result = await orchestrator.ProcessAsync("test input", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Test response", result);
@@ -306,7 +306,7 @@ public class AgentOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await orchestrator.ProcessAsync("test input"));
+            async () => await orchestrator.ProcessAsync("test input", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -337,7 +337,7 @@ public class AgentOrchestratorTests
             mockSelector);
 
         // Act
-        var stream = orchestrator.StreamAsync("test input", "test-agent");
+        var stream = orchestrator.StreamAsync("test input", "test-agent", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(stream);
@@ -364,7 +364,7 @@ public class AgentOrchestratorTests
 
         // Act & Assert
         Assert.Throws<AgentNotFoundException>(
-            () => orchestrator.StreamAsync("test input", "nonexistent-agent"));
+            () => orchestrator.StreamAsync("test input", "nonexistent-agent", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -544,7 +544,7 @@ public class AgentOrchestratorTests
 
         // Act
         var result = new List<string>();
-        await foreach (var chunk in orchestrator.StreamAsync("test input"))
+        await foreach (var chunk in orchestrator.StreamAsync("test input", TestContext.Current.CancellationToken))
         {
             result.Add(chunk);
         }
@@ -602,7 +602,7 @@ public class AgentOrchestratorTests
 
         // Act
         var result = new List<string>();
-        await foreach (var chunk in orchestrator.StreamAsync("test input"))
+        await foreach (var chunk in orchestrator.StreamAsync("test input", TestContext.Current.CancellationToken))
         {
             result.Add(chunk);
         }
@@ -639,7 +639,7 @@ public class AgentOrchestratorTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in orchestrator.StreamAsync(""))
+            await foreach (var _ in orchestrator.StreamAsync("", TestContext.Current.CancellationToken))
             {
                 // Should not reach here
             }
@@ -695,7 +695,7 @@ public class AgentOrchestratorTests
         var collectedChunks = new List<string>();
         var initialMemory = GC.GetTotalMemory(forceFullCollection: true);
 
-        await foreach (var chunk in orchestrator.StreamAsync("Large stream test"))
+        await foreach (var chunk in orchestrator.StreamAsync("Large stream test", TestContext.Current.CancellationToken))
         {
             collectedChunks.Add(chunk);
         }

@@ -17,7 +17,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This is safe content");
+        var result = await guardrail.ValidateInputAsync("This is safe content", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -33,7 +33,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This contains badword in the text");
+        var result = await guardrail.ValidateInputAsync("This contains badword in the text", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -52,7 +52,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This contains BADWORD");
+        var result = await guardrail.ValidateInputAsync("This contains BADWORD", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -69,8 +69,8 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var resultLower = await guardrail.ValidateInputAsync("This contains badword");
-        var resultExact = await guardrail.ValidateInputAsync("This contains BadWord");
+        var resultLower = await guardrail.ValidateInputAsync("This contains badword", TestContext.Current.CancellationToken);
+        var resultExact = await guardrail.ValidateInputAsync("This contains BadWord", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(resultLower.IsAllowed);
@@ -88,8 +88,8 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var resultPartial = await guardrail.ValidateInputAsync("This is badminton");
-        var resultWhole = await guardrail.ValidateInputAsync("This is bad");
+        var resultPartial = await guardrail.ValidateInputAsync("This is badminton", TestContext.Current.CancellationToken);
+        var resultWhole = await guardrail.ValidateInputAsync("This is bad", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(resultPartial.IsAllowed);
@@ -107,7 +107,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This is badminton");
+        var result = await guardrail.ValidateInputAsync("This is badminton", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -123,7 +123,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Something evil this way comes");
+        var result = await guardrail.ValidateInputAsync("Something evil this way comes", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -140,7 +140,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Something bad and evil");
+        var result = await guardrail.ValidateInputAsync("Something bad and evil", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -158,7 +158,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Something bad and evil");
+        var result = await guardrail.ValidateInputAsync("Something bad and evil", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -175,7 +175,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("");
+        var result = await guardrail.ValidateInputAsync("", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -191,7 +191,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateOutputAsync("The secret is revealed");
+        var result = await guardrail.ValidateOutputAsync("The secret is revealed", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -208,7 +208,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("This is bad");
+        var result = await guardrail.ValidateInputAsync("This is bad", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -225,7 +225,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateOutputAsync("This is bad");
+        var result = await guardrail.ValidateOutputAsync("This is bad", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -242,7 +242,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("The secret word");
+        var result = await guardrail.ValidateInputAsync("The secret word", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -260,7 +260,7 @@ public class KeywordGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("The secret word");
+        var result = await guardrail.ValidateInputAsync("The secret word", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);

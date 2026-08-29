@@ -19,7 +19,7 @@ public class InMemoryTokenUsageStoreTests
         };
 
         // Act
-        await _store.RecordAsync(usage);
+        await _store.RecordAsync(usage, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(1, _store.Count);
@@ -36,7 +36,7 @@ public class InMemoryTokenUsageStoreTests
         };
 
         // Act
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, _store.Count);
@@ -53,10 +53,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", InputTokens = 150, OutputTokens = 75, Timestamp = now.AddHours(-1) },
             new TokenUsage { ModelId = "gpt-4", InputTokens = 200, OutputTokens = 100, Timestamp = now.AddDays(-2) }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.GetUsageAsync(now.AddDays(-1), now);
+        var result = await _store.GetUsageAsync(now.AddDays(-1), now, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -72,10 +72,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", AgentName = "agent2", InputTokens = 150, OutputTokens = 75 },
             new TokenUsage { ModelId = "gpt-4", AgentName = "agent1", InputTokens = 200, OutputTokens = 100 }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.GetUsageByAgentAsync("agent1");
+        var result = await _store.GetUsageByAgentAsync("agent1", cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -92,10 +92,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", SessionId = "session2", InputTokens = 150, OutputTokens = 75 },
             new TokenUsage { ModelId = "gpt-4", SessionId = "session1", InputTokens = 200, OutputTokens = 100 }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.GetUsageBySessionAsync("session1");
+        var result = await _store.GetUsageBySessionAsync("session1", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -112,10 +112,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", AgentName = "agent1", InputTokens = 150, OutputTokens = 75 },
             new TokenUsage { ModelId = "gpt-3.5-turbo", AgentName = "agent2", InputTokens = 200, OutputTokens = 100 }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        var stats = await _store.GetStatisticsAsync();
+        var stats = await _store.GetStatisticsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, stats.TotalRequests);
@@ -135,10 +135,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", InputTokens = 100, OutputTokens = 50 },
             new TokenUsage { ModelId = "gpt-4", InputTokens = 150, OutputTokens = 75 }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        await _store.ClearAsync();
+        await _store.ClearAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(0, _store.Count);
@@ -155,10 +155,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", InputTokens = 150, OutputTokens = 75, Timestamp = now.AddDays(-1) },
             new TokenUsage { ModelId = "gpt-4", InputTokens = 200, OutputTokens = 100, Timestamp = now }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        var removed = await _store.ClearOlderThanAsync(now.AddDays(-2));
+        var removed = await _store.ClearOlderThanAsync(now.AddDays(-2), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(1, removed);
@@ -191,10 +191,10 @@ public class InMemoryTokenUsageStoreTests
             new TokenUsage { ModelId = "gpt-4", InputTokens = 150, OutputTokens = 75, Timestamp = now.AddDays(-1) },
             new TokenUsage { ModelId = "gpt-4", InputTokens = 200, OutputTokens = 100, Timestamp = now }
         };
-        await _store.RecordBatchAsync(usages);
+        await _store.RecordBatchAsync(usages, TestContext.Current.CancellationToken);
 
         // Act
-        var stats = await _store.GetStatisticsAsync(now.AddDays(-2), now.AddDays(1));
+        var stats = await _store.GetStatisticsAsync(now.AddDays(-2), now.AddDays(1), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, stats.TotalRequests);

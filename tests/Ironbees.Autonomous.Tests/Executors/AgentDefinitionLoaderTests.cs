@@ -30,7 +30,7 @@ public class AgentDefinitionLoaderTests : IDisposable
         Directory.CreateDirectory(agentDir);
 
         await Assert.ThrowsAsync<FileNotFoundException>(() =>
-            _loader.LoadAgentAsync(agentDir));
+            _loader.LoadAgentAsync(agentDir, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public class AgentDefinitionLoaderTests : IDisposable
     {
         var agentDir = CreateAgentDir("minimal", "{}");
 
-        var agent = await _loader.LoadAgentAsync(agentDir);
+        var agent = await _loader.LoadAgentAsync(agentDir, TestContext.Current.CancellationToken);
 
         Assert.Equal("minimal", agent.Id); // falls back to directory name
         Assert.Equal("minimal", agent.Name);
@@ -74,7 +74,7 @@ public class AgentDefinitionLoaderTests : IDisposable
             """;
         var agentDir = CreateAgentDir("q-agent", yaml);
 
-        var agent = await _loader.LoadAgentAsync(agentDir);
+        var agent = await _loader.LoadAgentAsync(agentDir, TestContext.Current.CancellationToken);
 
         Assert.Equal("questioner", agent.Id);
         Assert.Equal("Question Generator", agent.Name);
@@ -99,11 +99,9 @@ public class AgentDefinitionLoaderTests : IDisposable
     public async Task LoadAgentAsync_WithSystemPromptFile_ShouldLoadFromFile()
     {
         var agentDir = CreateAgentDir("prompter", "{}");
-        await File.WriteAllTextAsync(
-            Path.Combine(agentDir, "system-prompt.md"),
-            "You are a helpful assistant.");
+        await File.WriteAllTextAsync(Path.Combine(agentDir, "system-prompt.md"), "You are a helpful assistant.", TestContext.Current.CancellationToken);
 
-        var agent = await _loader.LoadAgentAsync(agentDir);
+        var agent = await _loader.LoadAgentAsync(agentDir, TestContext.Current.CancellationToken);
 
         Assert.Equal("You are a helpful assistant.", agent.SystemPrompt);
     }
@@ -116,7 +114,7 @@ public class AgentDefinitionLoaderTests : IDisposable
             """;
         var agentDir = CreateAgentDir("inline", yaml);
 
-        var agent = await _loader.LoadAgentAsync(agentDir);
+        var agent = await _loader.LoadAgentAsync(agentDir, TestContext.Current.CancellationToken);
 
         Assert.Equal("Inline prompt from YAML", agent.SystemPrompt);
     }
@@ -128,11 +126,9 @@ public class AgentDefinitionLoaderTests : IDisposable
             system_prompt: "YAML prompt"
             """;
         var agentDir = CreateAgentDir("precedence", yaml);
-        await File.WriteAllTextAsync(
-            Path.Combine(agentDir, "system-prompt.md"),
-            "File prompt takes precedence");
+        await File.WriteAllTextAsync(Path.Combine(agentDir, "system-prompt.md"), "File prompt takes precedence", TestContext.Current.CancellationToken);
 
-        var agent = await _loader.LoadAgentAsync(agentDir);
+        var agent = await _loader.LoadAgentAsync(agentDir, TestContext.Current.CancellationToken);
 
         Assert.Equal("File prompt takes precedence", agent.SystemPrompt);
     }
@@ -142,7 +138,7 @@ public class AgentDefinitionLoaderTests : IDisposable
     [Fact]
     public async Task LoadAgentsAsync_NonExistentDirectory_ShouldReturnEmpty()
     {
-        var result = await _loader.LoadAgentsAsync(Path.Combine(_tempDir, "nonexistent"));
+        var result = await _loader.LoadAgentsAsync(Path.Combine(_tempDir, "nonexistent"), TestContext.Current.CancellationToken);
 
         Assert.Empty(result);
     }
@@ -153,7 +149,7 @@ public class AgentDefinitionLoaderTests : IDisposable
         var agentsDir = Path.Combine(_tempDir, "empty-agents");
         Directory.CreateDirectory(agentsDir);
 
-        var result = await _loader.LoadAgentsAsync(agentsDir);
+        var result = await _loader.LoadAgentsAsync(agentsDir, TestContext.Current.CancellationToken);
 
         Assert.Empty(result);
     }
@@ -173,7 +169,7 @@ public class AgentDefinitionLoaderTests : IDisposable
             name: "Agent B"
             """);
 
-        var result = await _loader.LoadAgentsAsync(agentsDir);
+        var result = await _loader.LoadAgentsAsync(agentsDir, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.Count);
         Assert.True(result.ContainsKey("agent-a"));
@@ -194,7 +190,7 @@ public class AgentDefinitionLoaderTests : IDisposable
         // Create directory without agent.yaml
         Directory.CreateDirectory(Path.Combine(agentsDir, "no-yaml"));
 
-        var result = await _loader.LoadAgentsAsync(agentsDir);
+        var result = await _loader.LoadAgentsAsync(agentsDir, TestContext.Current.CancellationToken);
 
         Assert.Single(result);
         Assert.True(result.ContainsKey("valid"));
@@ -205,7 +201,7 @@ public class AgentDefinitionLoaderTests : IDisposable
     [Fact]
     public async Task LoadFallbackItemsAsync_FileNotFound_ShouldReturnEmpty()
     {
-        var result = await _loader.LoadFallbackItemsAsync(Path.Combine(_tempDir, "missing.yaml"));
+        var result = await _loader.LoadFallbackItemsAsync(Path.Combine(_tempDir, "missing.yaml"), TestContext.Current.CancellationToken);
 
         Assert.Empty(result);
     }
@@ -220,9 +216,9 @@ public class AgentDefinitionLoaderTests : IDisposable
               - "Can you eat it?"
             """;
         var filePath = Path.Combine(_tempDir, "fallback.yaml");
-        await File.WriteAllTextAsync(filePath, yaml);
+        await File.WriteAllTextAsync(filePath, yaml, TestContext.Current.CancellationToken);
 
-        var result = await _loader.LoadFallbackItemsAsync(filePath);
+        var result = await _loader.LoadFallbackItemsAsync(filePath, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, result.Count);
         Assert.Contains("Is it alive?", result);

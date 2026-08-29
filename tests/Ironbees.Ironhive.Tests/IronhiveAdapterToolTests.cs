@@ -56,7 +56,7 @@ public class IronhiveAdapterToolTests
         // No pool registered at all - must not matter when the agent declares no tools.
         var adapter = CreateAdapter(hiveService, pool: null);
 
-        await adapter.CreateAgentAsync(CreateTestConfig(tools: null));
+        await adapter.CreateAgentAsync(CreateTestConfig(tools: null), TestContext.Current.CancellationToken);
 
         Assert.Null(mockAgent.Tools);
     }
@@ -70,7 +70,7 @@ public class IronhiveAdapterToolTests
         var pool = new ToolCollection([FakeTool("search"), FakeTool("count-files"), FakeTool("unused")]);
         var adapter = CreateAdapter(hiveService, pool);
 
-        await adapter.CreateAgentAsync(CreateTestConfig(tools: ["search", "count-files"]));
+        await adapter.CreateAgentAsync(CreateTestConfig(tools: ["search", "count-files"]), TestContext.Current.CancellationToken);
 
         Assert.NotNull(mockAgent.Tools);
         Assert.Equal(2, mockAgent.Tools!.Count);
@@ -88,7 +88,7 @@ public class IronhiveAdapterToolTests
         var adapter = CreateAdapter(hiveService, pool: null);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => adapter.CreateAgentAsync(CreateTestConfig(tools: ["search"])));
+            () => adapter.CreateAgentAsync(CreateTestConfig(tools: ["search"]), TestContext.Current.CancellationToken));
 
         Assert.Contains("test-agent", ex.Message);
         Assert.Contains("IronhiveOptions.Tools", ex.Message);
@@ -104,7 +104,7 @@ public class IronhiveAdapterToolTests
         var adapter = CreateAdapter(hiveService, pool);
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => adapter.CreateAgentAsync(CreateTestConfig(tools: ["search", "typo-tool"])));
+            () => adapter.CreateAgentAsync(CreateTestConfig(tools: ["search", "typo-tool"]), TestContext.Current.CancellationToken));
 
         Assert.Contains("typo-tool", ex.Message);
         Assert.Contains("search", ex.Message);
@@ -143,7 +143,7 @@ public class IronhiveAdapterToolTests
         }
 
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in adapter.StreamStructuredAsync(wrapper, "Hi"))
+        await foreach (var chunk in adapter.StreamStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }
@@ -188,7 +188,7 @@ public class IronhiveAdapterToolTests
         }
 
         var chunks = new List<StreamChunk>();
-        await foreach (var chunk in adapter.StreamStructuredAsync(wrapper, "Hi"))
+        await foreach (var chunk in adapter.StreamStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken))
         {
             chunks.Add(chunk);
         }

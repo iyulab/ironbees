@@ -14,7 +14,7 @@ public class LengthGuardrailTests
         var guardrail = new LengthGuardrail(maxInputLength: 100);
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Short input");
+        var result = await guardrail.ValidateInputAsync("Short input", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -28,7 +28,7 @@ public class LengthGuardrailTests
         var input = new string('x', 20);
 
         // Act
-        var result = await guardrail.ValidateInputAsync(input);
+        var result = await guardrail.ValidateInputAsync(input, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -44,7 +44,7 @@ public class LengthGuardrailTests
         var input = new string('x', 100000);
 
         // Act
-        var result = await guardrail.ValidateInputAsync(input);
+        var result = await guardrail.ValidateInputAsync(input, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -60,7 +60,7 @@ public class LengthGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync("Short");
+        var result = await guardrail.ValidateInputAsync("Short", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -76,7 +76,7 @@ public class LengthGuardrailTests
         var output = new string('y', 100);
 
         // Act
-        var result = await guardrail.ValidateOutputAsync(output);
+        var result = await guardrail.ValidateOutputAsync(output, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -89,7 +89,7 @@ public class LengthGuardrailTests
         var guardrail = new LengthGuardrail(maxOutputLength: 100);
 
         // Act
-        var result = await guardrail.ValidateOutputAsync("Short output");
+        var result = await guardrail.ValidateOutputAsync("Short output", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -105,7 +105,7 @@ public class LengthGuardrailTests
         });
 
         // Act
-        var result = await guardrail.ValidateInputAsync(null!);
+        var result = await guardrail.ValidateInputAsync(null!, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);
@@ -118,7 +118,7 @@ public class LengthGuardrailTests
         var guardrail = new LengthGuardrail(maxInputLength: 100);
 
         // Act
-        var result = await guardrail.ValidateInputAsync("");
+        var result = await guardrail.ValidateInputAsync("", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsAllowed);
@@ -145,7 +145,7 @@ public class LengthGuardrailTests
         var input = new string('x', 25);
 
         // Act
-        var result = await guardrail.ValidateInputAsync(input);
+        var result = await guardrail.ValidateInputAsync(input, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result.IsAllowed);

@@ -66,7 +66,7 @@ public class GpuStackAdapterTests
         };
 
         // Act
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(agent);
@@ -86,7 +86,7 @@ public class GpuStackAdapterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await adapter.CreateAgentAsync(null!));
+            async () => await adapter.CreateAgentAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -108,7 +108,7 @@ public class GpuStackAdapterTests
         };
 
         // Act
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(agent);
@@ -126,7 +126,7 @@ public class GpuStackAdapterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await adapter.RunAsync(null!, "test input"));
+            async () => await adapter.RunAsync(null!, "test input", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -147,11 +147,11 @@ public class GpuStackAdapterTests
             Model = new ModelConfig { Deployment = "llama3.2" }
         };
 
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await adapter.RunAsync(agent, ""));
+            async () => await adapter.RunAsync(agent, "", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class GpuStackAdapterTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await adapter.RunAsync(mockAgent, "test input"));
+            async () => await adapter.RunAsync(mockAgent, "test input", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class GpuStackAdapterTests
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(async () =>
         {
-            await foreach (var _ in adapter.StreamAsync(null!, "test input"))
+            await foreach (var _ in adapter.StreamAsync(null!, "test input", TestContext.Current.CancellationToken))
             {
                 // Should throw before reaching here
             }
@@ -207,12 +207,12 @@ public class GpuStackAdapterTests
             Model = new ModelConfig { Deployment = "llama3.2" }
         };
 
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(async () =>
         {
-            await foreach (var _ in adapter.StreamAsync(agent, ""))
+            await foreach (var _ in adapter.StreamAsync(agent, "", TestContext.Current.CancellationToken))
             {
                 // Should throw before reaching here
             }
@@ -233,7 +233,7 @@ public class GpuStackAdapterTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
-            await foreach (var _ in adapter.StreamAsync(mockAgent, "test input"))
+            await foreach (var _ in adapter.StreamAsync(mockAgent, "test input", TestContext.Current.CancellationToken))
             {
                 // Should throw before reaching here
             }

@@ -83,7 +83,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { codingAgent, writingAgent };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Write some code for programming", agents);
+        var result = await hybridSelector.SelectAgentAsync("Write some code for programming", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -133,7 +133,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { codingAgent, writingAgent };
 
         // Act - Query has "code" keyword but embedding favors writing
-        var result = await hybridSelector.SelectAgentAsync("code review task", agents);
+        var result = await hybridSelector.SelectAgentAsync("code review task", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -153,7 +153,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent>();
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Any query", agents);
+        var result = await hybridSelector.SelectAgentAsync("Any query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result.SelectedAgent);
@@ -173,7 +173,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Any query", agents);
+        var result = await hybridSelector.SelectAgentAsync("Any query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -194,7 +194,7 @@ public class HybridAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAnyAsync<ArgumentException>(
-            async () => await hybridSelector.SelectAgentAsync(null!, agents));
+            async () => await hybridSelector.SelectAgentAsync(null!, agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class HybridAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await hybridSelector.SelectAgentAsync("", agents));
+            async () => await hybridSelector.SelectAgentAsync("", agents, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -222,7 +222,7 @@ public class HybridAgentSelectorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await hybridSelector.SelectAgentAsync("test", null!));
+            async () => await hybridSelector.SelectAgentAsync("test", null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var scores = await hybridSelector.ScoreAgentsAsync("Test query", agents);
+        var scores = await hybridSelector.ScoreAgentsAsync("Test query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, scores.Count);
@@ -341,7 +341,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("code review", agents);
+        var result = await hybridSelector.SelectAgentAsync("code review", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Contains("Keyword", result.SelectionReason);
@@ -406,7 +406,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Test query", agents);
+        var result = await hybridSelector.SelectAgentAsync("Test query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);
@@ -439,7 +439,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Query", agents);
+        var result = await hybridSelector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Contains("Runner-up", result.SelectionReason);
@@ -469,7 +469,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Query", agents);
+        var result = await hybridSelector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.AllScores.Count);
@@ -507,7 +507,7 @@ public class HybridAgentSelectorTests
         var agents = new List<IAgent> { agent1, agent2 };
 
         // Act
-        var result = await hybridSelector.SelectAgentAsync("Test query", agents);
+        var result = await hybridSelector.SelectAgentAsync("Test query", agents, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result.SelectedAgent);

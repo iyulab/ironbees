@@ -108,10 +108,10 @@ public class EmbeddingAgentSelectorBenchmarkTests
         };
 
         // Warmup - cache embeddings
-        await selector.WarmupCacheAsync(agents);
+        await selector.WarmupCacheAsync(agents, TestContext.Current.CancellationToken);
         foreach (var query in testQueries)
         {
-            await selector.SelectAgentAsync(query, agents);
+            await selector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
         }
 
         // Act
@@ -119,7 +119,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
         for (int i = 0; i < 1000; i++)
         {
             var query = testQueries[i % testQueries.Length];
-            await selector.SelectAgentAsync(query, agents);
+            await selector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
         }
         stopwatch.Stop();
 
@@ -163,13 +163,13 @@ public class EmbeddingAgentSelectorBenchmarkTests
 
         // Act - First call (no cache for agent embeddings)
         var stopwatch1 = Stopwatch.StartNew();
-        await selector.SelectAgentAsync("Test query", agents);
+        await selector.SelectAgentAsync("Test query", agents, TestContext.Current.CancellationToken);
         stopwatch1.Stop();
         var firstCallTime = stopwatch1.ElapsedMilliseconds;
 
         // Act - Second call (with cached agent embeddings)
         var stopwatch2 = Stopwatch.StartNew();
-        await selector.SelectAgentAsync("Another query", agents);
+        await selector.SelectAgentAsync("Another query", agents, TestContext.Current.CancellationToken);
         stopwatch2.Stop();
         var secondCallTime = stopwatch2.ElapsedMilliseconds;
 
@@ -203,11 +203,11 @@ public class EmbeddingAgentSelectorBenchmarkTests
         }
 
         // Warmup
-        await selector.WarmupCacheAsync(agents);
+        await selector.WarmupCacheAsync(agents, TestContext.Current.CancellationToken);
 
         // Act
         var stopwatch = Stopwatch.StartNew();
-        var scores = await selector.ScoreAgentsAsync("Test query", agents);
+        var scores = await selector.ScoreAgentsAsync("Test query", agents, TestContext.Current.CancellationToken);
         stopwatch.Stop();
 
         // Assert
@@ -266,7 +266,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
         // Warmup
         foreach (var query in testQueries)
         {
-            await hybridSelector.SelectAgentAsync(query, agents);
+            await hybridSelector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
         }
 
         // Act
@@ -274,7 +274,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
         for (int i = 0; i < 1000; i++)
         {
             var query = testQueries[i % testQueries.Length];
-            await hybridSelector.SelectAgentAsync(query, agents);
+            await hybridSelector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
         }
         stopwatch.Stop();
 
@@ -320,13 +320,13 @@ public class EmbeddingAgentSelectorBenchmarkTests
         };
 
         // Warmup
-        await hybridSelector.SelectAgentAsync("Warmup query", agents);
+        await hybridSelector.SelectAgentAsync("Warmup query", agents, TestContext.Current.CancellationToken);
 
         // Act - Multiple iterations
         var stopwatch = Stopwatch.StartNew();
         for (int i = 0; i < 10; i++)
         {
-            await hybridSelector.SelectAgentAsync($"Query {i}", agents);
+            await hybridSelector.SelectAgentAsync($"Query {i}", agents, TestContext.Current.CancellationToken);
         }
         stopwatch.Stop();
 
@@ -434,14 +434,14 @@ public class EmbeddingAgentSelectorBenchmarkTests
         // Build cache
         for (int i = 0; i < 10; i++)
         {
-            await selector.SelectAgentAsync($"Query {i}", agents);
+            await selector.SelectAgentAsync($"Query {i}", agents, TestContext.Current.CancellationToken);
         }
 
         // Act
         selector.ClearCache();
 
         // Assert - Should not throw and cache should be cleared
-        var result = await selector.SelectAgentAsync("New query", agents);
+        var result = await selector.SelectAgentAsync("New query", agents, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
     }
 

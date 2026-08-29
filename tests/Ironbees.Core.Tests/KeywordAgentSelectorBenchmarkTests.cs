@@ -114,7 +114,7 @@ public class KeywordAgentSelectorBenchmarkTests
         {
             foreach (var query in testQueries)
             {
-                await selector.SelectAgentAsync(query, agents);
+                await selector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
             }
         }
 
@@ -123,7 +123,7 @@ public class KeywordAgentSelectorBenchmarkTests
         for (int i = 0; i < 1000; i++)
         {
             var query = testQueries[i % testQueries.Length];
-            await selector.SelectAgentAsync(query, agents);
+            await selector.SelectAgentAsync(query, agents, TestContext.Current.CancellationToken);
         }
         stopwatch.Stop();
 
@@ -165,11 +165,11 @@ public class KeywordAgentSelectorBenchmarkTests
         };
 
         // Warmup
-        await selector.SelectAgentAsync("Write code", agents);
+        await selector.SelectAgentAsync("Write code", agents, TestContext.Current.CancellationToken);
 
         // Act
         var stopwatch = Stopwatch.StartNew();
-        await selector.SelectAgentAsync("Help me write some code", agents);
+        await selector.SelectAgentAsync("Help me write some code", agents, TestContext.Current.CancellationToken);
         stopwatch.Stop();
 
         // Assert
@@ -195,13 +195,13 @@ public class KeywordAgentSelectorBenchmarkTests
 
         // Act - First call (no cache)
         var stopwatch1 = Stopwatch.StartNew();
-        await selector.SelectAgentAsync("Write some code", agents);
+        await selector.SelectAgentAsync("Write some code", agents, TestContext.Current.CancellationToken);
         stopwatch1.Stop();
         var firstCallTime = stopwatch1.ElapsedTicks;
 
         // Act - Second call (with cache)
         var stopwatch2 = Stopwatch.StartNew();
-        await selector.SelectAgentAsync("Write some code", agents);
+        await selector.SelectAgentAsync("Write some code", agents, TestContext.Current.CancellationToken);
         stopwatch2.Stop();
         var secondCallTime = stopwatch2.ElapsedTicks;
 
@@ -229,7 +229,7 @@ public class KeywordAgentSelectorBenchmarkTests
 
         // Act
         var stopwatch = Stopwatch.StartNew();
-        var scores = await selector.ScoreAgentsAsync("Help me with capability-5", agents);
+        var scores = await selector.ScoreAgentsAsync("Help me with capability-5", agents, TestContext.Current.CancellationToken);
         stopwatch.Stop();
 
         // Assert
@@ -273,14 +273,14 @@ public class KeywordAgentSelectorBenchmarkTests
         // the JIT room to promote it to optimized code first.
         for (int i = 0; i < 50; i++)
         {
-            await selector.SelectAgentAsync("Help me write C# code", agents);
+            await selector.SelectAgentAsync("Help me write C# code", agents, TestContext.Current.CancellationToken);
         }
 
         // Act
         var stopwatch = Stopwatch.StartNew();
         for (int i = 0; i < 100; i++)
         {
-            await selector.SelectAgentAsync("Help me write C# code", agents);
+            await selector.SelectAgentAsync("Help me write C# code", agents, TestContext.Current.CancellationToken);
         }
         stopwatch.Stop();
 
@@ -314,14 +314,14 @@ public class KeywordAgentSelectorBenchmarkTests
         // Build cache
         for (int i = 0; i < 10; i++)
         {
-            await selector.SelectAgentAsync($"Query {i}", agents);
+            await selector.SelectAgentAsync($"Query {i}", agents, TestContext.Current.CancellationToken);
         }
 
         // Act
         selector.ClearCache();
 
         // Assert - Should not throw and cache should be cleared
-        var result = await selector.SelectAgentAsync("New query", agents);
+        var result = await selector.SelectAgentAsync("New query", agents, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
     }
 }

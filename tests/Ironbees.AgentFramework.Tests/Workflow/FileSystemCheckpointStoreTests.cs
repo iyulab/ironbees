@@ -88,7 +88,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
         var checkpoint = CreateTestCheckpoint();
 
         // Act
-        await _store.SaveAsync(checkpoint);
+        await _store.SaveAsync(checkpoint, TestContext.Current.CancellationToken);
 
         // Assert
         var expectedPath = Path.Combine(
@@ -103,7 +103,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task SaveAsync_WithNullCheckpoint_ThrowsArgumentNullException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.SaveAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.SaveAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -115,14 +115,14 @@ public class FileSystemCheckpointStoreTests : IDisposable
         var checkpoint3 = CreateTestCheckpoint("checkpoint-3", "execution-2");
 
         // Act
-        await _store.SaveAsync(checkpoint1);
-        await _store.SaveAsync(checkpoint2);
-        await _store.SaveAsync(checkpoint3);
+        await _store.SaveAsync(checkpoint1, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint2, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint3, TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(await _store.ExistsAsync("checkpoint-1"));
-        Assert.True(await _store.ExistsAsync("checkpoint-2"));
-        Assert.True(await _store.ExistsAsync("checkpoint-3"));
+        Assert.True(await _store.ExistsAsync("checkpoint-1", TestContext.Current.CancellationToken));
+        Assert.True(await _store.ExistsAsync("checkpoint-2", TestContext.Current.CancellationToken));
+        Assert.True(await _store.ExistsAsync("checkpoint-3", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -139,11 +139,11 @@ public class FileSystemCheckpointStoreTests : IDisposable
         };
 
         // Act
-        await _store.SaveAsync(checkpoint1);
-        await _store.SaveAsync(checkpoint2);
+        await _store.SaveAsync(checkpoint1, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint2, TestContext.Current.CancellationToken);
 
         // Assert
-        var retrieved = await _store.GetAsync("checkpoint-1");
+        var retrieved = await _store.GetAsync("checkpoint-1", TestContext.Current.CancellationToken);
         Assert.NotNull(retrieved);
         Assert.Equal("STATE_B", retrieved.CurrentStateId);
     }
@@ -157,10 +157,10 @@ public class FileSystemCheckpointStoreTests : IDisposable
     {
         // Arrange
         var checkpoint = CreateTestCheckpoint();
-        await _store.SaveAsync(checkpoint);
+        await _store.SaveAsync(checkpoint, TestContext.Current.CancellationToken);
 
         // Act
-        var retrieved = await _store.GetAsync(checkpoint.CheckpointId);
+        var retrieved = await _store.GetAsync(checkpoint.CheckpointId, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(retrieved);
@@ -173,7 +173,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task GetAsync_NonExistentCheckpoint_ReturnsNull()
     {
         // Act
-        var retrieved = await _store.GetAsync("non-existent-id");
+        var retrieved = await _store.GetAsync("non-existent-id", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(retrieved);
@@ -183,14 +183,14 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task GetAsync_WithNullId_ThrowsArgumentNullException()
     {
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.GetAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.GetAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task GetAsync_WithEmptyId_ThrowsArgumentException()
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _store.GetAsync(""));
+        await Assert.ThrowsAsync<ArgumentException>(() => _store.GetAsync("", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -214,10 +214,10 @@ public class FileSystemCheckpointStoreTests : IDisposable
             }
         };
 
-        await _store.SaveAsync(checkpoint);
+        await _store.SaveAsync(checkpoint, TestContext.Current.CancellationToken);
 
         // Act
-        var retrieved = await _store.GetAsync(checkpoint.CheckpointId);
+        var retrieved = await _store.GetAsync(checkpoint.CheckpointId, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(retrieved);
@@ -254,12 +254,12 @@ public class FileSystemCheckpointStoreTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await _store.SaveAsync(checkpoint1);
-        await _store.SaveAsync(checkpoint2);
-        await _store.SaveAsync(checkpoint3);
+        await _store.SaveAsync(checkpoint1, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint2, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint3, TestContext.Current.CancellationToken);
 
         // Act
-        var latest = await _store.GetLatestForExecutionAsync("execution-1");
+        var latest = await _store.GetLatestForExecutionAsync("execution-1", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(latest);
@@ -270,7 +270,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task GetLatestForExecutionAsync_NoCheckpoints_ReturnsNull()
     {
         // Act
-        var latest = await _store.GetLatestForExecutionAsync("non-existent-execution");
+        var latest = await _store.GetLatestForExecutionAsync("non-existent-execution", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(latest);
@@ -281,7 +281,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     {
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _store.GetLatestForExecutionAsync(null!));
+            _store.GetLatestForExecutionAsync(null!, TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -305,12 +305,12 @@ public class FileSystemCheckpointStoreTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-5)
         };
 
-        await _store.SaveAsync(checkpoint1);
-        await _store.SaveAsync(checkpoint2);
-        await _store.SaveAsync(checkpoint3);
+        await _store.SaveAsync(checkpoint1, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint2, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint3, TestContext.Current.CancellationToken);
 
         // Act
-        var all = await _store.GetAllForExecutionAsync("execution-1");
+        var all = await _store.GetAllForExecutionAsync("execution-1", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(3, all.Count);
@@ -323,7 +323,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task GetAllForExecutionAsync_NoCheckpoints_ReturnsEmptyList()
     {
         // Act
-        var all = await _store.GetAllForExecutionAsync("non-existent-execution");
+        var all = await _store.GetAllForExecutionAsync("non-existent-execution", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(all);
@@ -337,13 +337,13 @@ public class FileSystemCheckpointStoreTests : IDisposable
         var checkpoint2 = CreateTestCheckpoint("checkpoint-2", "execution-1");
         var checkpoint3 = CreateTestCheckpoint("checkpoint-3", "execution-2");
 
-        await _store.SaveAsync(checkpoint1);
-        await _store.SaveAsync(checkpoint2);
-        await _store.SaveAsync(checkpoint3);
+        await _store.SaveAsync(checkpoint1, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint2, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint3, TestContext.Current.CancellationToken);
 
         // Act
-        var exec1Checkpoints = await _store.GetAllForExecutionAsync("execution-1");
-        var exec2Checkpoints = await _store.GetAllForExecutionAsync("execution-2");
+        var exec1Checkpoints = await _store.GetAllForExecutionAsync("execution-1", TestContext.Current.CancellationToken);
+        var exec2Checkpoints = await _store.GetAllForExecutionAsync("execution-2", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, exec1Checkpoints.Count);
@@ -359,21 +359,21 @@ public class FileSystemCheckpointStoreTests : IDisposable
     {
         // Arrange
         var checkpoint = CreateTestCheckpoint();
-        await _store.SaveAsync(checkpoint);
+        await _store.SaveAsync(checkpoint, TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _store.DeleteAsync(checkpoint.CheckpointId);
+        var result = await _store.DeleteAsync(checkpoint.CheckpointId, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
-        Assert.False(await _store.ExistsAsync(checkpoint.CheckpointId));
+        Assert.False(await _store.ExistsAsync(checkpoint.CheckpointId, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task DeleteAsync_NonExistentCheckpoint_ReturnsFalse()
     {
         // Act
-        var result = await _store.DeleteAsync("non-existent-id");
+        var result = await _store.DeleteAsync("non-existent-id", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -383,7 +383,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task DeleteAsync_WithNullId_ThrowsArgumentNullException()
     {
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.DeleteAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.DeleteAsync(null!, TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -398,25 +398,25 @@ public class FileSystemCheckpointStoreTests : IDisposable
         var checkpoint2 = CreateTestCheckpoint("checkpoint-2", "execution-1");
         var checkpoint3 = CreateTestCheckpoint("checkpoint-3", "execution-2");
 
-        await _store.SaveAsync(checkpoint1);
-        await _store.SaveAsync(checkpoint2);
-        await _store.SaveAsync(checkpoint3);
+        await _store.SaveAsync(checkpoint1, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint2, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(checkpoint3, TestContext.Current.CancellationToken);
 
         // Act
-        var deletedCount = await _store.DeleteAllForExecutionAsync("execution-1");
+        var deletedCount = await _store.DeleteAllForExecutionAsync("execution-1", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, deletedCount);
-        Assert.False(await _store.ExistsAsync("checkpoint-1"));
-        Assert.False(await _store.ExistsAsync("checkpoint-2"));
-        Assert.True(await _store.ExistsAsync("checkpoint-3")); // Different execution
+        Assert.False(await _store.ExistsAsync("checkpoint-1", TestContext.Current.CancellationToken));
+        Assert.False(await _store.ExistsAsync("checkpoint-2", TestContext.Current.CancellationToken));
+        Assert.True(await _store.ExistsAsync("checkpoint-3", TestContext.Current.CancellationToken)); // Different execution
     }
 
     [Fact]
     public async Task DeleteAllForExecutionAsync_NoCheckpoints_ReturnsZero()
     {
         // Act
-        var deletedCount = await _store.DeleteAllForExecutionAsync("non-existent-execution");
+        var deletedCount = await _store.DeleteAllForExecutionAsync("non-existent-execution", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(0, deletedCount);
@@ -427,7 +427,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     {
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            _store.DeleteAllForExecutionAsync(null!));
+            _store.DeleteAllForExecutionAsync(null!, TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -447,16 +447,16 @@ public class FileSystemCheckpointStoreTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await _store.SaveAsync(oldCheckpoint);
-        await _store.SaveAsync(recentCheckpoint);
+        await _store.SaveAsync(oldCheckpoint, TestContext.Current.CancellationToken);
+        await _store.SaveAsync(recentCheckpoint, TestContext.Current.CancellationToken);
 
         // Act
-        var deletedCount = await _store.CleanupOlderThanAsync(DateTimeOffset.UtcNow.AddDays(-5));
+        var deletedCount = await _store.CleanupOlderThanAsync(DateTimeOffset.UtcNow.AddDays(-5), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(1, deletedCount);
-        Assert.False(await _store.ExistsAsync("old-checkpoint"));
-        Assert.True(await _store.ExistsAsync("recent-checkpoint"));
+        Assert.False(await _store.ExistsAsync("old-checkpoint", TestContext.Current.CancellationToken));
+        Assert.True(await _store.ExistsAsync("recent-checkpoint", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -467,10 +467,10 @@ public class FileSystemCheckpointStoreTests : IDisposable
         {
             CreatedAt = DateTimeOffset.UtcNow
         };
-        await _store.SaveAsync(recentCheckpoint);
+        await _store.SaveAsync(recentCheckpoint, TestContext.Current.CancellationToken);
 
         // Act
-        var deletedCount = await _store.CleanupOlderThanAsync(DateTimeOffset.UtcNow.AddDays(-5));
+        var deletedCount = await _store.CleanupOlderThanAsync(DateTimeOffset.UtcNow.AddDays(-5), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(0, deletedCount);
@@ -485,10 +485,10 @@ public class FileSystemCheckpointStoreTests : IDisposable
     {
         // Arrange
         var checkpoint = CreateTestCheckpoint();
-        await _store.SaveAsync(checkpoint);
+        await _store.SaveAsync(checkpoint, TestContext.Current.CancellationToken);
 
         // Act
-        var exists = await _store.ExistsAsync(checkpoint.CheckpointId);
+        var exists = await _store.ExistsAsync(checkpoint.CheckpointId, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(exists);
@@ -498,7 +498,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task ExistsAsync_NonExistentCheckpoint_ReturnsFalse()
     {
         // Act
-        var exists = await _store.ExistsAsync("non-existent-id");
+        var exists = await _store.ExistsAsync("non-existent-id", TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(exists);
@@ -508,7 +508,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public async Task ExistsAsync_WithNullId_ThrowsArgumentNullException()
     {
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.ExistsAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _store.ExistsAsync(null!, TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -523,7 +523,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
         _store.Dispose();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => _store.SaveAsync(checkpoint));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => _store.SaveAsync(checkpoint, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -533,7 +533,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
         _store.Dispose();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => _store.GetAsync("id"));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => _store.GetAsync("id", TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -551,13 +551,13 @@ public class FileSystemCheckpointStoreTests : IDisposable
         for (int i = 0; i < 10; i++)
         {
             var checkpoint = CreateTestCheckpoint($"checkpoint-{i}", executionId);
-            tasks.Add(_store.SaveAsync(checkpoint));
+            tasks.Add(_store.SaveAsync(checkpoint, TestContext.Current.CancellationToken));
         }
 
         await Task.WhenAll(tasks);
 
         // Assert
-        var all = await _store.GetAllForExecutionAsync(executionId);
+        var all = await _store.GetAllForExecutionAsync(executionId, TestContext.Current.CancellationToken);
         Assert.Equal(10, all.Count);
     }
 

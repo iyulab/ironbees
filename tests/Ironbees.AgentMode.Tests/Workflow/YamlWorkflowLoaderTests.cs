@@ -25,7 +25,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("TestWorkflow", result.Name);
@@ -50,7 +50,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(2, result.Agents.Count);
@@ -79,7 +79,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         var state = result.States.First(s => s.Id == "WAIT_FILE");
@@ -109,7 +109,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         var state = result.States.First(s => s.Id == "APPROVAL");
@@ -147,7 +147,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         var state = result.States.First(s => s.Id == "VALIDATE");
@@ -174,7 +174,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(TimeSpan.FromMinutes(45), result.Settings.DefaultTimeout);
@@ -196,7 +196,7 @@ public class YamlWorkflowLoaderTests
 
         // Act & Assert
         await Assert.ThrowsAsync<WorkflowParseException>(
-            () => _loader.LoadFromStringAsync(yaml));
+            () => _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class YamlWorkflowLoaderTests
 
         // Act & Assert
         await Assert.ThrowsAsync<WorkflowParseException>(
-            () => _loader.LoadFromStringAsync(yaml));
+            () => _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -320,7 +320,7 @@ public class YamlWorkflowLoaderTests
             """;
 
         // Act
-        var result = await _loader.LoadFromStringAsync(yaml);
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
 
         // Assert
         var state = result.States.First();

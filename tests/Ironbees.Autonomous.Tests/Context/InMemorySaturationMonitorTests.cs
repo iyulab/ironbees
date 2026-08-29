@@ -205,7 +205,7 @@ public class InMemorySaturationMonitorTests
         var monitor = new InMemorySaturationMonitor(config);
         monitor.RecordUsage(100, "test");
 
-        var state = await monitor.UpdateStateAsync();
+        var state = await monitor.UpdateStateAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(100, state.CurrentTokens);
     }

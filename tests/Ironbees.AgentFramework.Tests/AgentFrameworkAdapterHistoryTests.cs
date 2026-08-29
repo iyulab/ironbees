@@ -31,12 +31,12 @@ public class AgentFrameworkAdapterHistoryTests
         var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Act & Assert — should not throw (actual API call will fail but the method path is verified)
         // We verify that null history doesn't cause issues by checking it reaches the API call
         await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await adapter.RunAsync(agent, "test input", conversationHistory: null));
+            async () => await adapter.RunAsync(agent, "test input", conversationHistory: null, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -48,12 +48,12 @@ public class AgentFrameworkAdapterHistoryTests
         var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
         var emptyHistory = new List<ChatMessage>();
 
         // Act & Assert — should not throw differently from null history
         await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await adapter.RunAsync(agent, "test input", emptyHistory));
+            async () => await adapter.RunAsync(agent, "test input", emptyHistory, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class AgentFrameworkAdapterHistoryTests
         var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
         var history = new List<ChatMessage>
         {
             new(ChatRole.User, "What is C#?"),
@@ -76,7 +76,7 @@ public class AgentFrameworkAdapterHistoryTests
         // Since we can't mock the ChatClient easily, we verify it reaches the API call
         // (which will throw because there's no actual connection)
         await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await adapter.RunAsync(agent, "Tell me more", history));
+            async () => await adapter.RunAsync(agent, "Tell me more", history, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -88,12 +88,12 @@ public class AgentFrameworkAdapterHistoryTests
         var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Act & Assert — streaming with null history should reach the API call
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await foreach (var chunk in adapter.StreamAsync(agent, "test input", conversationHistory: null))
+            await foreach (var chunk in adapter.StreamAsync(agent, "test input", conversationHistory: null, cancellationToken: TestContext.Current.CancellationToken))
             {
                 // Should not reach here with mock client
             }
@@ -109,7 +109,7 @@ public class AgentFrameworkAdapterHistoryTests
         var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
         var history = new List<ChatMessage>
         {
             new(ChatRole.User, "Previous question"),
@@ -119,7 +119,7 @@ public class AgentFrameworkAdapterHistoryTests
         // Act & Assert — streaming with history should reach the API call
         await Assert.ThrowsAnyAsync<Exception>(async () =>
         {
-            await foreach (var chunk in adapter.StreamAsync(agent, "Follow-up", history))
+            await foreach (var chunk in adapter.StreamAsync(agent, "Follow-up", history, TestContext.Current.CancellationToken))
             {
                 // Should not reach here with mock client
             }
@@ -142,7 +142,7 @@ public class AgentFrameworkAdapterHistoryTests
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(
-            async () => await adapter.RunAsync(mockAgent, "test input", history));
+            async () => await adapter.RunAsync(mockAgent, "test input", history, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -154,13 +154,13 @@ public class AgentFrameworkAdapterHistoryTests
         var adapter = new AgentFrameworkAdapter(mockClient, mockLogger);
 
         var config = CreateTestConfig();
-        var agent = await adapter.CreateAgentAsync(config);
+        var agent = await adapter.CreateAgentAsync(config, TestContext.Current.CancellationToken);
 
         // Both calls should follow the same code path (the history overload)
         var ex1 = await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await adapter.RunAsync(agent, "test input"));
+            async () => await adapter.RunAsync(agent, "test input", TestContext.Current.CancellationToken));
         var ex2 = await Assert.ThrowsAsync<AgentLoadException>(
-            async () => await adapter.RunAsync(agent, "test input", conversationHistory: null));
+            async () => await adapter.RunAsync(agent, "test input", conversationHistory: null, cancellationToken: TestContext.Current.CancellationToken));
 
         // Both should throw with the same type of exception
         Assert.IsType<AgentLoadException>(ex1);
