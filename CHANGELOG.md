@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-09-01
+
+### Changed
+- Lowered the `Microsoft.ML.OnnxRuntime` floor `1.26.0`→`1.24.4` to avoid a known DirectML
+  `LayerNormalization` execution-provider crash present in 1.25 and later. This package only uses
+  the plain `InferenceSession` constructor and has no functional dependency on anything newer than
+  1.24.4.
+
 ## [0.13.2] - 2026-09-01
 
 ### Changed
