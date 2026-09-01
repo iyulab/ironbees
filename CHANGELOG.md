@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-09-01
+
+### Changed
+- Re-pinned `IronHive.Abstractions`/`.Core`/`.Providers.OpenAI` (`0.20.0`→`0.22.1`) and
+  `TokenMeter` (`0.7.0`→`0.7.3`) to their latest patch/minor. Already-consumed siblings, not a
+  new dependency surface. No source changes.
+
 ## [0.13.1] - 2026-08-24
 
 ### Changed
