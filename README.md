@@ -165,6 +165,44 @@ services.AddIronbees(options =>
 });
 ```
 
+### Without an API key (Ollama, LM Studio, vLLM, llama.cpp server)
+
+The IronHive backend can talk to any OpenAI-compatible local server, and those accept requests
+without a key. Register the server under a provider name and point the agent at it — nothing else
+in the agent definition changes:
+
+```bash
+dotnet add package Ironbees.Ironhive
+dotnet add package IronHive.Providers.OpenAI.Compatible
+```
+
+```csharp
+services.AddIronbeesIronhive(options =>
+{
+    options.AgentsDirectory = "./agents";
+    options.ConfigureHive = hive =>
+    {
+        // Ollama's default endpoint; LM Studio is :1234, vLLM :8000 — only BaseUrl differs.
+        hive.AddOpenAICompatibleProviders("ollama", new OpenAICompatibleConfig
+        {
+            BaseUrl = "http://localhost:11434"
+        });
+    };
+});
+```
+
+```yaml
+# agents/coding-agent/agent.yaml
+model:
+  provider: ollama        # the name you registered above
+  deployment: qwen2.5:7b  # a model the server has pulled
+```
+
+The server must already be running with that model available (`ollama pull qwen2.5:7b`); Ironbees
+does not start or download it. For a fully in-process local model with no server at all, see
+[ironhive-host](https://github.com/iyulab/ironhive-host), which embeds local inference through
+LMSupply and has it on by default.
+
 ### Use the Agent
 
 ```csharp
