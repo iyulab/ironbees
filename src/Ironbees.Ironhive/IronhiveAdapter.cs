@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Ironbees.AgentMode.Goals;
 using Ironbees.Core;
 using Ironbees.Core.Orchestration;
@@ -264,12 +264,16 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             }
             else if (chunk is StreamingContentCompletedResponse { Content: ToolMessageContent { Output: { } output } completed })
             {
+                // IronHive 0.23.0+: ToolOutput carries MessageContent blocks, not a string. The chunk's
+                // Result/Error stay text (the contract this adapter has always exposed), so flatten the
+                // same way IronHive's own text-only tool-result wires do: join text blocks, describe the rest.
+                var outputText = FlattenToolOutput(output);
                 yield return new ToolCallCompleteChunk(
                     completed.Name,
                     completed.Id,
                     output.IsSuccess,
-                    output.IsSuccess ? output.Result : null,
-                    output.IsSuccess ? null : output.Result);
+                    output.IsSuccess ? outputText : null,
+                    output.IsSuccess ? null : outputText);
             }
             else if (chunk is StreamingMessageDoneResponse done)
             {
@@ -305,6 +309,24 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     /// Maps neutral per-invoke options to IronHive <see cref="IronHiveInvokeOptions"/>.
     /// Null options (or all-null fields) map to null so agent defaults apply.
     /// </summary>
+    /// <summary>
+    /// Flattens a <see cref="ToolOutput"/>'s content blocks to a single string: text blocks are joined
+    /// with newlines, any non-text block is replaced by a short placeholder naming what was omitted.
+    /// </summary>
+    internal static string FlattenToolOutput(ToolOutput output)
+    {
+        if (output.Content.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Join("\n", output.Content.Select(c => c switch
+        {
+            TextMessageContent text => text.Value ?? string.Empty,
+            _ => $"[{c.GetType().Name} omitted — non-text tool output is not carried on this stream]"
+        }));
+    }
+
     private static IronHiveInvokeOptions? MapInvokeOptions(AgentRunOptions? options)
     {
         if (options is null || (options.Suggestions is null && options.ThinkingEffort is null && options.Tools is null))

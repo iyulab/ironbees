@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.5] - 2026-09-09
+
+### Changed
+- Re-pinned `IronHive.Abstractions`/`IronHive.Core` 0.22.2 -> 0.24.0.
+- `Ironbees.Ironhive`: adapted to IronHive 0.23.0's `ToolOutput.Content` (`MessageContent` blocks replaced the `Result` string). The streaming `ToolCallCompleteChunk` keeps exposing text: text blocks are joined with newlines, any non-text block is replaced by a short placeholder naming the omitted content type.
+
 ## [0.13.4] - 2026-09-08
 
 ### Changed

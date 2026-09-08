@@ -151,7 +151,8 @@ public class IronhiveAdapterTests
         var output = await mappedTool.InvokeAsync(new IronHive.Abstractions.Tools.ToolInput(
             new Dictionary<string, object?> { ["path"] = "/desk-1" }), TestContext.Current.CancellationToken);
         Assert.True(output.IsSuccess);
-        Assert.Contains("listing /desk-1", output.Result);
+        var text = Assert.IsType<TextMessageContent>(Assert.Single(output.Content));
+        Assert.Contains("listing /desk-1", text.Value);
     }
 
     [Fact]
