@@ -67,6 +67,21 @@ public record ProcessOptions
     public ThinkingEffort? ThinkingEffort { get; init; }
 
     /// <summary>
+    /// Maximum number of output tokens for this request only, overriding the agent's configured
+    /// <see cref="ModelConfig.MaxTokens"/>. Null leaves the configured value in place.
+    /// </summary>
+    /// <remarks>
+    /// The sibling overrides here (<see cref="ModelOverride"/>, <see cref="ThinkingEffort"/>,
+    /// <see cref="SystemPromptOverride"/>) all adjust the model call per request; this one was
+    /// missing, so a consumer could reach an output cap through a direct chat client but not
+    /// through this surface, and the same operator setting produced different behaviour on the two
+    /// paths. It matters most on a reasoning model, where the reasoning and the answer share one
+    /// budget: a run that reasons without concluding can spend the whole allowance and return no
+    /// text at all, which reads to a user as a request that thought and then said nothing.
+    /// </remarks>
+    public int? MaxTokens { get; init; }
+
+    /// <summary>
     /// Tool set to use for this request only, overriding the agent's configured
     /// <see cref="AgentConfig.Tools"/> for the duration of this call — e.g. a
     /// workspace/session-scoped tool that cannot be expressed as a static name in

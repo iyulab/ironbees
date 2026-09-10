@@ -329,7 +329,9 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
 
     private static IronHiveInvokeOptions? MapInvokeOptions(AgentRunOptions? options)
     {
-        if (options is null || (options.Suggestions is null && options.ThinkingEffort is null && options.Tools is null))
+        if (options is null
+            || (options.Suggestions is null && options.ThinkingEffort is null && options.Tools is null
+                && options.MaxTokens is null))
         {
             return null;
         }
@@ -337,6 +339,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         var mapped = new IronHiveInvokeOptions
         {
             ThinkingEffort = MapThinkingEffort(options.ThinkingEffort),
+            MaxTokens = options.MaxTokens,
         };
 
         if (options.Suggestions is { } request)

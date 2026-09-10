@@ -236,6 +236,19 @@ await foreach (var chunk in orchestrator.StreamAsync(query, new ProcessOptions
     Console.Write(chunk);
 }
 
+// Per-request output cap. Null (the default) keeps the agent's configured ModelConfig.MaxTokens.
+// Worth setting on a reasoning model: reasoning and answer share one budget, so a run that reasons
+// without concluding can spend the whole allowance and return no text - which reads to a user as a
+// request that thought and then said nothing.
+await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new ProcessOptions
+{
+    ConversationId = sessionId,
+    MaxTokens = 2048,
+}))
+{
+    // ...
+}
+
 // Structured streaming with follow-up suggestions (adapter permitting, e.g. Ironbees.Ironhive)
 await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new ProcessOptions
 {

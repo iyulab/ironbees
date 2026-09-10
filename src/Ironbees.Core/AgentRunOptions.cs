@@ -25,6 +25,12 @@ public record AgentRunOptions
     public ThinkingEffort? ThinkingEffort { get; init; }
 
     /// <summary>
+    /// Maximum number of output tokens for this invocation, overriding the agent's configured
+    /// value. Null leaves that value in place.
+    /// </summary>
+    public int? MaxTokens { get; init; }
+
+    /// <summary>
     /// Tool set to use for this invocation only, overriding the agent's configured
     /// <see cref="AgentConfig.Tools"/> for the duration of this call. Represented as
     /// framework-neutral M.E.AI <see cref="AITool"/> so <c>Ironbees.Core</c> stays free

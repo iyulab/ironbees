@@ -164,5 +164,12 @@ public interface ILLMFrameworkAdapter
                 $"{GetType().Name} does not support per-invoke tools. " +
                 "Override RunStructuredAsync/StreamStructuredAsync to honor AgentRunOptions.Tools.");
         }
+
+        if (options?.MaxTokens is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support a per-invoke output token cap. " +
+                "Override RunStructuredAsync/StreamStructuredAsync to honor AgentRunOptions.MaxTokens.");
+        }
     }
 }

@@ -85,6 +85,31 @@ public class AgentOrchestratorStructuredTests
     }
 
     [Fact]
+    public async Task ProcessStructuredAsync_Should_Pass_MaxTokens_To_Adapter_On_Its_Own()
+    {
+        // The gap this covers: every other per-request override reached the adapter and this one had
+        // nowhere to sit, so a consumer with an operator-adjustable output cap could apply it through
+        // a direct chat client and not through this surface - the same setting, two behaviours.
+        AgentRunOptions? captured = null;
+        _adapter.RunStructuredAsync(
+                _agent, "Hi",
+                Arg.Any<IReadOnlyList<ChatMessage>?>(),
+                Arg.Do<AgentRunOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(new AgentRunResult { Text = "answer" });
+
+        var orchestrator = CreateOrchestrator();
+
+        // Alone, with no sibling override set - the mapping must not require company to be built.
+        await orchestrator.ProcessStructuredAsync("Hi", new ProcessOptions { AgentName = "test-agent", MaxTokens = 512 }, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Equal(512, captured!.MaxTokens);
+        Assert.Null(captured.ThinkingEffort);
+        Assert.Null(captured.Suggestions);
+    }
+
+    [Fact]
     public async Task ProcessStructuredAsync_Should_Pass_Null_RunOptions_When_Not_Requested()
     {
         // Arrange
