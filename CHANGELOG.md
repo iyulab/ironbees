@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-11
+
+### Added
+- `ProcessOptions.MaxTokens` — a per-request cap on generated output tokens. `ProcessOptions`
+  already carried per-request overrides for the model, the system prompt, the thinking effort and
+  the tool set; the output cap was the one model-call parameter with no slot, so it could only be
+  set in the agent's YAML. An application whose other entry point reaches the same operator setting
+  through `ChatOptions` therefore saw the two paths respond differently to one setting.
+- `null` leaves the agent definition's value in force, so existing callers are unaffected.
+
 ## [0.13.6] - 2026-09-10
 
 ### Changed
