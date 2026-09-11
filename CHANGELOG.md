@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-09-11
+
+### Fixed
+- `AgentFrameworkAdapter` now applies `AgentRunOptions.MaxTokens` (and so `ProcessOptions.MaxTokens`
+  through the orchestrator) on both `RunStructuredAsync` and `StreamStructuredAsync`. It did not
+  override the structured surface, so it inherited the interface default, which refuses every
+  option: a cap that the IronHive adapter applied made this adapter throw `NotSupportedException`.
+  Both halves now build the request through one method, so they cannot apply it differently.
+- `Suggestions`, `ThinkingEffort` and `Tools` are still refused by this adapter, now by name in
+  its own check rather than by the interface default. A single Chat Completions call has no
+  tool-execution loop, no reasoning channel to surface, and no suggestion pass.
+
 ## [0.14.0] - 2026-09-11
 
 ### Added

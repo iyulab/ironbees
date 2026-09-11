@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Ironbees.Core;
+using Ironbees.Core.Streaming;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using OpenAI;
@@ -73,11 +74,40 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
-    public async Task<string> RunAsync(
+    public Task<string> RunAsync(
         IAgent agent,
         string input,
         IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
         CancellationToken cancellationToken = default)
+    {
+        return RunCoreAsync(agent, input, conversationHistory, runOptions: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Honours <see cref="AgentRunOptions.MaxTokens"/>. Refuses <see cref="AgentRunOptions.Suggestions"/>,
+    /// <see cref="AgentRunOptions.ThinkingEffort"/> and <see cref="AgentRunOptions.Tools"/> with
+    /// <see cref="NotSupportedException"/>: this adapter runs a single Chat Completions call with no
+    /// tool-execution loop, no reasoning channel to surface, and no suggestion pass.
+    /// </remarks>
+    public async Task<AgentRunResult> RunStructuredAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory = null,
+        AgentRunOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfUnsupported(options);
+        var text = await RunCoreAsync(agent, input, conversationHistory, options, cancellationToken).ConfigureAwait(false);
+        return new AgentRunResult { Text = text };
+    }
+
+    private async Task<string> RunCoreAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
+        AgentRunOptions? runOptions,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(agent);
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
@@ -98,7 +128,7 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
             var messages = BuildMessages(wrapper.Config.SystemPrompt, input, conversationHistory);
 
             // Create chat options
-            var options = BuildChatOptions(wrapper.Config.Model);
+            var options = BuildChatOptions(wrapper.Config.Model, runOptions);
 
             // Call chat completion
             var response = await wrapper.ChatClient.CompleteChatAsync(messages, options, cancellationToken);
@@ -129,11 +159,52 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<string> StreamAsync(
+    public IAsyncEnumerable<string> StreamAsync(
         IAgent agent,
         string input,
         IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
+    {
+        return StreamCoreAsync(agent, input, conversationHistory, runOptions: null, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Same options contract as <see cref="RunStructuredAsync"/>; a refused option throws at call time,
+    /// before the stream is enumerated.
+    /// </remarks>
+    public IAsyncEnumerable<StreamChunk> StreamStructuredAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory = null,
+        AgentRunOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ThrowIfUnsupported(options);
+        return StreamStructuredCoreAsync(agent, input, conversationHistory, options, cancellationToken);
+    }
+
+    private async IAsyncEnumerable<StreamChunk> StreamStructuredCoreAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
+        AgentRunOptions? runOptions,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await foreach (var text in StreamCoreAsync(agent, input, conversationHistory, runOptions, cancellationToken).ConfigureAwait(false))
+        {
+            yield return new TextChunk(text);
+        }
+
+        yield return new CompletionChunk();
+    }
+
+    private async IAsyncEnumerable<string> StreamCoreAsync(
+        IAgent agent,
+        string input,
+        IReadOnlyList<Microsoft.Extensions.AI.ChatMessage>? conversationHistory,
+        AgentRunOptions? runOptions,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(agent);
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
@@ -152,7 +223,7 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
         var messages = BuildMessages(wrapper.Config.SystemPrompt, input, conversationHistory);
 
         // Create chat options
-        var options = BuildChatOptions(wrapper.Config.Model);
+        var options = BuildChatOptions(wrapper.Config.Model, runOptions);
 
         // Stream chat completion
         var streamingResponse = wrapper.ChatClient.CompleteChatStreamingAsync(messages, options, cancellationToken);
@@ -228,14 +299,15 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
     private static partial void LogAgentStreamingCompleted(ILogger logger, string agentName);
 
     /// <summary>
-    /// Builds ChatCompletionOptions from model configuration.
+    /// Builds ChatCompletionOptions from the agent's model configuration and this call's options.
+    /// The one place both halves turn options into a request, so the two cannot disagree about it.
     /// </summary>
-    private static ChatCompletionOptions BuildChatOptions(ModelConfig model)
+    private static ChatCompletionOptions BuildChatOptions(ModelConfig model, AgentRunOptions? runOptions)
     {
         var options = new ChatCompletionOptions
         {
             Temperature = (float)model.Temperature,
-            MaxOutputTokenCount = model.MaxTokens
+            MaxOutputTokenCount = runOptions?.MaxTokens ?? model.MaxTokens
         };
 
         if (model.TopP.HasValue)
@@ -254,5 +326,30 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
         }
 
         return options;
+    }
+
+    /// <summary>
+    /// Refuses the per-invoke options this adapter cannot apply. Each is refused rather than dropped:
+    /// an option a caller set and the adapter ignored would read as applied.
+    /// </summary>
+    private void ThrowIfUnsupported(AgentRunOptions? options)
+    {
+        if (options?.Suggestions is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support structured suggestions (AgentRunOptions.Suggestions).");
+        }
+
+        if (options?.ThinkingEffort is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support per-invoke thinking effort (AgentRunOptions.ThinkingEffort).");
+        }
+
+        if (options?.Tools is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} does not support per-invoke tools (AgentRunOptions.Tools).");
+        }
     }
 }

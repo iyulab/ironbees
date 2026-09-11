@@ -267,6 +267,16 @@ await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new Proces
 //                result.Text / result.Suggestions
 ```
 
+Which per-request options an adapter applies. An option the adapter cannot apply throws
+`NotSupportedException` at call time rather than being ignored:
+
+| `ProcessOptions` | `Ironbees.Ironhive` | `Ironbees.AgentFramework` |
+|---|---|---|
+| `MaxTokens` | applied | applied |
+| `ThinkingEffort` | applied | throws |
+| `Tools` | applied | throws |
+| `Suggestions` | applied | throws |
+
 ### ASP.NET Core Integration
 
 **Required packages** — `Ironbees.Core` is abstraction-only. An LLM backend package must also be added:
