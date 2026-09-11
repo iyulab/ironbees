@@ -22,8 +22,8 @@
     <PackageVersion Include="Microsoft.OpenApi" Version="3.5.5" />
   </ItemGroup>
   <ItemGroup Label="IronHive">
-    <PackageVersion Include="IronHive.Abstractions" Version="0.24.1" />
-    <PackageVersion Include="IronHive.Core" Version="0.24.1" />
+    <PackageVersion Include="IronHive.Abstractions" Version="0.25.0" />
+    <PackageVersion Include="IronHive.Core" Version="0.25.0" />
   </ItemGroup>
   <ItemGroup Label="AI and Agent Framework">
     <!-- Azure AI Services -->
