@@ -227,6 +227,16 @@ public class KeywordAgentSelectorBenchmarkTests
                 tags: new List<string> { $"tag-{i}", $"category-{i}" }));
         }
 
+        // Warmup: this was the one benchmark in the class still timing a cold first call after the
+        // 2026-08-27 recalibration above — a 5ms bound with no warmup measures tier-0 JIT of the
+        // scoring path, not the scoring path, and it failed at exactly 5ms on three consecutive
+        // isolated Release runs on 2026-09-12 (no concurrent load). Same fix as its siblings: loop
+        // the real call shape before timing starts.
+        for (int i = 0; i < 50; i++)
+        {
+            await selector.ScoreAgentsAsync("Help me with capability-5", agents, TestContext.Current.CancellationToken);
+        }
+
         // Act
         var stopwatch = Stopwatch.StartNew();
         var scores = await selector.ScoreAgentsAsync("Help me with capability-5", agents, TestContext.Current.CancellationToken);

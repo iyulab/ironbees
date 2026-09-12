@@ -7,6 +7,8 @@ set -e
 # Default values
 CATEGORY="all"
 COVERAGE=false
+# Release by default so a local run measures the same binaries CI measures.
+CONFIGURATION="Release"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -19,9 +21,13 @@ while [[ $# -gt 0 ]]; do
             COVERAGE=true
             shift
             ;;
+        --configuration)
+            CONFIGURATION="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--category all|unit|performance|integration|ci] [--coverage]"
+            echo "Usage: $0 [--category all|unit|performance|integration|ci] [--coverage] [--configuration Debug|Release]"
             exit 1
             ;;
     esac
@@ -32,7 +38,7 @@ echo "Category: $CATEGORY"
 echo ""
 
 # Base test command
-TEST_CMD="dotnet test --configuration Debug --verbosity normal"
+TEST_CMD="dotnet test --configuration $CONFIGURATION --verbosity normal"
 
 # Add coverage if requested
 if [ "$COVERAGE" = true ]; then
@@ -59,8 +65,10 @@ case $CATEGORY in
         TEST_CMD="$TEST_CMD --filter \"Category=Integration\""
         ;;
     ci)
-        echo "▶️  Running CI tests (excluding Performance)"
-        TEST_CMD="$TEST_CMD --filter \"Category!=Performance\""
+        # The same exclusion set publish.yml applies solution-wide (ci.yml applies it per project).
+        # "ci" used to exclude only Performance, so a local "ci" green did not mean what a CI green means.
+        echo "▶️  Running CI tests (excluding Performance, Integration, RequiresApiKey — as publish.yml does)"
+        TEST_CMD="$TEST_CMD --filter \"Category!=Performance&Category!=Integration&Category!=RequiresApiKey\""
         ;;
     *)
         echo "Invalid category: $CATEGORY"

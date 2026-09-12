@@ -7,7 +7,12 @@ param(
     [string]$Category = "all",
 
     [Parameter(Mandatory=$false)]
-    [switch]$Coverage
+    [switch]$Coverage,
+
+    # Release by default so a local run measures the same binaries CI measures.
+    [Parameter(Mandatory=$false)]
+    [ValidateSet("Debug", "Release")]
+    [string]$Configuration = "Release"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,7 +22,7 @@ Write-Host "Category: $Category" -ForegroundColor Yellow
 Write-Host ""
 
 # Base test command
-$testCommand = "dotnet test --configuration Debug --verbosity normal"
+$testCommand = "dotnet test --configuration $Configuration --verbosity normal"
 
 # Add coverage if requested
 if ($Coverage) {
@@ -44,8 +49,10 @@ switch ($Category) {
         $testCommand += " --filter `"Category=Integration`""
     }
     "ci" {
-        Write-Host "▶️  Running CI tests (excluding Performance)" -ForegroundColor White
-        $testCommand += " --filter `"Category!=Performance`""
+        # The same exclusion set publish.yml applies solution-wide (ci.yml applies it per project).
+        # "ci" used to exclude only Performance, so a local "ci" green did not mean what a CI green means.
+        Write-Host "▶️  Running CI tests (excluding Performance, Integration, RequiresApiKey — as publish.yml does)" -ForegroundColor White
+        $testCommand += " --filter `"Category!=Performance&Category!=Integration&Category!=RequiresApiKey`""
     }
 }
 
