@@ -22,8 +22,8 @@
     <PackageVersion Include="Microsoft.OpenApi" Version="3.5.5" />
   </ItemGroup>
   <ItemGroup Label="IronHive">
-    <PackageVersion Include="IronHive.Abstractions" Version="0.26.3" />
-    <PackageVersion Include="IronHive.Core" Version="0.26.3" />
+    <PackageVersion Include="IronHive.Abstractions" Version="0.27.0" />
+    <PackageVersion Include="IronHive.Core" Version="0.27.0" />
   </ItemGroup>
   <ItemGroup Label="AI and Agent Framework">
     <!-- Azure AI Services -->
@@ -58,7 +58,7 @@
     <PackageVersion Include="Polly" Version="8.6.6" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
     <!-- Token Counting and Cost Tracking -->
-    <PackageVersion Include="TokenMeter" Version="0.7.4" />
+    <PackageVersion Include="TokenMeter" Version="0.7.5" />
   </ItemGroup>
   <ItemGroup Label="Web and API">
     <!-- ASP.NET Core -->
