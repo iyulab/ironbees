@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.8] - 2026-09-16
+
+### Changed
+- Raised `Microsoft.ML.OnnxRuntime` from 1.24.4 to 1.30.0. The hold at 1.24.4 (a CPU Whisper decoder regression in the 1.25+ line, seen through a sibling package) was retired after 1.30.0 passed the sibling's real-model transcriber, embedder and reranker suites and this repository's own tests.
+
 ## [0.14.7] - 2026-09-16
 
 ### Changed
