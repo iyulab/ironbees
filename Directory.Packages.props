@@ -9,14 +9,14 @@
     <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.9.0" />
     <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.9.0" />
     <!-- Microsoft Extensions DI and Logging -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.12" />
     <!-- Microsoft Extensions Configuration -->
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.12" />
     <!-- Security lift: 3.5.3 carries a high-severity advisory (GHSA-v5pm-xwqc-g5wc).
          3.5.5 is the lowest release on the same minor that clears it. -->
     <PackageVersion Include="Microsoft.OpenApi" Version="3.5.5" />
@@ -45,7 +45,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.9.0" />
     <PackageVersion Include="Microsoft.Build.Locator" Version="1.11.2" />
     <!-- Utilities -->
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <!-- Pinned to 1.24.4, matching modules/lm-supply and flux/FluxGuard's intentional floor
          (DirectML LayerNormalization crash on 1.25+, docket iyulab/FluxGuard#156). This project
@@ -56,7 +56,7 @@
     <PackageVersion Include="DotNetEnv" Version="3.2.0" />
     <!-- Resilience and Caching -->
     <PackageVersion Include="Polly" Version="8.6.6" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12" />
     <!-- Token Counting and Cost Tracking -->
     <PackageVersion Include="TokenMeter" Version="0.7.5" />
   </ItemGroup>
