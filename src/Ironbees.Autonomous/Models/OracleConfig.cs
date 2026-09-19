@@ -1,15 +1,14 @@
 namespace Ironbees.Autonomous.Models;
 
 /// <summary>
-/// Configuration for oracle verification
+/// Configuration for oracle verification, handed to the <see cref="Abstractions.IOracleVerifier"/> on each call.
 /// </summary>
+/// <remarks>
+/// The model that verifies is the one behind the client the verifier was given — choose a stronger model there to
+/// have a stronger reviewer check the work.
+/// </remarks>
 public record OracleConfig
 {
-    /// <summary>
-    /// Model identifier (e.g., "gpt-4", "claude-3-haiku", "llama-3")
-    /// </summary>
-    public string Model { get; init; } = "gpt-4o-mini";
-
     /// <summary>
     /// Maximum tokens for response
     /// </summary>

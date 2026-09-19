@@ -226,7 +226,6 @@ public class OracleVerdictTests
     {
         var config = new OracleConfig();
 
-        Assert.Equal("gpt-4o-mini", config.Model);
         Assert.Equal(1024, config.MaxTokens);
         Assert.Equal(0.3, config.Temperature);
         Assert.Equal(TimeSpan.FromSeconds(30), config.Timeout);

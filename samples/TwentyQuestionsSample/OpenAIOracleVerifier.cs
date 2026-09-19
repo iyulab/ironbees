@@ -71,7 +71,7 @@ public partial class OpenAIOracleVerifier : IOracleVerifier
         ArgumentNullException.ThrowIfNull(client);
         _chatClient = client.GetChatClient(model);
         _logger = logger ?? NullLogger.Instance;
-        _defaultConfig = new OracleConfig { Model = model };
+        _defaultConfig = new OracleConfig();
     }
 
     private static OpenAIClient CreateClientWithEndpoint(Uri endpoint, string apiKey)
