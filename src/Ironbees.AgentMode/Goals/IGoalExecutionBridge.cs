@@ -133,17 +133,18 @@ public sealed record GoalExecutionOptions
     public bool? CheckpointAfterEachIteration { get; init; }
 
     /// <summary>
-    /// Gets the maximum iterations override.
+    /// Gets the maximum iterations override (replaces the goal's <c>Constraints.MaxIterations</c> for this call).
     /// </summary>
     public int? MaxIterations { get; init; }
 
     /// <summary>
-    /// Gets the maximum tokens override.
+    /// Gets the maximum tokens override (replaces the goal's <c>Constraints.MaxTokens</c> for this call).
     /// </summary>
     public int? MaxTokens { get; init; }
 
     /// <summary>
-    /// Gets the execution timeout.
+    /// Gets the execution timeout. Overrides the goal's <c>Constraints.MaxDuration</c>; when either is set, a run that
+    /// exceeds it ends with a failed, timed-out <c>GoalFailed</c> event.
     /// </summary>
     public TimeSpan? Timeout { get; init; }
 
@@ -151,11 +152,6 @@ public sealed record GoalExecutionOptions
     /// Gets additional parameters to pass to the workflow template.
     /// </summary>
     public IReadOnlyDictionary<string, object>? Parameters { get; init; }
-
-    /// <summary>
-    /// Gets whether to include detailed progress events.
-    /// </summary>
-    public bool IncludeDetailedProgress { get; init; } = true;
 
     /// <summary>
     /// Creates default options.

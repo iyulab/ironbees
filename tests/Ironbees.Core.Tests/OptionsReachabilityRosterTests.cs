@@ -22,8 +22,6 @@ public class OptionsReachabilityRosterTests
 
         // Baseline when the roster was adopted (2026-09-19): each is to be wired or removed, decided per option in the
         // umbrella issue draft "ironbees-options-roster-baseline". Do not add to this list.
-        ["Ironbees.AgentMode.Goals.GoalExecutionOptions"] =
-            ["CheckpointAfterEachIteration", "CheckpointDirectory", "IncludeDetailedProgress", "MaxIterations", "MaxTokens", "Timeout"],
         ["Ironbees.Autonomous.Context.AutonomousContextOptions"] = ["AutoSummarizeThreshold", "Enabled", "MaxSummaryTokens", "UseTieredMemory"],
         ["Ironbees.Autonomous.Executors.FallbackConfig"] = ["Strategy"],
         ["Ironbees.Autonomous.Models.AutonomousConfig"] = ["MaxContextLearnings"],

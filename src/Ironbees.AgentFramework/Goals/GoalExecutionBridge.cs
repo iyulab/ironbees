@@ -121,11 +121,20 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
 
         options ??= GoalExecutionOptions.Default;
+        // Per-call overrides replace the goal's own values before anything reads them — the template parameters,
+        // the event metadata and the checkpoint decision all see one effective goal.
+        goal = ApplyOverrides(goal, options);
         var executionId = options.ExecutionId ?? $"goal-exec-{Guid.NewGuid():N}";
         var startedAt = DateTimeOffset.UtcNow;
 
-        // Create execution context
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        // Create execution context. The goal's time limit (MaxDuration, or the per-call Timeout) cancels the run through
+        // its own source, so a timeout can be told apart from the caller cancelling.
+        using var timeoutCts = new CancellationTokenSource();
+        if (goal.Constraints.MaxDuration is { } maxDuration)
+        {
+            timeoutCts.CancelAfter(maxDuration);
+        }
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
         var context = new ExecutionContext
         {
             GoalId = goal.Id,
@@ -166,8 +175,6 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
 
             try
             {
-                // Merge options parameters with goal parameters
-                var parameters = MergeParameters(goal, options);
                 workflowDefinition = await _templateResolver.ResolveAsync(
                     goal.WorkflowTemplate,
                     goal,
@@ -211,13 +218,13 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
 
             // Execute workflow
             context.Status = GoalExecutionStatus.Running;
-            var enableCheckpointing = options.EnableCheckpointing ?? goal.Checkpoint.Enabled;
+            var enableCheckpointing = goal.Checkpoint.Enabled;
             var iterationCount = 0;
 
             if (enableCheckpointing)
             {
-                await foreach (var evt in ExecuteWithCheckpointingAsync(
-                    goal, workflowDefinition, input, executionId, options, context, cts.Token))
+                await foreach (var evt in StopOnTimeout(ExecuteWithCheckpointingAsync(
+                    goal, workflowDefinition, input, executionId, options, context, cts.Token), timeoutCts, context, () => cancellationToken.IsCancellationRequested))
                 {
                     if (evt.Type == GoalExecutionEventType.IterationCompleted)
                     {
@@ -228,8 +235,8 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
             }
             else
             {
-                await foreach (var evt in ExecuteWithoutCheckpointingAsync(
-                    goal, workflowDefinition, input, executionId, options, context, cts.Token))
+                await foreach (var evt in StopOnTimeout(ExecuteWithoutCheckpointingAsync(
+                    goal, workflowDefinition, input, executionId, options, context, cts.Token), timeoutCts, context, () => cancellationToken.IsCancellationRequested))
                 {
                     if (evt.Type == GoalExecutionEventType.IterationCompleted)
                     {
@@ -272,13 +279,16 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
                 ExecutionId = executionId,
                 Content = finalStatus == GoalExecutionStatus.Completed
                     ? "Goal completed successfully"
-                    : "Goal execution failed",
+                    : context.TimedOut
+                        ? $"Goal execution timed out after {goal.Constraints.MaxDuration}"
+                        : "Goal execution failed",
                 IterationNumber = iterationCount,
                 Metadata = new Dictionary<string, object>
                 {
                     ["duration"] = (completedAt - startedAt).TotalMilliseconds,
                     ["iterations"] = iterationCount,
-                    ["status"] = finalStatus.ToString()
+                    ["status"] = finalStatus.ToString(),
+                    ["timedOut"] = context.TimedOut
                 }
             };
         }
@@ -548,19 +558,72 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
         };
     }
 
-    private static Dictionary<string, object> MergeParameters(GoalDefinition goal, GoalExecutionOptions options)
+    /// <summary>
+    /// The goal as this call runs it: each non-null <see cref="GoalExecutionOptions"/> override replaces the goal's own
+    /// value, and <see cref="GoalExecutionOptions.Parameters"/> is laid over the goal's parameters.
+    /// </summary>
+    internal static GoalDefinition ApplyOverrides(GoalDefinition goal, GoalExecutionOptions options)
     {
-        var parameters = new Dictionary<string, object>(goal.Parameters);
-
-        if (options.Parameters != null)
+        var parameters = goal.Parameters;
+        if (options.Parameters is { Count: > 0 })
         {
+            parameters = new Dictionary<string, object>(goal.Parameters);
             foreach (var (key, value) in options.Parameters)
             {
                 parameters[key] = value;
             }
         }
 
-        return parameters;
+        return goal with
+        {
+            Parameters = parameters,
+            Constraints = goal.Constraints with
+            {
+                MaxIterations = options.MaxIterations ?? goal.Constraints.MaxIterations,
+                MaxTokens = options.MaxTokens ?? goal.Constraints.MaxTokens,
+                MaxDuration = options.Timeout ?? goal.Constraints.MaxDuration,
+            },
+            Checkpoint = goal.Checkpoint with
+            {
+                Enabled = options.EnableCheckpointing ?? goal.Checkpoint.Enabled,
+                AfterEachIteration = options.CheckpointAfterEachIteration ?? goal.Checkpoint.AfterEachIteration,
+                CheckpointDirectory = options.CheckpointDirectory ?? goal.Checkpoint.CheckpointDirectory,
+            },
+        };
+    }
+
+    /// <summary>
+    /// Passes events through until the goal's time limit cancels the run; then marks the execution failed and timed out
+    /// and ends quietly instead of throwing. A cancellation from the caller still propagates as before.
+    /// </summary>
+    private static async IAsyncEnumerable<GoalExecutionEvent> StopOnTimeout(
+        IAsyncEnumerable<GoalExecutionEvent> source,
+        CancellationTokenSource timeout,
+        ExecutionContext context,
+        Func<bool> callerCancelled)
+    {
+        await using var events = source.GetAsyncEnumerator();
+        while (true)
+        {
+            bool moved;
+            try
+            {
+                moved = await events.MoveNextAsync();
+            }
+            catch (OperationCanceledException) when (timeout.IsCancellationRequested && !callerCancelled())
+            {
+                context.TimedOut = true;
+                context.Status = GoalExecutionStatus.Failed;
+                moved = false;
+            }
+
+            if (!moved)
+            {
+                yield break;
+            }
+
+            yield return events.Current;
+        }
     }
 
     private async Task<Microsoft.Agents.AI.Workflows.Workflow> ConvertToMafWorkflowAsync(
@@ -609,5 +672,6 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
         public required DateTimeOffset StartedAt { get; init; }
         public required CancellationTokenSource CancellationTokenSource { get; init; }
         public string? LastCheckpointId { get; set; }
+        public bool TimedOut { get; set; }
     }
 }

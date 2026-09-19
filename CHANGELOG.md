@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-19
+
+### Fixed
+- **Per-call `GoalExecutionOptions` take effect.** `MaxIterations`, `MaxTokens`, `CheckpointAfterEachIteration`,
+  `CheckpointDirectory` and `Parameters` were merged into a dictionary that was then thrown away, so the workflow
+  template saw the goal as written. The bridge now runs an effective goal with each override applied. The template
+  parameters, the event metadata and the checkpoint decision all see it, and the caller's goal is not modified.
+- **A goal's time limit is enforced.** `GoalExecutionOptions.Timeout`, or the goal's own `Constraints.MaxDuration`,
+  used to limit nothing. A run that exceeds the limit now ends with a `GoalFailed` event marked `timedOut`
+  instead of running on. Cancellation by the caller still propagates as an exception, as before.
+
+### Removed
+- **Breaking: `GoalExecutionOptions.IncludeDetailedProgress`.** Nothing filtered on it, so progress events were
+  always emitted in full. Migration: delete the assignment.
+
 ## [0.15.0] - 2026-09-19
 
 ### Fixed

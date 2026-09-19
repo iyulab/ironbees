@@ -314,6 +314,112 @@ public class GoalExecutionBridgeTests
     }
 
     [Fact]
+    public async Task ExecuteGoalAsync_PerCallOverrides_ReachTheTemplateResolver()
+    {
+        // The options used to be merged into a dictionary nothing read; the resolver saw the goal as written.
+        var bridge = CreateBridge();
+        var goal = CreateTestGoal() with { Checkpoint = new CheckpointSettings { Enabled = false } };
+        GoalDefinition? resolved = null;
+        _mockTemplateResolver.ResolveAsync(Arg.Any<string>(), Arg.Do<GoalDefinition>(g => resolved = g), Arg.Any<CancellationToken>())
+            .Returns(CreateTestWorkflowDefinition());
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(), Arg.Any<string>(), Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(), Arg.Any<CancellationToken>())
+            .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
+        var options = new GoalExecutionOptions
+        {
+            MaxIterations = 2,
+            MaxTokens = 500,
+            CheckpointAfterEachIteration = false,
+            CheckpointDirectory = "run-checkpoints",
+            Parameters = new Dictionary<string, object> { ["executor"] = "other-agent", ["extra"] = 1 },
+        };
+
+        await foreach (var _ in bridge.ExecuteGoalAsync(goal, "test input", options, TestContext.Current.CancellationToken))
+        {
+        }
+
+        Assert.NotNull(resolved);
+        Assert.Equal(2, resolved.Constraints.MaxIterations);
+        Assert.Equal(500, resolved.Constraints.MaxTokens);
+        Assert.False(resolved.Checkpoint.AfterEachIteration);
+        Assert.Equal("run-checkpoints", resolved.Checkpoint.CheckpointDirectory);
+        Assert.Equal("other-agent", resolved.Parameters["executor"]);
+        Assert.Equal(1, resolved.Parameters["extra"]);
+        Assert.Equal("test-agent", goal.Parameters["executor"]); // the caller's goal is not mutated
+    }
+
+    [Fact]
+    public void ApplyOverrides_WithNoOverrides_ReturnsTheGoalsOwnValues()
+    {
+        var goal = CreateTestGoal();
+
+        var effective = GoalExecutionBridge.ApplyOverrides(goal, GoalExecutionOptions.Default);
+
+        Assert.Equal(goal.Constraints, effective.Constraints);
+        Assert.Equal(goal.Checkpoint, effective.Checkpoint);
+        Assert.Same(goal.Parameters, effective.Parameters);
+    }
+
+    [Fact]
+    public async Task ExecuteGoalAsync_ExceedingTheTimeout_EndsWithATimedOutGoalFailed()
+    {
+        var bridge = CreateBridge();
+        var goal = CreateTestGoal() with { Checkpoint = new CheckpointSettings { Enabled = false } };
+        _mockTemplateResolver.ResolveAsync(Arg.Any<string>(), Arg.Any<GoalDefinition>(), Arg.Any<CancellationToken>())
+            .Returns(CreateTestWorkflowDefinition());
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(), Arg.Any<string>(), Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(), Arg.Any<CancellationToken>())
+            .Returns(call => NeverEnding(call.ArgAt<CancellationToken>(3)));
+
+        var events = new List<GoalExecutionEvent>();
+        await foreach (var evt in bridge.ExecuteGoalAsync(
+            goal, "test input", new GoalExecutionOptions { Timeout = TimeSpan.FromMilliseconds(100) }, TestContext.Current.CancellationToken))
+        {
+            events.Add(evt);
+        }
+
+        var last = events[^1];
+        Assert.Equal(GoalExecutionEventType.GoalFailed, last.Type);
+        Assert.Equal(true, last.Metadata!["timedOut"]);
+        Assert.Contains("timed out", last.Content!);
+
+        static async IAsyncEnumerable<WorkflowExecutionEvent> NeverEnding(
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken token = default)
+        {
+            await Task.Delay(Timeout.Infinite, token);
+            yield break;
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteGoalAsync_CallerCancellation_StillPropagates()
+    {
+        var bridge = CreateBridge();
+        var goal = CreateTestGoal() with { Checkpoint = new CheckpointSettings { Enabled = false } };
+        _mockTemplateResolver.ResolveAsync(Arg.Any<string>(), Arg.Any<GoalDefinition>(), Arg.Any<CancellationToken>())
+            .Returns(CreateTestWorkflowDefinition());
+        _mockWorkflowExecutor.ExecuteAsync(
+            Arg.Any<WorkflowDefinition>(), Arg.Any<string>(), Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(), Arg.Any<CancellationToken>())
+            .Returns(call => Waiting(call.ArgAt<CancellationToken>(3)));
+        using var caller = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var _ in bridge.ExecuteGoalAsync(
+                goal, "test input", new GoalExecutionOptions { Timeout = TimeSpan.FromMinutes(5) }, caller.Token))
+            {
+            }
+        });
+
+        static async IAsyncEnumerable<WorkflowExecutionEvent> Waiting(
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken token = default)
+        {
+            await Task.Delay(Timeout.Infinite, token);
+            yield break;
+        }
+    }
+
+    [Fact]
     public async Task ExecuteGoalAsync_WithCheckpointingDisabled_UsesExecuteAsync()
     {
         // Arrange
