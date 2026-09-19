@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - unreleased
+
+### Removed
+
+- **Breaking: `IronhiveAdapter.RunOrchestrationWithApprovalAsync` is removed.** It waited for an approval-request
+  event that the IronHive orchestrators never emit, so its `approvalHandler` was never called and every run went
+  through unapproved. Use `IronhiveOptions.ApprovalHandler`. The orchestrator factory hands it to every orchestrator
+  type, and it is asked before each agent runs; returning `false` stops the run. Run the orchestration with
+  `RunOrchestrationAsync`.
+
 ## [0.16.0] - 2026-09-19
 
 ### Changed

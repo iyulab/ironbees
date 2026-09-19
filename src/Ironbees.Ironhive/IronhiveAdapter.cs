@@ -431,9 +431,6 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     [LoggerMessage(Level = LogLevel.Debug, Message = "Starting orchestration for goal {GoalId}, execution {ExecutionId}")]
     private static partial void LogStartingOrchestration(ILogger logger, string goalId, string executionId);
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Starting orchestration with approval handler for goal {GoalId}, execution {ExecutionId}")]
-    private static partial void LogStartingOrchestrationWithApproval(ILogger logger, string goalId, string executionId);
-
     private static IronHiveAgent GetIronhiveAgent(IAgent agent)
     {
         if (agent is IronhiveAgentWrapper wrapper)
@@ -544,82 +541,6 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         {
             var mappedEvent = OrchestrationEventMapper.Map(streamEvent, goalId, executionId);
             if (mappedEvent is not null)
-            {
-                yield return mappedEvent;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Runs orchestration with approval callback for HITL patterns.
-    /// </summary>
-    /// <param name="orchestrator">The orchestrator to run.</param>
-    /// <param name="input">The input message to start orchestration.</param>
-    /// <param name="goalId">The goal ID for event tracking.</param>
-    /// <param name="executionId">The execution ID for this run.</param>
-    /// <param name="approvalHandler">Callback for handling approval requests.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>An async enumerable of goal execution events.</returns>
-    public async IAsyncEnumerable<GoalExecutionEvent> RunOrchestrationWithApprovalAsync(
-        IMultiAgentOrchestrator orchestrator,
-        string input,
-        string goalId,
-        string executionId,
-        Func<HitlRequestDetails, Task<bool>> approvalHandler,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(orchestrator);
-        ArgumentNullException.ThrowIfNull(input);
-        ArgumentNullException.ThrowIfNull(goalId);
-        ArgumentNullException.ThrowIfNull(executionId);
-        ArgumentNullException.ThrowIfNull(approvalHandler);
-
-        if (_logger.IsEnabled(LogLevel.Debug))
-        {
-            LogStartingOrchestrationWithApproval(_logger, goalId, executionId);
-        }
-
-        await foreach (var streamEvent in orchestrator.RunStreamingAsync(input, cancellationToken))
-        {
-            var mappedEvent = OrchestrationEventMapper.Map(streamEvent, goalId, executionId);
-            if (mappedEvent is null)
-            {
-                continue;
-            }
-
-            // Handle HITL approval requests
-            if (mappedEvent.Type == GoalExecutionEventType.HitlRequested && mappedEvent.HitlRequest is not null)
-            {
-                yield return mappedEvent;
-
-                var approved = await approvalHandler(mappedEvent.HitlRequest);
-
-                yield return new GoalExecutionEvent
-                {
-                    Type = GoalExecutionEventType.HitlResponseReceived,
-                    GoalId = goalId,
-                    ExecutionId = executionId,
-                    Content = approved ? "Approved" : "Rejected",
-                    Metadata = new Dictionary<string, object>
-                    {
-                        ["requestId"] = mappedEvent.HitlRequest.RequestId,
-                        ["approved"] = approved
-                    }
-                };
-
-                if (!approved)
-                {
-                    yield return new GoalExecutionEvent
-                    {
-                        Type = GoalExecutionEventType.GoalCancelled,
-                        GoalId = goalId,
-                        ExecutionId = executionId,
-                        Content = "Orchestration cancelled due to rejected approval"
-                    };
-                    yield break;
-                }
-            }
-            else
             {
                 yield return mappedEvent;
             }
