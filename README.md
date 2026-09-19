@@ -21,6 +21,34 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 | **Intelligent Routing** | Keyword, embedding, and hybrid agent selection out of the box |
 | **Cost Tracking** | Accurate token counting and cost estimation via [TokenMeter](https://github.com/iyulab/TokenMeter) |
 
+## Packages
+
+| Package | Purpose |
+|---|---|
+| `Ironbees.Core` | Agent loading from `agents/<name>/agent.yaml`, routing, guardrails, token and cost tracking (`AddIronbeesCore`) |
+| `Ironbees.AgentMode` | YAML workflow definitions, templates and goals (`GoalDefinition`, `IGoalExecutionBridge`) |
+| `Ironbees.Ironhive` | IronHive backend (multi-provider) and declarative multi-agent orchestration (`AddIronbeesIronhive`) |
+| `Ironbees.AgentFramework` | Azure OpenAI / Microsoft Agent Framework backend and the goal execution bridge (`AddIronbees`) |
+| `Ironbees.Autonomous` | Iterative autonomous execution with oracle verification (`AutonomousOrchestrator.Create<TRequest, TResult>()`) |
+
+## Features
+
+- **Agents from files** — `agent.yaml` + `system-prompt.md` per agent directory, loaded by the orchestrator. An agent that lists `tools` gets exactly those.
+- **Routing** — `IAgentOrchestrator.SelectAgentAsync(input)` picks an agent by keyword, embedding or hybrid selection. Call `ProcessAsync(input, agentName)` to address one directly.
+- **Guardrails** — `services.AddGuardrails()` returns a `GuardrailBuilder` for input and output checks. They are opt-in.
+- **Multi-agent orchestration** (`Ironbees.Ironhive`) — `IIronhiveOrchestratorFactory.CreateOrchestrator(settings, agents)` with an `OrchestratorSettings`:
+  `Type` (Sequential / Parallel / HubSpoke / Handoff / GroupChat / Graph), `Middleware` (retry, circuit breaker, bulkhead, rate limit, timeout),
+  `StopOnAgentFailure` and the timeouts. Every orchestrator type carries the same common options. See
+  [Multi-Agent Orchestration](#multi-agent-orchestration).
+- **Approval gate** — set `IronhiveOptions.ApprovalHandler` in `AddIronbeesIronhive` to be asked before each agent runs. A refusal stops the run.
+- **Goals** (`Ironbees.AgentFramework`) — `IGoalExecutionBridge.ExecuteGoalAsync(goal, input, new GoalExecutionOptions { MaxIterations = …, Timeout = …, Parameters = … })`
+  runs a goal's workflow template. The per-call options override the goal's own constraints and checkpoint settings. A goal that exceeds its `Timeout` (or
+  `Constraints.MaxDuration`) ends with a `GoalFailed` event marked `timedOut`.
+- **Autonomous execution** (`Ironbees.Autonomous`) — `AutonomousOrchestrator.Create<TRequest, TResult>().WithExecutor(…).WithOracle(…).Build()`. Context tracking is on by default;
+  `WithoutContext()` turns it off. `AutonomousConfig.MaxContextLearnings` (`context.max_learnings` in settings) caps the learnings kept between iterations.
+  `services.AddAutonomousContext(…)` registers the context manager for DI.
+- **Token tracking and cost estimation** — see [Token Tracking & Cost Estimation](#token-tracking--cost-estimation).
+
 ## Architecture
 
 ```
