@@ -110,6 +110,26 @@ public class AgentOrchestratorStructuredTests
     }
 
     [Fact]
+    public async Task ProcessStructuredAsync_Should_Pass_MaxToolTurns_To_Adapter_On_Its_Own()
+    {
+        AgentRunOptions? captured = null;
+        _adapter.RunStructuredAsync(
+                _agent, "Hi",
+                Arg.Any<IReadOnlyList<ChatMessage>?>(),
+                Arg.Do<AgentRunOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(new AgentRunResult { Text = "answer" });
+
+        var orchestrator = CreateOrchestrator();
+
+        await orchestrator.ProcessStructuredAsync("Hi", new ProcessOptions { AgentName = "test-agent", MaxToolTurns = 3 }, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Equal(3, captured!.MaxToolTurns);
+        Assert.Null(captured.MaxTokens);
+    }
+
+    [Fact]
     public async Task ProcessStructuredAsync_Should_Pass_Null_RunOptions_When_Not_Requested()
     {
         // Arrange

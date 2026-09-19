@@ -189,6 +189,9 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         {
             Text = ExtractText(response),
             Suggestions = MapSuggestions(response.Suggestions),
+            Usage = response.TokenUsage is { } usage
+                ? new UsageDetails { InputTokenCount = usage.InputTokens, OutputTokenCount = usage.OutputTokens }
+                : null,
         };
     }
 
@@ -331,7 +334,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     {
         if (options is null
             || (options.Suggestions is null && options.ThinkingEffort is null && options.Tools is null
-                && options.MaxTokens is null))
+                && options.MaxTokens is null && options.MaxToolTurns is null))
         {
             return null;
         }
@@ -340,6 +343,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
         {
             ThinkingEffort = MapThinkingEffort(options.ThinkingEffort),
             MaxTokens = options.MaxTokens,
+            MaxTurns = options.MaxToolTurns,
         };
 
         if (options.Suggestions is { } request)

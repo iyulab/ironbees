@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-19
+
+### Added
+- **A per-request tool-turn limit: `ProcessOptions.MaxToolTurns` / `AgentRunOptions.MaxToolTurns`.** An adapter
+  that runs its own tool loop applies it for that call; the IronHive adapter maps it to `AgentInvokeOptions.MaxTurns`.
+  Adapters without a tool loop (the Agent Framework adapter, and the interface's default implementation) refuse it
+  with `NotSupportedException` instead of ignoring it.
+- **`AgentRunResult.Usage`, `TurnsUsed` and `TurnLimitReached`** — what the run consumed and whether it stopped at its
+  turn limit with the model still calling tools. Null means the adapter does not know. The IronHive adapter now
+  reports `Usage`.
+
 ## [0.14.12] - 2026-09-18
 
 ### Changed

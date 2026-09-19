@@ -351,5 +351,11 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
             throw new NotSupportedException(
                 $"{GetType().Name} does not support per-invoke tools (AgentRunOptions.Tools).");
         }
+
+        if (options?.MaxToolTurns is not null)
+        {
+            throw new NotSupportedException(
+                $"{GetType().Name} runs a single call with no tool loop, so it has no tool-turn limit to apply (AgentRunOptions.MaxToolTurns).");
+        }
     }
 }

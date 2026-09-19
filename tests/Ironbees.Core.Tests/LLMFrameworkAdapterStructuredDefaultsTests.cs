@@ -118,4 +118,17 @@ public class LLMFrameworkAdapterStructuredDefaultsTests
         Assert.Contains("TextOnlyAdapter", ex.Message);
         Assert.Contains("tools", ex.Message);
     }
+
+    [Fact]
+    public async Task RunStructuredAsync_Default_Should_FailLoud_When_MaxToolTurns_Requested()
+    {
+        ILLMFrameworkAdapter adapter = new TextOnlyAdapter();
+        var options = new AgentRunOptions { MaxToolTurns = 2 };
+
+        var ex = await Assert.ThrowsAsync<NotSupportedException>(
+            () => adapter.RunStructuredAsync(DummyAgent, "hi", options: options, cancellationToken: TestContext.Current.CancellationToken));
+
+        Assert.Contains("TextOnlyAdapter", ex.Message);
+        Assert.Contains("tool-turn limit", ex.Message);
+    }
 }

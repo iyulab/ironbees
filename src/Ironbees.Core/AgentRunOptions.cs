@@ -31,6 +31,14 @@ public record AgentRunOptions
     public int? MaxTokens { get; init; }
 
     /// <summary>
+    /// Maximum number of model round-trips the adapter's tool loop may run for this invocation,
+    /// overriding the adapter's configured default. Null leaves that default in place. When the loop
+    /// stops at this limit the result says so (<see cref="AgentRunResult.TurnLimitReached"/>) instead
+    /// of passing the last partial text off as a finished answer.
+    /// </summary>
+    public int? MaxToolTurns { get; init; }
+
+    /// <summary>
     /// Tool set to use for this invocation only, overriding the agent's configured
     /// <see cref="AgentConfig.Tools"/> for the duration of this call. Represented as
     /// framework-neutral M.E.AI <see cref="AITool"/> so <c>Ironbees.Core</c> stays free

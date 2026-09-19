@@ -87,6 +87,29 @@ public class IronhiveAdapterStructuredTests
     }
 
     [Fact]
+    public async Task RunStructuredAsync_Should_Map_MaxToolTurns_To_MaxTurns_And_Report_Usage()
+    {
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? captured = null;
+        var response = TextResponse("answer");
+        response.TokenUsage = new MessageTokenUsage { InputTokens = 7, OutputTokens = 3 };
+        mockAgent
+            .InvokeAsync(
+                Arg.Any<IEnumerable<Message>>(),
+                Arg.Do<AgentInvokeOptions?>(o => captured = o),
+                Arg.Any<CancellationToken>())
+            .Returns(response);
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        var result = await _adapter.RunStructuredAsync(
+            wrapper, "Hi", options: new AgentRunOptions { MaxToolTurns = 4 }, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(4, captured!.MaxTurns);
+        Assert.Equal(7, result.Usage!.InputTokenCount);
+        Assert.Equal(3, result.Usage.OutputTokenCount);
+    }
+
+    [Fact]
     public async Task RunStructuredAsync_Should_Pass_Null_Options_When_Not_Requested()
     {
         // Arrange

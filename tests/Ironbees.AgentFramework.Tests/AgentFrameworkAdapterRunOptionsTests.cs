@@ -45,6 +45,7 @@ public class AgentFrameworkAdapterRunOptionsTests
         nameof(AgentRunOptions.Suggestions),
         nameof(AgentRunOptions.ThinkingEffort),
         nameof(AgentRunOptions.Tools),
+        nameof(AgentRunOptions.MaxToolTurns),
     ];
 
     private static AgentConfig CreateConfig() => new()
@@ -159,6 +160,7 @@ public class AgentFrameworkAdapterRunOptionsTests
             nameof(AgentRunOptions.Suggestions) => new AgentRunOptions { Suggestions = new SuggestionRequest() },
             nameof(AgentRunOptions.ThinkingEffort) => new AgentRunOptions { ThinkingEffort = ThinkingEffort.Low },
             nameof(AgentRunOptions.Tools) => new AgentRunOptions { Tools = [AIFunctionFactory.Create(() => 1, "noop")] },
+            nameof(AgentRunOptions.MaxToolTurns) => new AgentRunOptions { MaxToolTurns = 2 },
             _ => throw new ArgumentOutOfRangeException(nameof(option), option, "no sample value for this option"),
         };
 

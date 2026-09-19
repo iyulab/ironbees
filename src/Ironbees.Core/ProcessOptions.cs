@@ -82,6 +82,13 @@ public record ProcessOptions
     public int? MaxTokens { get; init; }
 
     /// <summary>
+    /// Maximum number of model round-trips the agent's tool loop may run for this request only,
+    /// overriding the adapter default. Null leaves the default in place. Adapters that run no tool
+    /// loop of their own refuse it (<see cref="NotSupportedException"/>) rather than ignore it.
+    /// </summary>
+    public int? MaxToolTurns { get; init; }
+
+    /// <summary>
     /// Tool set to use for this request only, overriding the agent's configured
     /// <see cref="AgentConfig.Tools"/> for the duration of this call — e.g. a
     /// workspace/session-scoped tool that cannot be expressed as a static name in

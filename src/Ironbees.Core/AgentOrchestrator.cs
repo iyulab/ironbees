@@ -330,7 +330,7 @@ public class AgentOrchestrator : IAgentOrchestrator
     /// </summary>
     private static AgentRunOptions? MapRunOptions(ProcessOptions options)
         => options.Suggestions is null && options.ThinkingEffort is null && options.Tools is null
-           && options.MaxTokens is null
+           && options.MaxTokens is null && options.MaxToolTurns is null
             ? null
             : new AgentRunOptions
             {
@@ -338,6 +338,7 @@ public class AgentOrchestrator : IAgentOrchestrator
                 ThinkingEffort = options.ThinkingEffort,
                 Tools = options.Tools,
                 MaxTokens = options.MaxTokens,
+                MaxToolTurns = options.MaxToolTurns,
             };
 
     /// <summary>
