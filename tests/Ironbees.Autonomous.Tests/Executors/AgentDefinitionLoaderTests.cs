@@ -90,7 +90,6 @@ public class AgentDefinitionLoaderTests : IDisposable
         Assert.NotNull(agent.Fallback);
         Assert.True(agent.Fallback.Enabled);
         Assert.Equal(2, agent.Fallback.Items.Count);
-        Assert.Equal("random", agent.Fallback.Strategy);
         Assert.Equal(2, agent.Variables.Count);
         Assert.Equal("animals", agent.Variables["category"]);
     }

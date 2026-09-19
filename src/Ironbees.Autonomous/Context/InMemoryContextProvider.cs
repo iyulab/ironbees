@@ -66,9 +66,10 @@ public class InMemoryContextProvider : IAutonomousContextProvider
 
     /// <inheritdoc />
     public Task<string> GetExecutionSummaryAsync(
-        int maxTokens = 1000,
+        int? maxTokens = null,
         CancellationToken cancellationToken = default)
     {
+        var limit = maxTokens ?? 1000;
         var items = _contextItems.ToArray();
         if (items.Length == 0)
             return Task.FromResult("No execution history.");
@@ -79,7 +80,7 @@ public class InMemoryContextProvider : IAutonomousContextProvider
         foreach (var item in items.OrderBy(x => x.Timestamp))
         {
             var tokens = item.EstimatedTokens > 0 ? item.EstimatedTokens : _estimatedTokensPerItem;
-            if (totalTokens + tokens > maxTokens)
+            if (totalTokens + tokens > limit)
                 break;
 
             summaryParts.Add($"[{item.Type}] {TruncateContent(item.Content, 200)}");

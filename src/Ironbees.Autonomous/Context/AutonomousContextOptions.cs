@@ -8,11 +8,6 @@ namespace Ironbees.Autonomous.Context;
 public class AutonomousContextOptions
 {
     /// <summary>
-    /// Whether context management is enabled.
-    /// </summary>
-    public bool Enabled { get; set; } = true;
-
-    /// <summary>
     /// Maximum context items to retain in memory.
     /// </summary>
     public int MaxContextItems { get; set; } = 50;
@@ -28,17 +23,7 @@ public class AutonomousContextOptions
     public SaturationConfig Saturation { get; set; } = new();
 
     /// <summary>
-    /// Whether to use tiered memory (L1/L2/L3).
-    /// </summary>
-    public bool UseTieredMemory { get; set; } = true;
-
-    /// <summary>
-    /// Auto-summarize when saturation exceeds this percentage.
-    /// </summary>
-    public float AutoSummarizeThreshold { get; set; } = 75f;
-
-    /// <summary>
-    /// Maximum tokens for execution summary.
+    /// Maximum tokens for execution summary — the limit <c>GetExecutionSummaryAsync()</c> uses when the caller passes none.
     /// </summary>
     public int MaxSummaryTokens { get; set; } = 1000;
 }
@@ -66,7 +51,7 @@ public class NullContextProvider : IAutonomousContextProvider
         => Task.CompletedTask;
 
     /// <inheritdoc />
-    public Task<string> GetExecutionSummaryAsync(int maxTokens = 1000, CancellationToken cancellationToken = default)
+    public Task<string> GetExecutionSummaryAsync(int? maxTokens = null, CancellationToken cancellationToken = default)
         => Task.FromResult(string.Empty);
 
     /// <inheritdoc />

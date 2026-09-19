@@ -59,6 +59,15 @@ public record AutonomousExecutionContext
         Learnings = [.. Learnings, learning]
     };
 
+    /// <summary>
+    /// Add a learning from this iteration, keeping only the most recent <paramref name="maxLearnings"/>
+    /// (<see cref="AutonomousConfig.MaxContextLearnings"/>).
+    /// </summary>
+    public AutonomousExecutionContext WithLearning(IterationLearning learning, int maxLearnings) => this with
+    {
+        Learnings = [.. Learnings.Append(learning).TakeLast(Math.Max(0, maxLearnings))]
+    };
+
     /// <summary>Add an error resolution</summary>
     public AutonomousExecutionContext WithErrorResolution(ErrorResolution resolution) => this with
     {

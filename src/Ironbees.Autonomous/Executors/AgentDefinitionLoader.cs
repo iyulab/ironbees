@@ -120,8 +120,7 @@ public sealed class AgentDefinitionLoader
             Fallback = yaml.Fallback != null ? new FallbackConfig
             {
                 Enabled = yaml.Fallback.Enabled ?? true,
-                Items = yaml.Fallback.Items ?? new List<string>(),
-                Strategy = yaml.Fallback.Strategy ?? "sequential"
+                Items = yaml.Fallback.Items ?? new List<string>()
             } : null,
             Variables = yaml.Variables ?? new Dictionary<string, string>()
         };
@@ -160,7 +159,6 @@ public sealed class AgentDefinitionLoader
     {
         public bool? Enabled { get; set; }
         public List<string>? Items { get; set; }
-        public string? Strategy { get; set; }
     }
 
     private sealed class YamlFallbackItems

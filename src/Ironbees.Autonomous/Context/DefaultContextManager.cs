@@ -86,9 +86,10 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
 
     /// <inheritdoc />
     public Task<string> GetExecutionSummaryAsync(
-        int maxTokens = 1000,
+        int? maxTokens = null,
         CancellationToken cancellationToken = default)
     {
+        var limit = maxTokens ?? _options.MaxSummaryTokens;
         var items = _contextQueue.ToArray();
         if (items.Length == 0)
             return Task.FromResult(string.Empty);
@@ -98,7 +99,7 @@ public sealed class DefaultContextManager : IAutonomousContextProvider, IAutonom
 
         foreach (var item in items.OrderBy(x => x.Timestamp))
         {
-            if (totalTokens + item.EstimatedTokens > maxTokens)
+            if (totalTokens + item.EstimatedTokens > limit)
                 break;
 
             parts.Add($"[{item.Type}] {Truncate(item.Content, 150)}");

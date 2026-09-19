@@ -66,16 +66,13 @@ public record AgentLlmSettings
 }
 
 /// <summary>
-/// Fallback configuration for when AI fails.
-/// Supports sequential, random, and context-aware strategies.
+/// Fallback configuration for when AI fails. <c>ContextAwareFallbackStrategy</c> tries a matching context pool, then
+/// the default pool, then <see cref="Items"/>.
 /// </summary>
 public record FallbackConfig
 {
     /// <summary>Enable fallback behavior</summary>
     public bool Enabled { get; init; } = true;
-
-    /// <summary>Strategy: sequential, random, context-aware</summary>
-    public string Strategy { get; init; } = "sequential";
 
     /// <summary>Simple list of fallback items (for sequential/random)</summary>
     public List<string> Items { get; init; } = [];

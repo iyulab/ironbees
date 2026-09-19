@@ -19,12 +19,6 @@ public class OptionsReachabilityRosterTests
         // OracleConfig goes to the IOracleVerifier implementation; AgentConfig.Metadata is the consumer's own bag.
         ["Ironbees.Autonomous.Models.OracleConfig"] = ["MaxTokens", "ReflectionSystemPrompt", "SystemPrompt", "Temperature", "Timeout"],
         ["Ironbees.Core.AgentConfig"] = ["Metadata"],
-
-        // Baseline when the roster was adopted (2026-09-19): each is to be wired or removed, decided per option in the
-        // umbrella issue draft "ironbees-options-roster-baseline". Do not add to this list.
-        ["Ironbees.Autonomous.Context.AutonomousContextOptions"] = ["AutoSummarizeThreshold", "Enabled", "MaxSummaryTokens", "UseTieredMemory"],
-        ["Ironbees.Autonomous.Executors.FallbackConfig"] = ["Strategy"],
-        ["Ironbees.Autonomous.Models.AutonomousConfig"] = ["MaxContextLearnings"],
     };
 
     [Fact]

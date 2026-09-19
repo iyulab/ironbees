@@ -228,6 +228,25 @@ public class DefaultContextManagerTests
     }
 
     [Fact]
+    public async Task GetExecutionSummary_WithoutALimit_UsesMaxSummaryTokens()
+    {
+        // MaxSummaryTokens was declared but the summary always used its own parameter default (1000).
+        var narrow = DefaultContextManager.Create(o => o.MaxSummaryTokens = 100);
+        var wide = DefaultContextManager.Create(o => o.MaxSummaryTokens = 100_000);
+        for (int i = 1; i <= 20; i++)
+        {
+            await narrow.RecordOutputAsync(new string('x', 100), cancellationToken: TestContext.Current.CancellationToken);
+            await wide.RecordOutputAsync(new string('x', 100), cancellationToken: TestContext.Current.CancellationToken);
+        }
+
+        var narrowSummary = await narrow.GetExecutionSummaryAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var wideSummary = await wide.GetExecutionSummaryAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(narrowSummary.Length < wideSummary.Length,
+            $"the configured limit decides the default summary size ({narrowSummary.Length} vs {wideSummary.Length})");
+    }
+
+    [Fact]
     public async Task RetrieveWithFilter_FiltersByTier()
     {
         // Arrange

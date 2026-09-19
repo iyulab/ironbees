@@ -37,11 +37,12 @@ public interface IAutonomousContextProvider
     /// <summary>
     /// Gets summary of execution history for prompt building.
     /// </summary>
-    /// <param name="maxTokens">Maximum tokens to include in summary</param>
+    /// <param name="maxTokens">Maximum tokens to include in summary; <see langword="null"/> uses the provider's configured
+    /// limit (<c>AutonomousContextOptions.MaxSummaryTokens</c> for the default manager).</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Summarized execution history</returns>
     Task<string> GetExecutionSummaryAsync(
-        int maxTokens = 1000,
+        int? maxTokens = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

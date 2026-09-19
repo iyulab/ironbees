@@ -33,7 +33,6 @@ resilience:
 # Context-aware fallback configuration
 fallback:
   enabled: true
-  strategy: context-aware
 
   # Default fallback pool (used when no context matches)
   default:

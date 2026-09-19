@@ -30,7 +30,7 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     private IAutonomousContextProvider? _contextProvider;
     private IAutonomousMemoryStore? _memoryStore;
     private IContextSaturationMonitor? _saturationMonitor;
-    private AutonomousContextOptions _contextOptions = new() { Enabled = true };
+    private AutonomousContextOptions _contextOptions = new();
     private bool _contextDisabled;
 
     /// <summary>
@@ -288,7 +288,6 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         IAutonomousContextProvider contextProvider)
     {
         _contextProvider = contextProvider ?? throw new ArgumentNullException(nameof(contextProvider));
-        _contextOptions.Enabled = true;
         return this;
     }
 
@@ -336,7 +335,6 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         _contextProvider = new InMemoryContextProvider(maxContextItems);
         _memoryStore = new InMemoryMemoryStore(maxMemories);
         _saturationMonitor = new InMemorySaturationMonitor(_contextOptions.Saturation);
-        _contextOptions.Enabled = true;
         return this;
     }
 
@@ -352,7 +350,6 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         _contextProvider = manager;
         _memoryStore = manager;
         _saturationMonitor = manager;
-        _contextOptions.Enabled = true;
         return this;
     }
 
@@ -365,7 +362,6 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         _contextProvider = manager ?? throw new ArgumentNullException(nameof(manager));
         _memoryStore = manager;
         _saturationMonitor = manager;
-        _contextOptions.Enabled = true;
         _contextDisabled = false;
         return this;
     }
@@ -380,7 +376,6 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         _contextProvider = null;
         _memoryStore = null;
         _saturationMonitor = null;
-        _contextOptions.Enabled = false;
         return this;
     }
 

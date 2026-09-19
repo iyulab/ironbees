@@ -17,10 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A goal's time limit is enforced.** `GoalExecutionOptions.Timeout`, or the goal's own `Constraints.MaxDuration`,
   used to limit nothing. A run that exceeds the limit now ends with a `GoalFailed` event marked `timedOut`
   instead of running on. Cancellation by the caller still propagates as an exception, as before.
+- **`AutonomousConfig.MaxContextLearnings` (`context.max_learnings` in settings) caps the learnings kept in context.**
+  Learnings grew without limit while the sibling `MaxContextOutputs` was enforced. A new overload,
+  `AutonomousExecutionContext.WithLearning(learning, maxLearnings)`, keeps the most recent ones.
+- **`AutonomousContextOptions.MaxSummaryTokens` is the default limit of `GetExecutionSummaryAsync()`.** The
+  parameter's own default (1000) always won. The parameter is now `int? maxTokens = null`, and `null` uses the
+  provider's configured limit.
 
 ### Removed
 - **Breaking: `GoalExecutionOptions.IncludeDetailedProgress`.** Nothing filtered on it, so progress events were
   always emitted in full. Migration: delete the assignment.
+- **Breaking: `AutonomousContextOptions.Enabled`, `UseTieredMemory` and `AutoSummarizeThreshold`.** `Enabled` duplicated
+  `WithoutContext()`, which is what switches context off. Tiered memory and auto-summarization had no implementation behind
+  them. Migration: call `WithoutContext()` instead of setting `Enabled = false`, and delete the other two.
+- **Breaking: `FallbackConfig.Strategy` (`fallback.strategy` in agent YAML).** There was one strategy: context pools, then
+  default, then items. An agent file that still sets the key loads unchanged, because unknown keys are ignored.
+- **Breaking: `IAutonomousContextProvider.GetExecutionSummaryAsync(int? maxTokens = null, …)`.** Implementers change the
+  parameter type. Callers that pass a number are unaffected.
 
 ## [0.15.0] - 2026-09-19
 

@@ -702,7 +702,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                     if (_config.EnableReflection && verdict.Reflection != null && _executionContext != null)
                     {
                         _executionContext = _executionContext
-                            .WithLearning(verdict.Reflection.ToLearning(_currentIteration))
+                            .WithLearning(verdict.Reflection.ToLearning(_currentIteration), _config.MaxContextLearnings)
                             .WithReflection(verdict.Reflection.ToInsight());
 
                         RaiseEvent(AutonomousEventType.ReflectionCaptured,
@@ -918,7 +918,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
             if (entry.OracleVerdict?.Reflection != null)
             {
                 context = context
-                    .WithLearning(entry.OracleVerdict.Reflection.ToLearning(entry.IterationNumber))
+                    .WithLearning(entry.OracleVerdict.Reflection.ToLearning(entry.IterationNumber), _config.MaxContextLearnings)
                     .WithReflection(entry.OracleVerdict.Reflection.ToInsight());
             }
         }
