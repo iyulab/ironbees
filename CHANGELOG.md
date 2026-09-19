@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`AutonomousContextOptions.MaxSummaryTokens` is the default limit of `GetExecutionSummaryAsync()`.** The
   parameter's own default (1000) always won. The parameter is now `int? maxTokens = null`, and `null` uses the
   provider's configured limit.
+- **Handoff and GroupChat orchestrations get the middleware and `StopOnAgentFailure` from the settings.** The factory
+  built these two through IronHive's builders, which could not take either, so they always stopped on the first failure
+  and ran without the configured middleware. The builders gained the setters in IronHive 0.31.0. A test now checks that
+  every orchestrator type carries the common options: timeouts, `StopOnAgentFailure`, middleware and the approval handler.
 
 ### Removed
 - **Breaking: `GoalExecutionOptions.IncludeDetailedProgress`.** Nothing filtered on it, so progress events were

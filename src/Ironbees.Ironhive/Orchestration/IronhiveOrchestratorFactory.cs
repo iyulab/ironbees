@@ -256,7 +256,9 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             .SetInitialAgent(settings.InitialAgent)
             .SetMaxTransitions(settings.MaxTransitions)
             .SetTimeout(settings.Timeout)
-            .SetAgentTimeout(settings.AgentTimeout);
+            .SetAgentTimeout(settings.AgentTimeout)
+            .SetStopOnAgentFailure(baseOptions.StopOnAgentFailure)
+            .SetAgentMiddlewares(baseOptions.AgentMiddlewares);
 
         if (baseOptions.ApprovalHandler is { } handoffApproval)
         {
@@ -290,7 +292,9 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             .SetName("ironbees-groupchat")
             .SetMaxRounds(settings.MaxRounds)
             .SetTimeout(settings.Timeout)
-            .SetAgentTimeout(settings.AgentTimeout);
+            .SetAgentTimeout(settings.AgentTimeout)
+            .SetStopOnAgentFailure(baseOptions.StopOnAgentFailure)
+            .SetAgentMiddlewares(baseOptions.AgentMiddlewares);
 
         if (baseOptions.ApprovalHandler is { } groupChatApproval)
         {

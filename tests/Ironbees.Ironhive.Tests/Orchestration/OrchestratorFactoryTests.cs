@@ -345,6 +345,42 @@ public class OrchestratorFactoryTests
     }
 
     /// <summary>
+    /// The factory rebuilds each orchestrator's options from the settings, per type. That reconstruction is where options
+    /// go missing: the approval handler once did on every type, and middleware and StopOnAgentFailure did on Handoff and
+    /// GroupChat, whose builders could not take them. Every type must carry every common option the settings express.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryOrchestratorType))]
+    public void EveryOrchestratorType_CarriesTheCommonOptions(OrchestratorType type)
+    {
+        var factory = new IronhiveOrchestratorFactory(
+            NullLogger<IronhiveOrchestratorFactory>.Instance,
+            new IronhiveMiddlewareFactory(),
+            new IronhiveOptions { ApprovalHandler = _ => Task.FromResult(true) });
+        var settings = SettingsFor(type) with
+        {
+            Timeout = TimeSpan.FromSeconds(123),
+            AgentTimeout = TimeSpan.FromSeconds(45),
+            StopOnAgentFailure = false,
+            Middleware = new MiddlewareSettings { EnableLogging = true },
+        };
+
+        var wrapper = (IronhiveOrchestratorWrapper)factory.CreateOrchestrator(
+            settings, [CreateIronhiveAgentWrapper("agent1"), CreateIronhiveAgentWrapper("agent2")]);
+        // Derived orchestrators re-declare Options with their own type, so read the one the base class declares.
+        var options = (IronHive.Abstractions.Agent.Orchestration.OrchestratorOptions)typeof(IronHive.Core.Agent.Orchestration.OrchestratorBase)
+            .GetProperty("Options", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)!
+            .GetValue(wrapper.IronhiveOrchestrator)!;
+
+        Assert.Equal(TimeSpan.FromSeconds(123), options.Timeout);
+        Assert.Equal(TimeSpan.FromSeconds(45), options.AgentTimeout);
+        Assert.False(options.StopOnAgentFailure);
+        Assert.NotNull(options.AgentMiddlewares);
+        Assert.NotEmpty(options.AgentMiddlewares);
+        Assert.NotNull(options.ApprovalHandler);
+    }
+
+    /// <summary>
     /// Calls that run the agent, whichever path the orchestrator takes — the wrapper streams, so counting only
     /// <c>InvokeAsync</c> would make "the agent did not run" true of every run.
     /// </summary>
