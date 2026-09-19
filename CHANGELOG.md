@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - unreleased
+
+### Fixed
+
+- **`IronhiveAdapter` resolves from the container directly.** `AddIronbeesIronhive` registered it only as
+  `ILLMFrameworkAdapter`, which does not carry `CreateOrchestratorAsync` or `RunOrchestrationAsync`, so reaching the
+  orchestration API took a cast. It is now registered as itself too (the same singleton).
+- **The README's orchestration section showed an `orchestration.yaml` that nothing reads.** It now shows the
+  `OrchestratorSettings` record the adapter actually takes; there is no YAML loader for it.
+
 ## [0.17.0] - unreleased
 
 ### Changed

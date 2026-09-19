@@ -96,8 +96,10 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<ICheckpointStore>(),
                 sp.GetService<ILogger<IronhiveCheckpointStoreAdapter>>()));
 
-        // Register IronHive adapter
-        services.AddSingleton<ILLMFrameworkAdapter, IronhiveAdapter>();
+        // Register IronHive adapter — as itself too: its orchestration members (CreateOrchestratorAsync,
+        // RunOrchestrationAsync) are not on ILLMFrameworkAdapter, and resolving them must not need a cast.
+        services.AddSingleton<IronhiveAdapter>();
+        services.AddSingleton<ILLMFrameworkAdapter>(sp => sp.GetRequiredService<IronhiveAdapter>());
 
         // Register options for injection
         services.AddSingleton(options);

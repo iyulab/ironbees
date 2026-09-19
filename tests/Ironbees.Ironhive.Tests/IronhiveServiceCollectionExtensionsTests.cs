@@ -42,6 +42,9 @@ public class IronhiveServiceCollectionExtensionsTests
         var adapter = provider.GetService<ILLMFrameworkAdapter>();
         Assert.NotNull(adapter);
         Assert.IsType<IronhiveAdapter>(adapter);
+
+        // Assert - the orchestration members (not on ILLMFrameworkAdapter) resolve without a cast, as the same instance
+        Assert.Same(adapter, provider.GetService<IronhiveAdapter>());
     }
 
     [Fact]

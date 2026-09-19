@@ -343,40 +343,48 @@ app.Run();
 
 ## Multi-Agent Orchestration
 
-Ironbees.Ironhive provides **declarative multi-agent orchestration** via YAML:
+Ironbees.Ironhive builds an IronHive orchestrator from an `OrchestratorSettings` record and the agents' configs, and
+streams the run as goal events:
 
-```yaml
-# orchestration.yaml
-orchestrator:
-  type: Handoff          # Sequential, Parallel, HubSpoke, Handoff, GroupChat, Graph
-  initialAgent: triage
-  maxTransitions: 10
-  middleware:
-    retry:
-      maxRetries: 3
-    circuitBreaker:
-      failureThreshold: 5
-      breakDuration: 30s
+```csharp
+var adapter = serviceProvider.GetRequiredService<IronhiveAdapter>();   // registered by AddIronbeesIronhive
+
+var settings = new OrchestratorSettings
+{
+    Type = OrchestratorType.Handoff,   // Sequential, Parallel, HubSpoke, Handoff, GroupChat, Graph
+    InitialAgent = "triage",
+    MaxTransitions = 10,
+    Middleware = new MiddlewareSettings
+    {
+        Retry = new RetrySettings { MaxRetries = 3 },
+        CircuitBreaker = new CircuitBreakerSettings { FailureThreshold = 5, BreakDuration = TimeSpan.FromSeconds(30) },
+    },
+};
+
+var orchestrator = await adapter.CreateOrchestratorAsync(settings, agentConfigs);
+await foreach (var evt in adapter.RunOrchestrationAsync(orchestrator, input, goalId, executionId))
+{
+    // AgentStarted, AgentCompleted, ..., GoalCompleted / GoalFailed
+}
 ```
 
 **Graph-based workflows** for complex pipelines:
 
-```yaml
-orchestrator:
-  type: Graph
-  graph:
-    nodes:
-      - id: analyze
-        agent: code-analyzer
-      - id: review
-        agent: reviewer
-    edges:
-      - from: analyze
-        to: review
-        condition: "needs_review"
-    startNode: analyze
-    outputNode: review
+```csharp
+var settings = new OrchestratorSettings
+{
+    Type = OrchestratorType.Graph,
+    Graph = new GraphSettings
+    {
+        Nodes = [new() { Id = "analyze", Agent = "code-analyzer" }, new() { Id = "review", Agent = "reviewer" }],
+        Edges = [new() { From = "analyze", To = "review", Condition = "needs_review" }],
+        StartNode = "analyze",
+        OutputNode = "review",
+    },
+};
 ```
+
+There is no YAML loader for these settings — build the record in code (or bind it from your own configuration).
 
 **Available Orchestrator Types**:
 | Type | Use Case |
