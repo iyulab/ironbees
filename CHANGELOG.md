@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.15.0] - 2026-09-19
 
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.29.1 -> 0.29.2, `IronHive.Core` 0.29.1 -> 0.29.2 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+
 ### Added
 - **A per-request tool-turn limit: `ProcessOptions.MaxToolTurns` / `AgentRunOptions.MaxToolTurns`.** An adapter
   that runs its own tool loop applies it for that call; the IronHive adapter maps it to `AgentInvokeOptions.MaxTurns`.
