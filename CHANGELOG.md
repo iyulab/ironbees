@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.17.0] - unreleased
 
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.31.0 -> 0.32.0, `IronHive.Core` 0.31.0 -> 0.32.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+
 ### Removed
 
 - **Breaking: `IronhiveAdapter.RunOrchestrationWithApprovalAsync` is removed.** It waited for an approval-request
