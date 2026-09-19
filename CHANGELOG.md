@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verification model where you construct the verifier's client.
 
 ### Added
+- **An options roster test** (`Iyu.Conventions.Testing`) over all five assemblies: a new public option nothing reads
+  fails the build's tests. The options found unread when it was adopted are listed with their reason; one of them,
+  `IronhiveOptions.ApprovalHandler`, is a known defect (never wired) to be fixed next.
 - **A per-request tool-turn limit: `ProcessOptions.MaxToolTurns` / `AgentRunOptions.MaxToolTurns`.** An adapter
   that runs its own tool loop applies it for that call; the IronHive adapter maps it to `AgentInvokeOptions.MaxTurns`.
   Adapters without a tool loop (the Agent Framework adapter, and the interface's default implementation) refuse it

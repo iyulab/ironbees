@@ -27,4 +27,12 @@
     <ProjectReference Include="..\..\samples\Ironbees.Samples.Shared\Ironbees.Samples.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Iyu.Conventions.Testing" />
+    <ProjectReference Include="..\..\src\Ironbees.Autonomous\Ironbees.Autonomous.csproj" />
+    <ProjectReference Include="..\..\src\Ironbees.AgentMode\Ironbees.AgentMode.csproj" />
+    <ProjectReference Include="..\..\src\Ironbees.AgentFramework\Ironbees.AgentFramework.csproj" />
+    <ProjectReference Include="..\..\src\Ironbees.Ironhive\Ironbees.Ironhive.csproj" />
+  </ItemGroup>
+
 </Project>
