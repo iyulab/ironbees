@@ -3,6 +3,7 @@
 
 using IronHive.Abstractions.Agent.Orchestration;
 using IronHive.Core.Agent.Orchestration;
+using Ironbees.AgentMode.Goals;
 using Microsoft.Extensions.Logging;
 using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
 using IronHiveHandoffTarget = IronHive.Abstractions.Agent.Orchestration.HandoffTarget;
@@ -23,13 +24,16 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
 {
     private readonly ILogger<IronhiveOrchestratorFactory> _logger;
     private readonly IronhiveMiddlewareFactory? _middlewareFactory;
+    private readonly IronhiveOptions? _options;
 
     public IronhiveOrchestratorFactory(
         ILogger<IronhiveOrchestratorFactory> logger,
-        IronhiveMiddlewareFactory? middlewareFactory = null)
+        IronhiveMiddlewareFactory? middlewareFactory = null,
+        IronhiveOptions? options = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _middlewareFactory = middlewareFactory;
+        _options = options;
     }
 
     /// <inheritdoc />
@@ -56,6 +60,13 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
 
         // Build base orchestrator options
         var baseOptions = BuildBaseOptions(settings);
+
+        // The approval gate the IronHive orchestrators enforce: asked before each agent runs, a refusal stops the run.
+        // IronhiveOptions.ApprovalHandler is documented as this gate and used to be read by nothing.
+        if (_options?.ApprovalHandler is { } approve)
+        {
+            baseOptions.ApprovalHandler = (agentName, previousStep) => approve(ToApprovalRequest(agentName, previousStep));
+        }
 
         // Apply middleware if configured
         if (settings.Middleware is not null && _middlewareFactory is not null)
@@ -96,6 +107,25 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         return ironhiveAgents;
     }
 
+    private static HitlRequestDetails ToApprovalRequest(string agentName, IronHive.Abstractions.Agent.Orchestration.AgentStepResult? previousStep)
+    {
+        var context = new Dictionary<string, object> { ["agentName"] = agentName };
+        if (previousStep is not null)
+        {
+            context["previousAgent"] = previousStep.AgentName;
+            context["previousSucceeded"] = previousStep.IsSuccess;
+        }
+
+        return new HitlRequestDetails
+        {
+            RequestId = Guid.NewGuid().ToString("N"),
+            RequestType = HitlRequestType.Approval,
+            Reason = $"Agent '{agentName}' is about to run.",
+            CheckpointName = agentName,
+            Context = context,
+        };
+    }
+
     private static IronHiveOrchestratorOptions BuildBaseOptions(IronbeesOrchestratorSettings settings)
     {
         return new IronHiveOrchestratorOptions
@@ -123,6 +153,7 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             AgentTimeout = baseOptions.AgentTimeout,
             StopOnAgentFailure = baseOptions.StopOnAgentFailure,
             AgentMiddlewares = baseOptions.AgentMiddlewares,
+            ApprovalHandler = baseOptions.ApprovalHandler,
             PassOutputAsInput = true,
             AccumulateHistory = false
         });
@@ -150,6 +181,7 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             AgentTimeout = baseOptions.AgentTimeout,
             StopOnAgentFailure = baseOptions.StopOnAgentFailure,
             AgentMiddlewares = baseOptions.AgentMiddlewares,
+            ApprovalHandler = baseOptions.ApprovalHandler,
             ResultAggregation = ParallelResultAggregation.All
         });
 
@@ -188,6 +220,7 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             AgentTimeout = baseOptions.AgentTimeout,
             StopOnAgentFailure = baseOptions.StopOnAgentFailure,
             AgentMiddlewares = baseOptions.AgentMiddlewares,
+            ApprovalHandler = baseOptions.ApprovalHandler,
             MaxRounds = settings.MaxRounds
         });
 
@@ -225,6 +258,11 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             .SetTimeout(settings.Timeout)
             .SetAgentTimeout(settings.AgentTimeout);
 
+        if (baseOptions.ApprovalHandler is { } handoffApproval)
+        {
+            builder.SetApprovalHandler(handoffApproval);
+        }
+
         // Add agents with their handoff targets
         foreach (var agent in ironhiveAgents)
         {
@@ -253,6 +291,11 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             .SetMaxRounds(settings.MaxRounds)
             .SetTimeout(settings.Timeout)
             .SetAgentTimeout(settings.AgentTimeout);
+
+        if (baseOptions.ApprovalHandler is { } groupChatApproval)
+        {
+            builder.SetApprovalHandler(groupChatApproval);
+        }
 
         // Add all agents
         foreach (var agent in ironhiveAgents)
@@ -302,7 +345,8 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
                 Timeout = baseOptions.Timeout,
                 AgentTimeout = baseOptions.AgentTimeout,
                 StopOnAgentFailure = baseOptions.StopOnAgentFailure,
-                AgentMiddlewares = baseOptions.AgentMiddlewares
+                AgentMiddlewares = baseOptions.AgentMiddlewares,
+                ApprovalHandler = baseOptions.ApprovalHandler
             });
 
         // Create a lookup for agents by name

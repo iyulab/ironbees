@@ -4,6 +4,7 @@
 using Ironbees.Core;
 using Ironbees.Core.Orchestration;
 using Ironbees.Ironhive.Orchestration;
+using Ironbees.AgentMode.Goals;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
@@ -280,6 +281,93 @@ public class OrchestratorFactoryTests
             _factory.CreateOrchestrator(settings, agents));
         Assert.Contains("not an IronHive agent", ex.Message);
     }
+
+    public static TheoryData<OrchestratorType> EveryOrchestratorType() =>
+    [
+        OrchestratorType.Sequential, OrchestratorType.Parallel, OrchestratorType.HubSpoke,
+        OrchestratorType.Handoff, OrchestratorType.GroupChat, OrchestratorType.Graph,
+    ];
+
+    /// <summary>
+    /// IronhiveOptions.ApprovalHandler is documented as the HITL approval gate. It used to be read by nothing, and the
+    /// factory rebuilt each orchestrator's options from a copy that dropped the handler anyway, so an application that
+    /// set it had no gate on any orchestrator type.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryOrchestratorType))]
+    public async Task ApprovalHandler_Refusal_StopsTheRunBeforeTheAgentExecutes(OrchestratorType type)
+    {
+        HitlRequestDetails? asked = null;
+        var factory = new IronhiveOrchestratorFactory(
+            NullLogger<IronhiveOrchestratorFactory>.Instance,
+            options: new IronhiveOptions
+            {
+                ApprovalHandler = request =>
+                {
+                    asked ??= request;
+                    return Task.FromResult(false);
+                },
+            });
+        var agents = new List<IAgent> { CreateIronhiveAgentWrapper("agent1"), CreateIronhiveAgentWrapper("agent2") };
+        var orchestrator = factory.CreateOrchestrator(SettingsFor(type), agents);
+
+        var result = await orchestrator.RunAsync("draft the release notes", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Success);
+        Assert.NotNull(asked);
+        Assert.Equal(HitlRequestType.Approval, asked!.RequestType);
+        Assert.Contains(asked.Context!["agentName"], new object[] { "agent1", "agent2" });
+        Assert.All(agents.Cast<IronhiveAgentWrapper>(), agent => Assert.Equal(0, InvocationsOf(agent)));
+    }
+
+    [Fact]
+    public async Task ApprovalHandler_Approval_LetsTheAgentRunAndNamesIt()
+    {
+        var asked = new List<string>();
+        var factory = new IronhiveOrchestratorFactory(
+            NullLogger<IronhiveOrchestratorFactory>.Instance,
+            options: new IronhiveOptions
+            {
+                ApprovalHandler = request =>
+                {
+                    asked.Add((string)request.Context!["agentName"]);
+                    return Task.FromResult(true);
+                },
+            });
+        var agent = CreateIronhiveAgentWrapper("writer");
+        var orchestrator = factory.CreateOrchestrator(
+            new OrchestratorSettings { Type = OrchestratorType.Sequential }, new List<IAgent> { agent });
+
+        await orchestrator.RunAsync("draft the release notes", TestContext.Current.CancellationToken);
+
+        Assert.Equal(["writer"], asked);
+        Assert.Equal(1, InvocationsOf(agent));
+    }
+
+    /// <summary>
+    /// Calls that run the agent, whichever path the orchestrator takes — the wrapper streams, so counting only
+    /// <c>InvokeAsync</c> would make "the agent did not run" true of every run.
+    /// </summary>
+    private static int InvocationsOf(IronhiveAgentWrapper agent) =>
+        agent.IronhiveAgent.ReceivedCalls().Count(call => call.GetMethodInfo().Name.StartsWith("Invoke", StringComparison.Ordinal));
+
+    private static OrchestratorSettings SettingsFor(OrchestratorType type) => type switch
+    {
+        OrchestratorType.HubSpoke => new OrchestratorSettings { Type = type, HubAgent = "agent1" },
+        OrchestratorType.Handoff => new OrchestratorSettings { Type = type, InitialAgent = "agent1" },
+        OrchestratorType.Graph => new OrchestratorSettings
+        {
+            Type = type,
+            Graph = new GraphSettings
+            {
+                Nodes = [new GraphNodeDefinition { Id = "node1", Agent = "agent1" }, new GraphNodeDefinition { Id = "node2", Agent = "agent2" }],
+                Edges = [new GraphEdgeDefinition { From = "node1", To = "node2" }],
+                StartNode = "node1",
+                OutputNode = "node2",
+            },
+        },
+        _ => new OrchestratorSettings { Type = type },
+    };
 
     private static IronhiveAgentWrapper CreateIronhiveAgentWrapper(string name)
     {

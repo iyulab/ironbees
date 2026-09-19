@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.15.0] - 2026-09-19
 
+### Fixed
+- **`IronhiveOptions.ApprovalHandler` now gates orchestrations.** It was documented as the approval handler but
+  nothing read it, so a handler set there approved nothing and refused nothing. The orchestrator factory now asks it
+  before each agent runs, on all six orchestrator types, and a refusal stops the run as a failure. The factory
+  registered by `AddIronbeesIronhive` receives these options.
+
 ### Changed
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.29.1 -> 0.29.2, `IronHive.Core` 0.29.1 -> 0.29.2 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
 
@@ -19,8 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **An options roster test** (`Iyu.Conventions.Testing`) over all five assemblies: a new public option nothing reads
-  fails the build's tests. The options found unread when it was adopted are listed with their reason; one of them,
-  `IronhiveOptions.ApprovalHandler`, is a known defect (never wired) to be fixed next.
+  fails the build's tests. The options found unread when it was adopted are listed with their reason.
 - **A per-request tool-turn limit: `ProcessOptions.MaxToolTurns` / `AgentRunOptions.MaxToolTurns`.** An adapter
   that runs its own tool loop applies it for that call; the IronHive adapter maps it to `AgentInvokeOptions.MaxTurns`.
   Adapters without a tool loop (the Agent Framework adapter, and the interface's default implementation) refuse it

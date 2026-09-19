@@ -20,10 +20,6 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Autonomous.Models.OracleConfig"] = ["MaxTokens", "ReflectionSystemPrompt", "SystemPrompt", "Temperature", "Timeout"],
         ["Ironbees.Core.AgentConfig"] = ["Metadata"],
 
-        // DEFECT, not a decision: documented as the HITL approval handler and never read, so no approval ever runs.
-        // Tracked in the umbrella issue draft "ironbees-approval-handler-never-wired"; remove this line when it is wired.
-        ["Ironbees.Ironhive.IronhiveOptions"] = ["ApprovalHandler"],
-
         // Baseline when the roster was adopted (2026-09-19): each is to be wired or removed, decided per option in the
         // umbrella issue draft "ironbees-options-roster-baseline". Do not add to this list.
         ["Ironbees.AgentMode.Goals.GoalExecutionOptions"] =

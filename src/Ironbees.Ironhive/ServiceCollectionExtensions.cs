@@ -67,7 +67,11 @@ public static class ServiceCollectionExtensions
 
         // Register orchestration services
         services.AddSingleton<IronhiveMiddlewareFactory>();
-        services.AddSingleton<IIronhiveOrchestratorFactory, IronhiveOrchestratorFactory>();
+        // The options are not a DI service, so the factory receives them explicitly — they carry the approval gate.
+        services.AddSingleton<IIronhiveOrchestratorFactory>(sp => new IronhiveOrchestratorFactory(
+            sp.GetRequiredService<ILogger<IronhiveOrchestratorFactory>>(),
+            sp.GetService<IronhiveMiddlewareFactory>(),
+            options));
         services.AddSingleton<OrchestrationEventMapper>();
 
         // Register tool registry

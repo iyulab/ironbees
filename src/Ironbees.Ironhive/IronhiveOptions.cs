@@ -45,8 +45,10 @@ public class IronhiveOptions
     public string CheckpointDirectory { get; set; } = ".ironbees/checkpoints";
 
     /// <summary>
-    /// Handler for approval requests during HITL orchestration.
-    /// Receives agent name and step result, returns true to approve, false to reject.
+    /// Approval gate for orchestrations built by the orchestrator factory: asked before each agent runs, on every
+    /// orchestrator type. Return true to let the agent run; false stops the run, which then fails. The request is an
+    /// <see cref="HitlRequestType.Approval"/> whose <see cref="HitlRequestDetails.Context"/> carries <c>agentName</c>
+    /// and, after the first step, <c>previousAgent</c> and <c>previousSucceeded</c>.
     /// </summary>
     public Func<HitlRequestDetails, Task<bool>>? ApprovalHandler { get; set; }
 

@@ -1,4 +1,6 @@
 using Ironbees.Core;
+using Ironbees.Core.Orchestration;
+using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -40,6 +42,45 @@ public class IronhiveServiceCollectionExtensionsTests
         var adapter = provider.GetService<ILLMFrameworkAdapter>();
         Assert.NotNull(adapter);
         Assert.IsType<IronhiveAdapter>(adapter);
+    }
+
+    [Fact]
+    public async Task AddIronbeesIronhive_ApprovalHandler_ReachesTheRegisteredOrchestratorFactory()
+    {
+        // IronhiveOptions is not itself a DI service: a factory resolved from the container used to receive no options,
+        // so the approval gate set here never reached an orchestrator even after the factory learned to translate it.
+        var services = new ServiceCollection();
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        var asked = 0;
+        services.AddIronbeesIronhive(options =>
+        {
+            options.HiveService = Substitute.For<IHiveService>();
+            options.ApprovalHandler = _ =>
+            {
+                Interlocked.Increment(ref asked);
+                return Task.FromResult(false);
+            };
+        });
+        using var provider = services.BuildServiceProvider();
+
+        var ironhiveAgent = Substitute.For<IronHive.Abstractions.Agent.IAgent>();
+        ironhiveAgent.Name.Returns("writer");
+        var agent = new IronhiveAgentWrapper(ironhiveAgent, new AgentConfig
+        {
+            Name = "writer",
+            Description = "Test agent writer",
+            Version = "1.0.0",
+            SystemPrompt = "Test system prompt",
+            Model = new ModelConfig { Provider = "test", Deployment = "test-model" },
+        });
+        var orchestrator = provider.GetRequiredService<IIronhiveOrchestratorFactory>()
+            .CreateOrchestrator(new OrchestratorSettings { Type = OrchestratorType.Sequential }, [agent]);
+
+        var result = await orchestrator.RunAsync("draft the release notes", TestContext.Current.CancellationToken);
+
+        Assert.False(result.Success);
+        Assert.Equal(1, asked);
     }
 
     [Fact]

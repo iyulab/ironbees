@@ -360,6 +360,9 @@ orchestrator:
 | `GroupChat` | Multi-agent discussion with speaker selection |
 | `Graph` | DAG workflows with conditional routing |
 
+**Approval gate**: set `IronhiveOptions.ApprovalHandler` in `AddIronbeesIronhive` to be asked before each agent runs;
+returning `false` stops the orchestration, which then fails.
+
 ## Token Tracking & Cost Estimation
 
 Ironbees integrates [TokenMeter](https://github.com/iyulab/TokenMeter) for accurate tiktoken-based token counting and cost estimation across 40+ models (OpenAI, Anthropic, Google, xAI, Azure).
