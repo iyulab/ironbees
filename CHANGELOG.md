@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   type, and it is asked before each agent runs; returning `false` stops the run. Run the orchestration with
   `RunOrchestrationAsync`.
 
+## [0.17.3] - 2026-09-23
+
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.33.0 -> 0.33.1, `IronHive.Core` 0.33.0 -> 0.33.1 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+
 ## [0.17.2] - 2026-09-20
 
 ### Changed
