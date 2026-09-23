@@ -309,8 +309,8 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
             {
                 DefaultTimeout = yaml.DefaultTimeout != null
                     ? ParseTimeSpan(yaml.DefaultTimeout)
-                    : TimeSpan.FromMinutes(30),
-                DefaultMaxIterations = yaml.DefaultMaxIterations ?? 5,
+                    : null,
+                DefaultMaxIterations = yaml.DefaultMaxIterations,
                 EnableCheckpointing = yaml.EnableCheckpointing ?? true
             };
 

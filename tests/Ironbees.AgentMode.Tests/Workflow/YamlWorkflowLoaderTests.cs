@@ -183,6 +183,22 @@ public class YamlWorkflowLoaderTests
     }
 
     [Fact]
+    public async Task LoadFromStringAsync_WithoutLimitSettings_LeavesStatesUnlimited()
+    {
+        var yaml = """
+            name: NoLimits
+            states:
+              - id: START
+                type: start
+            """;
+
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
+
+        Assert.Null(result.Settings.DefaultTimeout);
+        Assert.Null(result.Settings.DefaultMaxIterations);
+    }
+
+    [Fact]
     public async Task LoadFromStringAsync_InvalidYaml_ThrowsWorkflowParseException()
     {
         // Arrange

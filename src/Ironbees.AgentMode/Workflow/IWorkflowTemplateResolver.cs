@@ -19,7 +19,7 @@ namespace Ironbees.AgentMode.Workflow;
 /// name: "{{goal.id}}-workflow"
 /// version: "{{goal.version}}"
 /// settings:
-///   defaultMaxIterations: {{goal.constraints.maxIterations}}
+///   default_max_iterations: {{goal.constraints.maxIterations}}
 /// states:
 ///   - id: START
 ///     type: start

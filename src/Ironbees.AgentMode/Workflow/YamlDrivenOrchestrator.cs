@@ -308,17 +308,48 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
 
             // Execute state based on type
             WorkflowRuntimeState? newState = null;
+            var limited = currentStateDef.Type is WorkflowStateType.Agent or WorkflowStateType.Parallel;
+            var iterationLimit = currentStateDef.MaxIterations ?? workflow.Settings.DefaultMaxIterations;
+            var timeout = currentStateDef.Timeout ?? workflow.Settings.DefaultTimeout;
+            using var stateTimeout = limited && timeout.HasValue
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                : null;
+            stateTimeout?.CancelAfter(timeout!.Value);
+            var stateToken = stateTimeout?.Token ?? cancellationToken;
             try
             {
+                if (limited && iterationLimit is { } maxRuns)
+                {
+                    var runs = execution.StateRuns.GetValueOrDefault(currentStateDef.Id);
+                    if (runs >= maxRuns)
+                    {
+                        throw new OrchestratorException(
+                            $"State '{currentStateDef.Id}' reached its iteration limit ({maxRuns}).",
+                            execution.ExecutionId,
+                            currentStateDef.Id);
+                    }
+
+                    execution.StateRuns[currentStateDef.Id] = runs + 1;
+                }
+
                 newState = currentStateDef.Type switch
                 {
                     WorkflowStateType.Start => await ExecuteStartStateAsync(state, currentStateDef, cancellationToken),
-                    WorkflowStateType.Agent => await ExecuteAgentStateAsync(state, currentStateDef, execution, cancellationToken),
-                    WorkflowStateType.Parallel => await ExecuteParallelStateAsync(state, currentStateDef, execution, cancellationToken),
+                    WorkflowStateType.Agent => await ExecuteAgentStateAsync(state, currentStateDef, execution, stateToken),
+                    WorkflowStateType.Parallel => await ExecuteParallelStateAsync(state, currentStateDef, execution, stateToken),
                     WorkflowStateType.HumanGate => await ExecuteHumanGateAsync(state, currentStateDef, execution, cancellationToken),
                     WorkflowStateType.Escalation => await ExecuteEscalationAsync(state, currentStateDef, cancellationToken),
                     WorkflowStateType.Terminal => state with { Status = WorkflowExecutionStatus.Completed },
                     _ => throw new OrchestratorException($"Unknown state type: {currentStateDef.Type}", execution.ExecutionId, currentStateDef.Id)
+                };
+            }
+            catch (OperationCanceledException) when (stateTimeout is { IsCancellationRequested: true } && !cancellationToken.IsCancellationRequested)
+            {
+                newState = state with
+                {
+                    Status = WorkflowExecutionStatus.Failed,
+                    ErrorMessage = $"State '{currentStateDef.Id}' timed out after {timeout!.Value}.",
+                    LastUpdatedAt = DateTimeOffset.UtcNow
                 };
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -678,6 +709,9 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         public TaskCompletionSource<ApprovalDecision>? ApprovalGate { get; set; }
         public ApprovalDecision? ApprovalDecision { get; set; }
         public CancellationTokenSource? CancellationSource { get; set; }
+
+        /// <summary>How many times each state has run in this execution — the count a state's iteration limit reads.</summary>
+        public Dictionary<string, int> StateRuns { get; } = new(StringComparer.Ordinal);
     }
 
     /// <summary>

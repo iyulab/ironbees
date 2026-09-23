@@ -118,12 +118,17 @@ public sealed record WorkflowStateDefinition
     public HumanGateSettings? HumanGate { get; init; }
 
     /// <summary>
-    /// Maximum iterations for retry loops.
+    /// How many times this state may run in one execution — the cap on a loop that returns to it. The run fails with an
+    /// iteration-limit error when the state is entered once more. Falls back to
+    /// <see cref="WorkflowSettings.DefaultMaxIterations"/>; unset in both means no limit. Applies to agent and parallel
+    /// states. The count restarts when an execution resumes from a checkpoint.
     /// </summary>
     public int? MaxIterations { get; init; }
 
     /// <summary>
-    /// Timeout duration for this state.
+    /// How long one run of this state may take before the execution fails with a timeout. Falls back to
+    /// <see cref="WorkflowSettings.DefaultTimeout"/>; unset in both means no limit. Applies to agent and parallel states;
+    /// a human gate waits for <see cref="HumanGateSettings.Timeout"/> instead.
     /// </summary>
     public TimeSpan? Timeout { get; init; }
 }
@@ -249,14 +254,15 @@ public sealed record HumanGateSettings
 public sealed record WorkflowSettings
 {
     /// <summary>
-    /// Default timeout for all states.
+    /// Timeout for a state that does not set <see cref="WorkflowStateDefinition.Timeout"/>. Default: <c>null</c> — no limit.
     /// </summary>
-    public TimeSpan DefaultTimeout { get; init; } = TimeSpan.FromMinutes(30);
+    public TimeSpan? DefaultTimeout { get; init; }
 
     /// <summary>
-    /// Default maximum iterations for loops.
+    /// Iteration cap for a state that does not set <see cref="WorkflowStateDefinition.MaxIterations"/>.
+    /// Default: <c>null</c> — no limit.
     /// </summary>
-    public int DefaultMaxIterations { get; init; } = 5;
+    public int? DefaultMaxIterations { get; init; }
 
     /// <summary>
     /// Enable checkpointing for state persistence.

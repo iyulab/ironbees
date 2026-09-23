@@ -356,9 +356,8 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
             version: "{{goal.version}}"
             description: "{{goal.description}}"
             settings:
-              defaultMaxIterations: {{goal.constraints.maxIterations}}
-              enableCheckpointing: {{goal.checkpoint.enabled}}
-              checkpointDirectory: "{{goal.checkpoint.directory}}"
+              default_max_iterations: {{goal.constraints.maxIterations}}
+              enable_checkpointing: {{goal.checkpoint.enabled}}
             states:
               - id: START
                 type: start

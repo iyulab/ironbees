@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **YAML workflow iteration and timeout limits are enforced.** A state's `max_iterations` (how many times a loop may
+  return to it) and `timeout` (how long one run may take), with `settings.default_max_iterations` /
+  `settings.default_timeout` as the fallback, were loaded and never read — a loop ran until its own exit condition and a
+  hung agent never timed out. Agent and parallel states now fail the execution with an iteration-limit or timeout error.
+  **Breaking**: `WorkflowSettings.DefaultMaxIterations` is `int?` and `DefaultTimeout` is `TimeSpan?`, and both default
+  to `null` (no limit) instead of the documented 5 and 30 minutes that were never applied — a workflow that sets none of
+  these keys behaves as before. A workflow that already sets them now gets the limit it asked for.
+- The `IWorkflowTemplateResolver` template example spelled its settings key `defaultMaxIterations`; the workflow loader
+  reads snake_case (`default_max_iterations`), so the key was ignored. The example now uses the key the loader reads.
 - `docs/AGENTIC-PATTERNS.md` states that `GoalDefinition.Agentic` is schema only: Ironbees loads it, nothing in
   Ironbees applies it.
 

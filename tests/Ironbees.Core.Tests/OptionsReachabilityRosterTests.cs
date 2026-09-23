@@ -35,10 +35,10 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
         ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
         //
-        // Not yet decided - enforcing them changes behaviour, or they overlap a wired knob: the YAML workflow iteration
-        // cap and timeout, the approval mode, and the core orchestrator's checkpointing and approval flags.
+        // Not yet decided - enforcing them changes behaviour, or they overlap a wired knob: the approval mode (its
+        // "on_sensitive" value has no sensitivity signal to act on), and the core orchestrator's checkpointing and
+        // approval flags.
         ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode"],
-        ["Ironbees.AgentMode.Workflow.WorkflowSettings"] = ["DefaultMaxIterations", "DefaultTimeout"],
         ["Ironbees.Core.Orchestration.OrchestratorSettings"] = ["EnableCheckpointing", "RequireApproval"],
     };
 

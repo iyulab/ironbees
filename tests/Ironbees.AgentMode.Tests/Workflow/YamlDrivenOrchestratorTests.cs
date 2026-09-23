@@ -384,6 +384,98 @@ public class YamlDrivenOrchestratorTests
         Assert.True(agentStates.Count >= 2);
     }
 
+    private static WorkflowDefinition CreateEndlessLoop(int? stateCap = null, TimeSpan? stateTimeout = null, WorkflowSettings? settings = null, string? exitCondition = null) => new()
+    {
+        Name = "LoopWorkflow",
+        States =
+        [
+            new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+            new WorkflowStateDefinition
+            {
+                Id = "AGENT",
+                Type = WorkflowStateType.Agent,
+                Executor = "worker",
+                MaxIterations = stateCap,
+                Timeout = stateTimeout,
+                Conditions = exitCondition is null ? [] : [new ConditionalTransition { If = exitCondition, Then = "END" }],
+                Next = "AGENT",
+            },
+            new WorkflowStateDefinition { Id = "END", Type = WorkflowStateType.Terminal },
+        ],
+        Settings = settings ?? new WorkflowSettings(),
+    };
+
+    [Fact]
+    public async Task ExecuteAsync_StateMaxIterations_StopsTheLoopAndFails()
+    {
+        var states = await CreateOrchestrator().ExecuteAsync(CreateEndlessLoop(stateCap: 2), "input", cancellationToken: TestContext.Current.CancellationToken)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkflowExecutionStatus.Failed, states.Last().Status);
+        Assert.Contains("iteration limit (2)", states.Last().ErrorMessage);
+        Assert.Equal(2, _executorFactory.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DefaultMaxIterations_AppliesToAStateWithoutItsOwnLimit()
+    {
+        var workflow = CreateEndlessLoop(settings: new WorkflowSettings { DefaultMaxIterations = 3 });
+
+        var states = await CreateOrchestrator().ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkflowExecutionStatus.Failed, states.Last().Status);
+        Assert.Equal(3, _executorFactory.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithoutAnyLimit_LoopsUntilItsOwnExitCondition()
+    {
+        // Positive control: no limit is configured by default, so a loop longer than any former default still completes.
+        var workflow = CreateEndlessLoop(exitCondition: "iteration_count >= 7");
+
+        var states = await CreateOrchestrator().ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkflowExecutionStatus.Completed, states.Last().Status);
+        Assert.Equal(7, _executorFactory.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_StateTimeout_FailsASlowState()
+    {
+        _executorFactory.Delay = TimeSpan.FromSeconds(30);
+        var workflow = CreateEndlessLoop(stateTimeout: TimeSpan.FromMilliseconds(100));
+
+        var states = await CreateOrchestrator().ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkflowExecutionStatus.Failed, states.Last().Status);
+        Assert.Contains("timed out", states.Last().ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DefaultTimeout_AppliesToAStateWithoutItsOwnTimeout()
+    {
+        _executorFactory.Delay = TimeSpan.FromSeconds(30);
+        var workflow = CreateEndlessLoop(settings: new WorkflowSettings { DefaultTimeout = TimeSpan.FromMilliseconds(100) });
+
+        var states = await CreateOrchestrator().ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkflowExecutionStatus.Failed, states.Last().Status);
+        Assert.Contains("timed out", states.Last().ErrorMessage);
+    }
+
+    [Fact]
+    public void WorkflowSettings_DefaultsToNoLimit()
+    {
+        var settings = new WorkflowSettings();
+
+        Assert.Null(settings.DefaultMaxIterations);
+        Assert.Null(settings.DefaultTimeout);
+    }
+
     [Fact]
     public async Task ExecuteAsync_WithNotCondition_NegatesCorrectly()
     {
@@ -808,6 +900,9 @@ public class YamlDrivenOrchestratorTests
         public int CreatedExecutorCount { get; private set; }
         public List<string> AllAgentNames { get; } = [];
         public bool ShouldThrow { get; set; }
+        public TimeSpan Delay { get; set; }
+        public int ExecutionCount => _executionCount;
+        private int _executionCount;
 
         public Task<IAgentExecutor> CreateExecutorAsync(string agentName, WorkflowExecutionContext context, CancellationToken cancellationToken = default)
         {
@@ -821,14 +916,17 @@ public class YamlDrivenOrchestratorTests
                 return Task.FromResult<IAgentExecutor>(new ThrowingExecutor());
             }
 
-            return Task.FromResult<IAgentExecutor>(new MockAgentExecutor());
+            return Task.FromResult<IAgentExecutor>(new MockAgentExecutor(this));
         }
 
-        private sealed class MockAgentExecutor : IAgentExecutor
+        private sealed class MockAgentExecutor(MockAgentExecutorFactory factory) : IAgentExecutor
         {
-            public Task<AgentExecutionResult> ExecuteAsync(string input, IReadOnlyDictionary<string, object> context, CancellationToken cancellationToken = default)
+            public async Task<AgentExecutionResult> ExecuteAsync(string input, IReadOnlyDictionary<string, object> context, CancellationToken cancellationToken = default)
             {
-                return Task.FromResult(new AgentExecutionResult
+                Interlocked.Increment(ref factory._executionCount);
+                if (factory.Delay > TimeSpan.Zero)
+                    await Task.Delay(factory.Delay, cancellationToken);
+                return new AgentExecutionResult
                 {
                     Success = true,
                     Data = new Dictionary<string, object>
@@ -836,7 +934,7 @@ public class YamlDrivenOrchestratorTests
                         ["build_success"] = true,
                         ["test_success"] = true
                     }
-                });
+                };
             }
         }
 
