@@ -142,7 +142,7 @@ public class AgentHealthCheck : IHealthCheck
     public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, CancellationToken ct = default)
     {
-        var agents = _registry.GetAllAgents();
+        var agents = _registry.ListAgents();
         return Task.FromResult(agents.Count > 0
             ? HealthCheckResult.Healthy($"{agents.Count} agents loaded")
             : HealthCheckResult.Unhealthy("No agents"));
