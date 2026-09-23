@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Breaking**: `WorkflowSettings.DefaultMaxIterations` is `int?` and `DefaultTimeout` is `TimeSpan?`, and both default
   to `null` (no limit) instead of the documented 5 and 30 minutes that were never applied — a workflow that sets none of
   these keys behaves as before. A workflow that already sets them now gets the limit it asked for.
+- **`OrchestratorSettings.EnableCheckpointing` and `RequireApproval` take effect on factory-built orchestrators.** The
+  factory never received a checkpoint store, so no IronHive orchestrator it built ever checkpointed, and both flags
+  were read by nothing. `EnableCheckpointing` now hands the registered store (`AddIronbeesIronhive` passes it) to every
+  orchestrator type; its default is now `false` — what every run already did — instead of the documented `true`.
+  `RequireApproval = true` without an `IronhiveOptions.ApprovalHandler` now fails when the orchestrator is created
+  instead of running every agent unapproved; a configured handler is asked before each agent either way, as before.
+  `IronhiveOrchestratorFactory` takes an optional IronHive `ICheckpointStore` as its last constructor parameter.
 - The `IWorkflowTemplateResolver` template example spelled its settings key `defaultMaxIterations`; the workflow loader
   reads snake_case (`default_max_iterations`), so the key was ignored. The example now uses the key the loader reads.
 - `docs/AGENTIC-PATTERNS.md` states that `GoalDefinition.Agentic` is schema only: Ironbees loads it, nothing in

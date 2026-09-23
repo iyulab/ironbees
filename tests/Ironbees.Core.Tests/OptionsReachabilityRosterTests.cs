@@ -35,11 +35,8 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
         ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
         //
-        // Not yet decided - enforcing them changes behaviour, or they overlap a wired knob: the approval mode (its
-        // "on_sensitive" value has no sensitivity signal to act on), and the core orchestrator's checkpointing and
-        // approval flags.
+        // Not yet decided - the approval mode: its "on_sensitive" value has no sensitivity signal to act on.
         ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode"],
-        ["Ironbees.Core.Orchestration.OrchestratorSettings"] = ["EnableCheckpointing", "RequireApproval"],
     };
 
     [Fact]

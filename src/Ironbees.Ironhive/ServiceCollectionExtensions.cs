@@ -71,7 +71,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IIronhiveOrchestratorFactory>(sp => new IronhiveOrchestratorFactory(
             sp.GetRequiredService<ILogger<IronhiveOrchestratorFactory>>(),
             sp.GetService<IronhiveMiddlewareFactory>(),
-            options));
+            options,
+            sp.GetService<IronHive.Abstractions.Agent.Orchestration.ICheckpointStore>()));
         services.AddSingleton<OrchestrationEventMapper>();
 
         // Register tool registry

@@ -380,6 +380,66 @@ public class OrchestratorFactoryTests
         Assert.NotNull(options.ApprovalHandler);
     }
 
+    private static IronHive.Abstractions.Agent.Orchestration.OrchestratorOptions OptionsOf(IMultiAgentOrchestrator orchestrator) =>
+        (IronHive.Abstractions.Agent.Orchestration.OrchestratorOptions)typeof(IronHive.Core.Agent.Orchestration.OrchestratorBase)
+            .GetProperty("Options", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)!
+            .GetValue(((IronhiveOrchestratorWrapper)orchestrator).IronhiveOrchestrator)!;
+
+    /// <summary>
+    /// OrchestratorSettings.EnableCheckpointing was read by nothing and the factory never received a checkpoint store, so
+    /// no factory-built orchestrator ever checkpointed. Enabled, every type now carries the registered store.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(EveryOrchestratorType))]
+    public void EnableCheckpointing_HandsTheCheckpointStoreToEveryOrchestratorType(OrchestratorType type)
+    {
+        var store = Substitute.For<IronHive.Abstractions.Agent.Orchestration.ICheckpointStore>();
+        var factory = new IronhiveOrchestratorFactory(NullLogger<IronhiveOrchestratorFactory>.Instance, checkpointStore: store);
+
+        var orchestrator = factory.CreateOrchestrator(
+            SettingsFor(type) with { EnableCheckpointing = true },
+            [CreateIronhiveAgentWrapper("agent1"), CreateIronhiveAgentWrapper("agent2")]);
+
+        Assert.Same(store, OptionsOf(orchestrator).CheckpointStore);
+    }
+
+    [Fact]
+    public void Checkpointing_IsOffByDefault_EvenWithAStoreRegistered()
+    {
+        var store = Substitute.For<IronHive.Abstractions.Agent.Orchestration.ICheckpointStore>();
+        var factory = new IronhiveOrchestratorFactory(NullLogger<IronhiveOrchestratorFactory>.Instance, checkpointStore: store);
+
+        var orchestrator = factory.CreateOrchestrator(new OrchestratorSettings(), [CreateIronhiveAgentWrapper("agent1")]);
+
+        Assert.False(new OrchestratorSettings().EnableCheckpointing);
+        Assert.Null(OptionsOf(orchestrator).CheckpointStore);
+    }
+
+    [Fact]
+    public void RequireApproval_WithoutAnApprovalHandler_FailsInsteadOfRunningUnapproved()
+    {
+        var factory = new IronhiveOrchestratorFactory(NullLogger<IronhiveOrchestratorFactory>.Instance);
+
+        var act = () => factory.CreateOrchestrator(
+            new OrchestratorSettings { RequireApproval = true }, [CreateIronhiveAgentWrapper("agent1")]);
+
+        var error = Assert.Throws<InvalidOperationException>(act);
+        Assert.Contains("ApprovalHandler", error.Message);
+    }
+
+    [Fact]
+    public void RequireApproval_WithAnApprovalHandler_GatesTheRun()
+    {
+        var factory = new IronhiveOrchestratorFactory(
+            NullLogger<IronhiveOrchestratorFactory>.Instance,
+            options: new IronhiveOptions { ApprovalHandler = _ => Task.FromResult(true) });
+
+        var orchestrator = factory.CreateOrchestrator(
+            new OrchestratorSettings { RequireApproval = true }, [CreateIronhiveAgentWrapper("agent1")]);
+
+        Assert.NotNull(OptionsOf(orchestrator).ApprovalHandler);
+    }
+
     /// <summary>
     /// Calls that run the agent, whichever path the orchestrator takes — the wrapper streams, so counting only
     /// <c>InvokeAsync</c> would make "the agent did not run" true of every run.

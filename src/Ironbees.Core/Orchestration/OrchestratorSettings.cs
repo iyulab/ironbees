@@ -61,12 +61,15 @@ public sealed record OrchestratorSettings
     public string? HubAgent { get; init; }
 
     /// <summary>
-    /// Whether to enable checkpointing during orchestration.
+    /// Whether the orchestrator saves checkpoints to the registered checkpoint store as it runs.
+    /// Default: <c>false</c>.
     /// </summary>
-    public bool EnableCheckpointing { get; init; } = true;
+    public bool EnableCheckpointing { get; init; }
 
     /// <summary>
-    /// Whether to require approval before executing certain agents.
+    /// Whether this orchestration depends on an approval gate. When <c>true</c>, creating the orchestrator fails if no
+    /// approval handler is configured, instead of running every agent unapproved. A configured handler is asked before
+    /// each agent either way.
     /// </summary>
     public bool RequireApproval { get; init; }
 

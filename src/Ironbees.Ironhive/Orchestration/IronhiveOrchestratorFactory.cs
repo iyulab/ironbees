@@ -25,15 +25,25 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
     private readonly ILogger<IronhiveOrchestratorFactory> _logger;
     private readonly IronhiveMiddlewareFactory? _middlewareFactory;
     private readonly IronhiveOptions? _options;
+    private readonly IronHive.Abstractions.Agent.Orchestration.ICheckpointStore? _checkpointStore;
 
+    /// <param name="logger">Logger.</param>
+    /// <param name="middlewareFactory">Builds the agent middleware the settings ask for.</param>
+    /// <param name="options">Carries the approval gate.</param>
+    /// <param name="checkpointStore">
+    /// Where orchestrators save checkpoints when <see cref="IronbeesOrchestratorSettings.EnableCheckpointing"/> is on.
+    /// <c>AddIronbeesIronhive</c> passes the registered store (the Ironbees store, bridged).
+    /// </param>
     public IronhiveOrchestratorFactory(
         ILogger<IronhiveOrchestratorFactory> logger,
         IronhiveMiddlewareFactory? middlewareFactory = null,
-        IronhiveOptions? options = null)
+        IronhiveOptions? options = null,
+        IronHive.Abstractions.Agent.Orchestration.ICheckpointStore? checkpointStore = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _middlewareFactory = middlewareFactory;
         _options = options;
+        _checkpointStore = checkpointStore;
     }
 
     /// <inheritdoc />
@@ -66,6 +76,17 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         if (_options?.ApprovalHandler is { } approve)
         {
             baseOptions.ApprovalHandler = (agentName, previousStep) => approve(ToApprovalRequest(agentName, previousStep));
+        }
+        else if (settings.RequireApproval)
+        {
+            // A configuration that relies on approval must not run unapproved because the gate was never wired.
+            throw new InvalidOperationException(
+                "OrchestratorSettings.RequireApproval is set but no IronhiveOptions.ApprovalHandler is configured.");
+        }
+
+        if (settings.EnableCheckpointing)
+        {
+            baseOptions.CheckpointStore = _checkpointStore;
         }
 
         // Apply middleware if configured
@@ -154,6 +175,7 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             StopOnAgentFailure = baseOptions.StopOnAgentFailure,
             AgentMiddlewares = baseOptions.AgentMiddlewares,
             ApprovalHandler = baseOptions.ApprovalHandler,
+            CheckpointStore = baseOptions.CheckpointStore,
             PassOutputAsInput = true,
             AccumulateHistory = false
         });
@@ -182,6 +204,7 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             StopOnAgentFailure = baseOptions.StopOnAgentFailure,
             AgentMiddlewares = baseOptions.AgentMiddlewares,
             ApprovalHandler = baseOptions.ApprovalHandler,
+            CheckpointStore = baseOptions.CheckpointStore,
             ResultAggregation = ParallelResultAggregation.All
         });
 
@@ -221,6 +244,7 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             StopOnAgentFailure = baseOptions.StopOnAgentFailure,
             AgentMiddlewares = baseOptions.AgentMiddlewares,
             ApprovalHandler = baseOptions.ApprovalHandler,
+            CheckpointStore = baseOptions.CheckpointStore,
             MaxRounds = settings.MaxRounds
         });
 
@@ -265,6 +289,11 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
             builder.SetApprovalHandler(handoffApproval);
         }
 
+        if (baseOptions.CheckpointStore is { } handoffCheckpoints)
+        {
+            builder.SetCheckpointStore(handoffCheckpoints);
+        }
+
         // Add agents with their handoff targets
         foreach (var agent in ironhiveAgents)
         {
@@ -299,6 +328,11 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
         if (baseOptions.ApprovalHandler is { } groupChatApproval)
         {
             builder.SetApprovalHandler(groupChatApproval);
+        }
+
+        if (baseOptions.CheckpointStore is { } groupChatCheckpoints)
+        {
+            builder.SetCheckpointStore(groupChatCheckpoints);
         }
 
         // Add all agents
@@ -350,7 +384,8 @@ public partial class IronhiveOrchestratorFactory : IIronhiveOrchestratorFactory
                 AgentTimeout = baseOptions.AgentTimeout,
                 StopOnAgentFailure = baseOptions.StopOnAgentFailure,
                 AgentMiddlewares = baseOptions.AgentMiddlewares,
-                ApprovalHandler = baseOptions.ApprovalHandler
+                ApprovalHandler = baseOptions.ApprovalHandler,
+                CheckpointStore = baseOptions.CheckpointStore
             });
 
         // Create a lookup for agents by name
