@@ -19,10 +19,29 @@ public class OptionsReachabilityRosterTests
         // OracleConfig goes to the IOracleVerifier implementation; AgentConfig.Metadata is the consumer's own bag.
         ["Ironbees.Autonomous.Models.OracleConfig"] = ["MaxTokens", "ReflectionSystemPrompt", "SystemPrompt", "Temperature", "Timeout"],
         ["Ironbees.Core.AgentConfig"] = ["Metadata"],
+
+        // *Settings types (YAML-bound workflow, goal, orchestration and middleware settings) were outside the scan until
+        // the suffix was added. Unclassified baseline: each entry still needs a verdict (wire, remove, or document as a
+        // contract member). Shrink it; do not add to it.
+        ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode", "NotifyEmail"],
+        ["Ironbees.AgentMode.Workflow.WorkflowSettings"] = ["CheckpointDirectory", "DefaultMaxIterations", "DefaultTimeout", "EnableCheckpointing", "RequireApprovalForAgents"],
+        ["Ironbees.Autonomous.Configuration.DebugSettings"] = ["Enabled", "ShowLlmResponses", "ShowReasoning", "ShowTokenUsage"],
+        ["Ironbees.Autonomous.Configuration.LlmSettings"] = ["EnableDebugOutput", "FrequencyPenalty", "MaxOutputTokens", "PresencePenalty", "Temperature", "TimeoutSeconds", "TopP"],
+        ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
+        ["Ironbees.Autonomous.Executors.AgentLlmSettings"] = ["MaxOutputTokens", "Temperature", "TopP"],
+        ["Ironbees.Autonomous.Executors.ValidationSettings"] = ["ChoicePatterns", "InvalidPatterns", "Messages"],
+        ["Ironbees.Core.Goals.AgenticSettings"] = ["Confidence", "Hitl", "Sampling"],
+        ["Ironbees.Core.Goals.CheckpointSettings"] = ["Interval"],
+        ["Ironbees.Core.Goals.ConfidenceSettings"] = ["MinConfidenceForHitl", "StabilityWindow", "Threshold", "TrackHistory"],
+        ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
+        ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
+        ["Ironbees.Core.Orchestration.CircuitBreakerSettings"] = ["FailureWindow"],
+        ["Ironbees.Core.Orchestration.OrchestratorSettings"] = ["EnableCheckpointing", "RequireApproval"],
+        ["Ironbees.Core.Orchestration.RetrySettings"] = ["BackoffMultiplier", "JitterFactor", "MaxDelay"],
     };
 
     [Fact]
     public void EveryPublicOption_IsRead() =>
-        OptionsReachability.Scan(Libraries, OptionsTypes.NamedWith("Options", "Config"))
+        OptionsReachability.Scan(Libraries, OptionsTypes.NamedWith("Options", "Config", "Settings"))
             .ShouldMatchRoster(KnownUnread);
 }
