@@ -20,24 +20,31 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Autonomous.Models.OracleConfig"] = ["MaxTokens", "ReflectionSystemPrompt", "SystemPrompt", "Temperature", "Timeout"],
         ["Ironbees.Core.AgentConfig"] = ["Metadata"],
 
-        // *Settings types (YAML-bound workflow, goal, orchestration and middleware settings) were outside the scan until
-        // the suffix was added. Unclassified baseline: each entry still needs a verdict (wire, remove, or document as a
-        // contract member). Shrink it; do not add to it.
-        ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode", "NotifyEmail"],
-        ["Ironbees.AgentMode.Workflow.WorkflowSettings"] = ["CheckpointDirectory", "DefaultMaxIterations", "DefaultTimeout", "EnableCheckpointing", "RequireApprovalForAgents"],
+        // *Settings types came into the scan with the suffix (run 62). Classified; each group states why it is unread.
+        //
+        // Contract members: settings the library loads (SettingsLoader, AgentDefinitionLoader, GameConfigLoader,
+        // FileSystemGoalLoader) and hands to the consumer, which applies them - the library makes no LLM calls of its own
+        // and the goal schema is executed by the agent framework. Read by samples and documented as such.
+        // DebugSettings.Show* and LlmSettings.EnableDebugOutput: removal candidates - nothing reads them, samples included.
         ["Ironbees.Autonomous.Configuration.DebugSettings"] = ["Enabled", "ShowLlmResponses", "ShowReasoning", "ShowTokenUsage"],
         ["Ironbees.Autonomous.Configuration.LlmSettings"] = ["EnableDebugOutput", "FrequencyPenalty", "MaxOutputTokens", "PresencePenalty", "Temperature", "TimeoutSeconds", "TopP"],
         ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
         ["Ironbees.Autonomous.Executors.AgentLlmSettings"] = ["MaxOutputTokens", "Temperature", "TopP"],
         ["Ironbees.Autonomous.Executors.ValidationSettings"] = ["ChoicePatterns", "InvalidPatterns", "Messages"],
         ["Ironbees.Core.Goals.AgenticSettings"] = ["Confidence", "Hitl", "Sampling"],
-        ["Ironbees.Core.Goals.CheckpointSettings"] = ["Interval"],
         ["Ironbees.Core.Goals.ConfidenceSettings"] = ["MinConfidenceForHitl", "StabilityWindow", "Threshold", "TrackHistory"],
         ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
         ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
-        ["Ironbees.Core.Orchestration.CircuitBreakerSettings"] = ["FailureWindow"],
+        // CheckpointSettings.Interval: removal candidate - its siblings are wired, time-based checkpoints are not implemented.
+        ["Ironbees.Core.Goals.CheckpointSettings"] = ["Interval"],
+        //
+        // Not yet decided (enforcing them changes behaviour, or they duplicate a wired knob): YAML workflow iteration
+        // cap and timeout, approval mode, core orchestrator checkpointing and approval flag, and two with no reader at
+        // all, which are removal candidates (notification e-mail, checkpoint directory - IronhiveOptions.CheckpointDirectory is
+        // the wired one - and RequireApprovalForAgents, which the YAML loader never maps).
+        ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode", "NotifyEmail"],
+        ["Ironbees.AgentMode.Workflow.WorkflowSettings"] = ["CheckpointDirectory", "DefaultMaxIterations", "DefaultTimeout", "RequireApprovalForAgents"],
         ["Ironbees.Core.Orchestration.OrchestratorSettings"] = ["EnableCheckpointing", "RequireApproval"],
-        ["Ironbees.Core.Orchestration.RetrySettings"] = ["BackoffMultiplier", "JitterFactor", "MaxDelay"],
     };
 
     [Fact]

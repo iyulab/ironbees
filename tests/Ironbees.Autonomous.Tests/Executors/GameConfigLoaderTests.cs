@@ -21,6 +21,77 @@ public class GameConfigLoaderTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    // --- validation: and prompts: sections (were never mapped; only defaults arrived) ---
+
+    [Fact]
+    public void LoadFromString_ValidationSection_ReachesTheDefinition()
+    {
+        var game = _loader.LoadFromString("""
+            validation:
+              invalid_patterns:
+                english: ["tell me "]
+                korean: ["말해"]
+              choice_patterns: [" versus "]
+              messages:
+                open_ended: "custom open"
+                choice: "custom choice"
+                empty: "custom empty"
+                examples: "custom examples"
+            """);
+
+        Assert.Equal(["tell me "], game.Validation.InvalidPatterns.English);
+        Assert.Equal(["말해"], game.Validation.InvalidPatterns.Korean);
+        Assert.Equal([" versus "], game.Validation.ChoicePatterns);
+        Assert.Equal("custom open", game.Validation.Messages.OpenEnded);
+        Assert.Equal("custom choice", game.Validation.Messages.Choice);
+        Assert.Equal("custom empty", game.Validation.Messages.Empty);
+        Assert.Equal("custom examples", game.Validation.Messages.Examples);
+    }
+
+    [Fact]
+    public void LoadFromString_PromptsSection_ReachesTheDefinition()
+    {
+        var game = _loader.LoadFromString("""
+            prompts:
+              questions_remaining: "left: {remaining}"
+              your_move: "go: "
+            """);
+
+        Assert.Equal("left: {remaining}", game.Prompts.QuestionsRemaining);
+        Assert.Equal("go: ", game.Prompts.YourMove);
+        Assert.Equal(new Ironbees.Autonomous.Executors.PlayerPrompts().HistoryLabel, game.Prompts.HistoryLabel);
+    }
+
+    [Fact]
+    public void LoadFromString_PartialValidationSection_KeepsTheOtherDefaults()
+    {
+        var game = _loader.LoadFromString("""
+            validation:
+              choice_patterns: [" versus "]
+            """);
+
+        var defaults = new Ironbees.Autonomous.Executors.ValidationSettings();
+        Assert.Equal([" versus "], game.Validation.ChoicePatterns);
+        Assert.Equal(defaults.InvalidPatterns.English, game.Validation.InvalidPatterns.English);
+        Assert.Equal(defaults.Messages.OpenEnded, game.Validation.Messages.OpenEnded);
+    }
+
+    [Fact]
+    public async Task LoadGameAsync_TheSampleGameFile_CarriesItsValidationAndPrompts()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Ironbees.slnx")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+        var path = Path.Combine(dir!.FullName, "samples", "TwentyQuestionsSample", "config", "game.yaml");
+
+        var game = await _loader.LoadGameAsync(path, TestContext.Current.CancellationToken);
+
+        Assert.Contains("인가요", game.Validation.ChoicePatterns);
+        Assert.Contains("what ", game.Validation.InvalidPatterns.English);
+        Assert.Contains("{remaining}", game.Prompts.QuestionsRemaining);
+    }
+
     // --- LoadFromString ---
 
     [Fact]

@@ -59,7 +59,10 @@ public sealed class GameConfigLoader
                 kvp => kvp.Key,
                 kvp => MapModeDefinition(kvp.Value)) ?? new(),
             Rules = MapRules(yaml.Rules),
-            Messages = MapMessages(yaml.Messages)
+            Messages = MapMessages(yaml.Messages),
+            // The domain records carry their own defaults; YamlDotNet fills only the keys the file sets.
+            Validation = yaml.Validation ?? new ValidationSettings(),
+            Prompts = yaml.Prompts ?? new PlayerPrompts()
         };
     }
 
@@ -136,6 +139,8 @@ public sealed class GameConfigLoader
         public Dictionary<string, YamlGameModeDefinition>? Modes { get; set; }
         public YamlGameRules? Rules { get; set; }
         public YamlGameMessages? Messages { get; set; }
+        public ValidationSettings? Validation { get; set; }
+        public PlayerPrompts? Prompts { get; set; }
     }
 
     private sealed class YamlGameModeDefinition

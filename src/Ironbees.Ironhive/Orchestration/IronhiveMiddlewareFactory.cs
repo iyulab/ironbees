@@ -84,9 +84,12 @@ public partial class IronhiveMiddlewareFactory
                 LogAddingCircuitBreakerMiddleware(_logger, settings.CircuitBreaker.FailureThreshold, settings.CircuitBreaker.BreakDuration);
             }
 
-            middlewares.Add(new CircuitBreakerMiddleware(
-                settings.CircuitBreaker.FailureThreshold,
-                settings.CircuitBreaker.BreakDuration));
+            middlewares.Add(new CircuitBreakerMiddleware(new CircuitBreakerMiddlewareOptions
+            {
+                FailureThreshold = settings.CircuitBreaker.FailureThreshold,
+                FailureWindow = settings.CircuitBreaker.FailureWindow,
+                BreakDuration = settings.CircuitBreaker.BreakDuration,
+            }));
         }
 
         if (settings.Retry is not null)
@@ -96,7 +99,14 @@ public partial class IronhiveMiddlewareFactory
                 LogAddingRetryMiddleware(_logger, settings.Retry.MaxRetries, settings.Retry.InitialDelay);
             }
 
-            middlewares.Add(new RetryMiddleware(settings.Retry.MaxRetries));
+            middlewares.Add(new RetryMiddleware(new RetryMiddlewareOptions
+            {
+                MaxRetries = settings.Retry.MaxRetries,
+                InitialDelay = settings.Retry.InitialDelay,
+                MaxDelay = settings.Retry.MaxDelay,
+                BackoffMultiplier = settings.Retry.BackoffMultiplier,
+                JitterFactor = settings.Retry.JitterFactor,
+            }));
         }
 
         if (settings.Timeout is not null)

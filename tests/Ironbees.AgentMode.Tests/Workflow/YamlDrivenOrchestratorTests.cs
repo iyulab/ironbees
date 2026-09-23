@@ -486,6 +486,39 @@ public class YamlDrivenOrchestratorTests
         Assert.Equal("MATCHED", states.Last().CurrentStateId);
     }
 
+    #region Settings.EnableCheckpointing
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ExecuteAsync_SavesCheckpoints_OnlyWhenTheWorkflowEnablesThem(bool enabled)
+    {
+        var checkpointStore = new MockCheckpointStore();
+        var workflow = new WorkflowDefinition
+        {
+            Name = "CheckpointWorkflow",
+            Settings = new WorkflowSettings { EnableCheckpointing = enabled },
+            States =
+            [
+                new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "AGENT" },
+                new WorkflowStateDefinition { Id = "AGENT", Type = WorkflowStateType.Agent, Executor = "worker", Next = "END" },
+                new WorkflowStateDefinition { Id = "END", Type = WorkflowStateType.Terminal }
+            ]
+        };
+        var orchestrator = new YamlDrivenOrchestrator(_loader, _triggerFactory, _executorFactory, checkpointStore);
+
+        var states = await orchestrator.ExecuteAsync(workflow, "input", cancellationToken: TestContext.Current.CancellationToken)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(WorkflowExecutionStatus.Completed, states.Last().Status);
+        if (enabled)
+            Assert.True(checkpointStore.SaveCount > 0, "checkpointing is on and a store is registered");
+        else
+            Assert.Equal(0, checkpointStore.SaveCount);
+    }
+
+    #endregion
+
     #region ResumeFromCheckpointAsync Tests
 
     [Fact]

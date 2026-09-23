@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.4] - 2026-09-23
+
+### Fixed
+
+- **Retry and circuit-breaker settings reach the IronHive middleware.** `IronhiveMiddlewareFactory` used the short
+  constructors, so `RetrySettings.InitialDelay` / `MaxDelay` / `BackoffMultiplier` / `JitterFactor` and
+  `CircuitBreakerSettings.FailureWindow` were dropped (only `MaxRetries`, `FailureThreshold` and `BreakDuration`
+  arrived). Unset values keep the same defaults as before.
+- **`WorkflowSettings.EnableCheckpointing` is honoured.** A YAML workflow with `enable_checkpointing: false` still
+  saved a checkpoint after every state when a checkpoint store was registered. The default (true) is unchanged.
+- **`GameConfigLoader` loads the `validation:` and `prompts:` sections.** Both were never mapped, so a game file's
+  question patterns, validation messages and player prompts were silently replaced by the built-in defaults. Keys a
+  file leaves out keep their defaults.
+
 ## [0.17.1] - unreleased
 
 ### Fixed

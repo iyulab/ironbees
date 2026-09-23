@@ -337,8 +337,8 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
                 execution.CurrentState = state;
                 yield return state;
 
-                // Save checkpoint after each state transition (when store available)
-                if (_checkpointStore != null && state.Status == WorkflowExecutionStatus.Running)
+                // Save checkpoint after each state transition (when a store is registered and the workflow allows it)
+                if (_checkpointStore != null && workflow.Settings.EnableCheckpointing && state.Status == WorkflowExecutionStatus.Running)
                 {
                     await SaveCheckpointAsync(execution, state, workflow, cancellationToken);
                 }
