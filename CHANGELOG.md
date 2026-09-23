@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or rejection moves it to `on_approve` / `on_reject`.
 
 ### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.33.1 -> 0.34.0, `IronHive.Core` 0.33.1 -> 0.34.0, `TokenMeter` 0.7.5 -> 0.7.6 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
 
 - **`approval_mode` is applied.** `HumanGateSettings.ApprovalMode` is now a `HumanGateApprovalMode` enum
   (`AlwaysRequire`, `Never`) instead of a string that nothing read. `never` lets the gate pass through to `on_approve`.
