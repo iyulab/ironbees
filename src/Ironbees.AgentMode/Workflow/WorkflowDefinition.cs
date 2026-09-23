@@ -197,6 +197,26 @@ public enum TriggerType
 }
 
 /// <summary>
+/// Whether a <see cref="WorkflowStateType.HumanGate"/> state waits for a human decision.
+/// </summary>
+/// <remarks>
+/// There is no "approve only when sensitive" mode: the workflow runtime carries no signal about what a
+/// previous state did (which tools it called, what it changed), so such a mode would have nothing to decide on.
+/// The YAML loader rejects <c>on_sensitive</c> rather than treating it as one of these.
+/// </remarks>
+public enum HumanGateApprovalMode
+{
+    /// <summary>The gate waits for <c>ApproveAsync</c> (or its timeout) before the workflow continues.</summary>
+    AlwaysRequire,
+
+    /// <summary>
+    /// The gate approves itself and moves to <see cref="HumanGateSettings.OnApprove"/> without waiting — a way to
+    /// switch a gate off (for example in a test environment) without rewriting the workflow's transitions.
+    /// </summary>
+    Never
+}
+
+/// <summary>
 /// Conditional transition based on state evaluation.
 /// </summary>
 public sealed record ConditionalTransition
@@ -228,9 +248,9 @@ public sealed record ConditionalTransition
 public sealed record HumanGateSettings
 {
     /// <summary>
-    /// Approval mode: "always_require", "on_sensitive", "never".
+    /// Whether the gate waits for a decision. Default: <see cref="HumanGateApprovalMode.AlwaysRequire"/>.
     /// </summary>
-    public string ApprovalMode { get; init; } = "always_require";
+    public HumanGateApprovalMode ApprovalMode { get; init; } = HumanGateApprovalMode.AlwaysRequire;
 
     /// <summary>
     /// Timeout for approval response.

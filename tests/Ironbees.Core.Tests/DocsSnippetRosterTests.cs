@@ -34,7 +34,7 @@ public class DocsSnippetRosterTests
     private static readonly HashSet<string> KnownExternal = new(StringComparer.Ordinal)
     {
         // IronHive provider packages and TokenMeter, which the samples register but this test output does not contain
-        "AddOpenAIProviders", "AddOpenAICompatibleProviders", "Default",
+        "AddOpenAIProviders", "AddOpenAICompatibleProviders", "AddAnthropicProviders", "AddGoogleAIProviders", "Default",
         // Deployment guide: ASP.NET Core health checks, HttpClient/Polly, Application Insights, Key Vault, Serilog
         "AddHealthChecks", "MapHealthChecks", "Healthy", "Unhealthy", "AddHttpClient", "AddPolicyHandler",
         "WaitAndRetryAsync", "CircuitBreakerAsync", "AddApplicationInsightsTelemetry", "ApplicationInsights",
@@ -49,9 +49,6 @@ public class DocsSnippetRosterTests
     /// </summary>
     private static readonly Dictionary<string, string[]> KnownDrift = new(StringComparer.Ordinal)
     {
-        // The provider guide's quick setup builds chat clients through an LLMProviderFactoryRegistry that does not
-        // exist; ILLMProviderFactory has no implementation in the library.
-        ["docs/PROVIDERS.md"] = ["GetFactory"],
     };
 
     /// <summary>Option-shaped types from other SDKs that a document legitimately shows (not ours to declare).</summary>

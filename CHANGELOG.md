@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-09-23
+
+### Fixed
+
+- **A workflow human gate can now be approved.** A `human_gate` state waited without ever reporting that it was
+  waiting, so `ApproveAsync` always answered "Execution is not waiting for approval" and the gate could only end in
+  its timeout (24 hours by default). The run now yields a `WaitingForApproval` state before it waits, and an approval
+  or rejection moves it to `on_approve` / `on_reject`.
+
+### Changed
+
+- **`approval_mode` is applied.** `HumanGateSettings.ApprovalMode` is now a `HumanGateApprovalMode` enum
+  (`AlwaysRequire`, `Never`) instead of a string that nothing read. `never` lets the gate pass through to `on_approve`.
+  **Breaking**: `on_sensitive` and unknown values now fail the load with a `WorkflowParseException` — there is no signal
+  for what is sensitive, so the value could not be honoured; use `always_require` or `never`. Code that set the string
+  property uses the enum.
+
+### Removed
+
+- **`ILLMProviderFactory`, `LLMConfiguration` and `LLMProvider`.** The provider factory had no implementation since its
+  registry was removed, and the provider guide told readers to use it. **Breaking** for code that referenced the types.
+  Choose providers through the backend instead: register them in `ConfigureHive` for the IronHive backend, or set
+  `IronbeesOptions` for the Agent Framework backend. `docs/PROVIDERS.md` shows both.
+
 ## [0.18.0] - 2026-09-23
 
 ### Removed

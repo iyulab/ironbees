@@ -41,6 +41,9 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
   `StopOnAgentFailure` and the timeouts. Every orchestrator type carries the same common options. See
   [Multi-Agent Orchestration](#multi-agent-orchestration).
 - **Approval gate** — set `IronhiveOptions.ApprovalHandler` in `AddIronbeesIronhive` to be asked before each agent runs. A refusal stops the run.
+- **Workflow human gates** (`Ironbees.AgentMode`) — a `type: human_gate` state in a YAML workflow stops `YamlDrivenOrchestrator.ExecuteAsync` with a
+  `WaitingForApproval` state; answer with `ApproveAsync(executionId, new ApprovalDecision { Approved = … })` to move to `on_approve` / `on_reject`.
+  `approval_mode: never` makes the gate pass through (e.g. in a test environment); `always_require` is the default.
 - **Goals** (`Ironbees.AgentFramework`) — `IGoalExecutionBridge.ExecuteGoalAsync(goal, input, new GoalExecutionOptions { MaxIterations = …, Timeout = …, Parameters = … })`
   runs a goal's workflow template. The per-call options override the goal's own constraints and checkpoint settings. A goal that exceeds its `Timeout` (or
   `Constraints.MaxDuration`) ends with a `GoalFailed` event marked `timedOut`.

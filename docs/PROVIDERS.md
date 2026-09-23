@@ -1,121 +1,121 @@
 # LLM Providers
 
-Configure LLM providers for Ironbees via unified `LLMConfiguration`.
+Ironbees does not create chat clients itself. A backend adapter does, and each backend has its own way
+of being told which provider to use:
 
-## Supported Providers
+| Backend | Package | Providers | Where the provider is chosen |
+|---------|---------|-----------|------------------------------|
+| IronHive | `Ironbees.Ironhive` | OpenAI, Anthropic, Google AI, any OpenAI-compatible server (Ollama, LM Studio, vLLM, GPUStack, llama.cpp) | Register providers by name in `ConfigureHive`; an agent picks one with `model.provider` |
+| Microsoft Agent Framework | `Ironbees.AgentFramework` | OpenAI, Azure OpenAI | `IronbeesOptions` in `AddIronbees` — one client for every agent |
 
-| Provider | Status | Best For |
-|----------|--------|----------|
-| Azure OpenAI | ✅ | Enterprise, production |
-| OpenAI | ✅ | Development, prototyping |
-| Anthropic | ✅ | Claude models |
-| OpenAI-Compatible | ✅ | Self-hosted (GPUStack, Ollama, vLLM) |
+The provider packages belong to IronHive; add the ones you register.
 
-## Quick Setup
+## IronHive backend
 
-```csharp
-using Ironbees.AgentMode.Configuration;
-using Ironbees.AgentMode.Providers;
-
-var config = new LLMConfiguration
-{
-    Provider = LLMProvider.OpenAI,
-    Model = "gpt-4o-mini",
-    ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY"),
-    Temperature = 0.0f,
-    MaxOutputTokens = 4096
-};
-
-var registry = new LLMProviderFactoryRegistry();
-var factory = registry.GetFactory(config.Provider);
-var chatClient = factory.CreateChatClient(config);
-```
-
-## Provider Configuration
-
-### Azure OpenAI
-
-```csharp
-var config = new LLMConfiguration
-{
-    Provider = LLMProvider.AzureOpenAI,
-    Endpoint = "https://your-resource.openai.azure.com",
-    ApiKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY"),
-    Model = "gpt-4o"  // deployment name
-};
-```
+Each `Add…Providers` call registers a provider under a name you choose. An agent refers to that name in
+`agents/<name>/agent.yaml`, so several providers can live side by side and each agent can use a
+different one.
 
 ```bash
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-AZURE_OPENAI_KEY=your-key
+dotnet add package Ironbees.Ironhive
+dotnet add package IronHive.Providers.OpenAI
 ```
-
-### OpenAI
 
 ```csharp
-var config = new LLMConfiguration
+services.AddIronbeesIronhive(options =>
 {
-    Provider = LLMProvider.OpenAI,
-    ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY"),
-    Model = "gpt-4o-mini"
-};
+    options.AgentsDirectory = "./agents";
+    options.ConfigureHive = hive =>
+    {
+        hive.AddOpenAIProviders("openai", new OpenAIConfig
+        {
+            ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY")!
+        });
+    };
+});
 ```
 
-**Models**: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`
+```yaml
+# agents/coding-agent/agent.yaml
+model:
+  provider: openai     # the name registered above
+  deployment: gpt-4o-mini
+  temperature: 0.0
+  maxTokens: 4096
+```
 
 ### Anthropic
 
-```csharp
-var config = new LLMConfiguration
-{
-    Provider = LLMProvider.Anthropic,
-    ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY"),
-    Model = "claude-sonnet-4-20250514"
-};
+```bash
+dotnet add package IronHive.Providers.Anthropic
 ```
 
-**Models**: `claude-sonnet-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`, `claude-3-haiku-20240307`
-
-### Self-Hosted (OpenAI-Compatible)
-
-#### GPUStack
-
 ```csharp
-var config = new LLMConfiguration
+hive.AddAnthropicProviders("anthropic", new AnthropicConfig
 {
-    Provider = LLMProvider.OpenAICompatible,
-    Endpoint = "http://gpu-cluster:8080/v1",
-    ApiKey = "gpustack_xxx",
-    Model = "llama-3.1-8b-instruct"
-};
+    ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
+});
 ```
 
-#### Ollama
+### Google AI
 
-```csharp
-var config = new LLMConfiguration
-{
-    Provider = LLMProvider.OpenAICompatible,
-    Endpoint = "http://localhost:11434/v1",
-    ApiKey = "dummy",  // Ollama doesn't require auth
-    Model = "mistral:7b-instruct"
-};
+```bash
+dotnet add package IronHive.Providers.GoogleAI
 ```
 
-#### vLLM
-
 ```csharp
-var config = new LLMConfiguration
+hive.AddGoogleAIProviders("google", new GoogleAIConfig
 {
-    Provider = LLMProvider.OpenAICompatible,
-    Endpoint = "http://localhost:8000/v1",
-    Model = "meta-llama/Llama-3.1-8B-Instruct"
-};
+    ApiKey = Environment.GetEnvironmentVariable("GOOGLE_API_KEY")
+});
 ```
 
-## Custom Adapter
+### Self-hosted (OpenAI-compatible)
 
-Implement `ILLMFrameworkAdapter` for custom integrations:
+Local servers usually accept requests without a key. Only `BaseUrl` differs between them.
+
+```bash
+dotnet add package IronHive.Providers.OpenAI.Compatible
+```
+
+```csharp
+// Ollama's default endpoint; LM Studio is :1234, vLLM :8000.
+hive.AddOpenAICompatibleProviders("ollama", new OpenAICompatibleConfig
+{
+    BaseUrl = "http://localhost:11434"
+});
+```
+
+```yaml
+model:
+  provider: ollama
+  deployment: qwen2.5:7b   # a model the server has already pulled
+```
+
+The server must already be running with that model available; Ironbees does not start or download it.
+
+## Microsoft Agent Framework backend
+
+```csharp
+// OpenAI
+services.AddIronbees(options =>
+{
+    options.OpenAIApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+    options.AgentsDirectory = "./agents";
+});
+
+// Azure OpenAI — deployment names go in model.deployment
+services.AddIronbees(options =>
+{
+    options.AzureOpenAIEndpoint = "https://your-resource.openai.azure.com";
+    options.AzureOpenAIKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY");
+    options.AgentsDirectory = "./agents";
+});
+```
+
+## Custom adapter
+
+To run agents on another framework, implement `ILLMFrameworkAdapter`:
 
 ```csharp
 public class CustomAdapter : ILLMFrameworkAdapter
@@ -149,38 +149,8 @@ public class CustomAdapter : ILLMFrameworkAdapter
 services.AddSingleton<ILLMFrameworkAdapter, CustomAdapter>();
 ```
 
-## Provider Selection Guide
+## Next steps
 
-| Use Case | Provider |
-|----------|----------|
-| Enterprise compliance | Azure OpenAI |
-| Latest models | OpenAI |
-| Extended context (200K) | Anthropic |
-| Cost optimization | Self-hosted |
-| Air-gapped environment | Self-hosted |
-
-## Temperature Guidelines
-
-| Value | Use Case |
-|-------|----------|
-| 0.0 | Code generation, factual answers |
-| 0.3-0.7 | Balanced creativity |
-| 1.0+ | Creative writing |
-
-## Error Handling
-
-```csharp
-try
-{
-    var response = await chatClient.CompleteAsync(messages);
-}
-catch (ArgumentException) { /* Invalid config */ }
-catch (HttpRequestException) { /* Network error */ }
-catch (UnauthorizedAccessException) { /* Invalid API key */ }
-```
-
-## Next Steps
-
-- [README](../README.md) - Quick start examples
+- [README](../README.md) — the `model:` keys and which backend applies each of them
 - [Architecture](./ARCHITECTURE.md)
 - [Deployment](./DEPLOYMENT.md)

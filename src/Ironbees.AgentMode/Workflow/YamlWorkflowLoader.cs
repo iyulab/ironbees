@@ -296,10 +296,21 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
     private static HumanGateSettings MapHumanGate(YamlHumanGateSettings yaml) =>
         new()
         {
-            ApprovalMode = yaml.ApprovalMode ?? "always_require",
+            ApprovalMode = ParseApprovalMode(yaml.ApprovalMode),
             Timeout = yaml.Timeout != null ? ParseTimeSpan(yaml.Timeout) : TimeSpan.FromHours(24),
             OnApprove = yaml.OnApprove,
             OnReject = yaml.OnReject
+        };
+
+    private static HumanGateApprovalMode ParseApprovalMode(string? mode) =>
+        mode?.ToLowerInvariant() switch
+        {
+            "always_require" or "alwaysrequire" or null => HumanGateApprovalMode.AlwaysRequire,
+            "never" => HumanGateApprovalMode.Never,
+            "on_sensitive" or "onsensitive" => throw new WorkflowParseException(
+                "approval_mode 'on_sensitive' is not supported: the workflow runtime has no signal for what is sensitive. " +
+                "Use 'always_require' or 'never'."),
+            _ => throw new WorkflowParseException($"Unknown approval_mode: '{mode}'. Use 'always_require' or 'never'.")
         };
 
     private static WorkflowSettings MapSettings(YamlWorkflowSettings? yaml) =>

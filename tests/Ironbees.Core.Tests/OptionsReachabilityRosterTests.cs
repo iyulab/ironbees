@@ -34,9 +34,6 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Core.Goals.ConfidenceSettings"] = ["MinConfidenceForHitl", "StabilityWindow", "Threshold", "TrackHistory"],
         ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
         ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
-        //
-        // Not yet decided - the approval mode: its "on_sensitive" value has no sensitivity signal to act on.
-        ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode"],
     };
 
     [Fact]

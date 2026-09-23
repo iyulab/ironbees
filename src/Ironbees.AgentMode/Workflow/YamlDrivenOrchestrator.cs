@@ -306,6 +306,22 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
                 }
             }
 
+            // A gate that waits must be visible as waiting before it waits: ApproveAsync only accepts an execution
+            // whose current state says WaitingForApproval, and a caller streaming the run learns it has to answer
+            // from this state. The gate is created first so an answer that arrives right after the yield is not lost.
+            if (currentStateDef.Type == WorkflowStateType.HumanGate &&
+                (currentStateDef.HumanGate?.ApprovalMode ?? HumanGateApprovalMode.AlwaysRequire) == HumanGateApprovalMode.AlwaysRequire)
+            {
+                execution.ApprovalGate = new TaskCompletionSource<ApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
+                state = state with
+                {
+                    Status = WorkflowExecutionStatus.WaitingForApproval,
+                    LastUpdatedAt = DateTimeOffset.UtcNow
+                };
+                execution.CurrentState = state;
+                yield return state;
+            }
+
             // Execute state based on type
             WorkflowRuntimeState? newState = null;
             var limited = currentStateDef.Type is WorkflowStateType.Agent or WorkflowStateType.Parallel;
@@ -519,15 +535,18 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
     {
         var settings = stateDef.HumanGate ?? new HumanGateSettings();
 
-        // Update state to waiting
-        state = state with
+        if (settings.ApprovalMode == HumanGateApprovalMode.Never)
         {
-            Status = WorkflowExecutionStatus.WaitingForApproval,
-            LastUpdatedAt = DateTimeOffset.UtcNow
-        };
+            return state with
+            {
+                CurrentStateId = settings.OnApprove ?? stateDef.Next ?? state.CurrentStateId,
+                LastUpdatedAt = DateTimeOffset.UtcNow
+            };
+        }
 
-        // Set up approval gate
-        execution.ApprovalGate = new TaskCompletionSource<ApprovalDecision>();
+        // The run loop has already created the gate and reported the waiting state.
+        var gate = execution.ApprovalGate
+            ?? throw new InvalidOperationException($"Human gate '{stateDef.Id}' has no approval gate to wait on.");
 
         // Wait for approval with timeout
         using var timeoutCts = new CancellationTokenSource(settings.Timeout);
@@ -537,7 +556,7 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
 
         try
         {
-            var decision = await execution.ApprovalGate.Task.WaitAsync(linkedCts.Token);
+            var decision = await gate.Task.WaitAsync(linkedCts.Token);
 
             if (decision.Approved)
             {

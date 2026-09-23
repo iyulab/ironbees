@@ -115,10 +115,55 @@ public class YamlWorkflowLoaderTests
         var state = result.States.First(s => s.Id == "APPROVAL");
         Assert.Equal(WorkflowStateType.HumanGate, state.Type);
         Assert.NotNull(state.HumanGate);
-        Assert.Equal("always_require", state.HumanGate.ApprovalMode);
+        Assert.Equal(HumanGateApprovalMode.AlwaysRequire, state.HumanGate.ApprovalMode);
         Assert.Equal(TimeSpan.FromHours(1), state.HumanGate.Timeout);
         Assert.Equal("NEXT", state.HumanGate.OnApprove);
         Assert.Equal("BACK", state.HumanGate.OnReject);
+    }
+
+    [Theory]
+    [InlineData("never", HumanGateApprovalMode.Never)]
+    [InlineData("always_require", HumanGateApprovalMode.AlwaysRequire)]
+    [InlineData(null, HumanGateApprovalMode.AlwaysRequire)]
+    public async Task LoadFromStringAsync_ApprovalMode_MapsToTheMode(string? mode, HumanGateApprovalMode expected)
+    {
+        var line = mode is null ? "" : $"approval_mode: {mode}";
+        var yaml = $"""
+            name: ApprovalWorkflow
+            states:
+              - id: APPROVAL
+                type: human_gate
+                human_gate:
+                  {line}
+                  on_approve: NEXT
+              - id: NEXT
+                type: terminal
+            """;
+
+        var result = await _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, result.States.First(s => s.Id == "APPROVAL").HumanGate!.ApprovalMode);
+    }
+
+    [Theory]
+    [InlineData("on_sensitive", "no signal")]
+    [InlineData("sometimes", "Unknown approval_mode")]
+    public async Task LoadFromStringAsync_ApprovalMode_WithoutAMeaning_IsRejected(string mode, string message)
+    {
+        var yaml = $"""
+            name: ApprovalWorkflow
+            states:
+              - id: APPROVAL
+                type: human_gate
+                human_gate:
+                  approval_mode: {mode}
+              - id: NEXT
+                type: terminal
+            """;
+
+        var ex = await Assert.ThrowsAsync<WorkflowParseException>(
+            () => _loader.LoadFromStringAsync(yaml, TestContext.Current.CancellationToken));
+        Assert.Contains(message, ex.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

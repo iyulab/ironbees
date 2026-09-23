@@ -820,6 +820,94 @@ public class YamlDrivenOrchestratorTests
 
     #region Mock Classes
 
+    private static WorkflowDefinition GateWorkflow(HumanGateApprovalMode mode, TimeSpan timeout) => new()
+    {
+        Name = "GateWorkflow",
+        States =
+        [
+            new WorkflowStateDefinition { Id = "START", Type = WorkflowStateType.Start, Next = "GATE" },
+            new WorkflowStateDefinition
+            {
+                Id = "GATE",
+                Type = WorkflowStateType.HumanGate,
+                HumanGate = new HumanGateSettings { ApprovalMode = mode, Timeout = timeout, OnApprove = "APPROVED", OnReject = "REJECTED" }
+            },
+            new WorkflowStateDefinition { Id = "APPROVED", Type = WorkflowStateType.Terminal },
+            new WorkflowStateDefinition { Id = "REJECTED", Type = WorkflowStateType.Terminal }
+        ]
+    };
+
+    [Fact]
+    public async Task HumanGate_AlwaysRequire_ReportsWaiting_AndAnApprovalMovesItOn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var orchestrator = CreateOrchestrator();
+        var seen = new List<WorkflowRuntimeState>();
+
+        await foreach (var state in orchestrator.ExecuteAsync(GateWorkflow(HumanGateApprovalMode.AlwaysRequire, TimeSpan.FromMinutes(1)), "input", cancellationToken: ct))
+        {
+            seen.Add(state);
+            if (state.Status == WorkflowExecutionStatus.WaitingForApproval)
+            {
+                Assert.Equal("GATE", state.CurrentStateId);
+                Assert.Equal(WorkflowExecutionStatus.WaitingForApproval, (await orchestrator.GetStateAsync(state.ExecutionId)).Status);
+                await orchestrator.ApproveAsync(state.ExecutionId, new ApprovalDecision { Approved = true });
+            }
+        }
+
+        Assert.Contains(seen, s => s.Status == WorkflowExecutionStatus.WaitingForApproval);
+        Assert.Equal(WorkflowExecutionStatus.Completed, seen[^1].Status);
+        Assert.Equal("APPROVED", seen[^1].CurrentStateId);
+    }
+
+    [Fact]
+    public async Task HumanGate_AlwaysRequire_Rejection_FollowsOnReject()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var orchestrator = CreateOrchestrator();
+        var seen = new List<WorkflowRuntimeState>();
+
+        await foreach (var state in orchestrator.ExecuteAsync(GateWorkflow(HumanGateApprovalMode.AlwaysRequire, TimeSpan.FromMinutes(1)), "input", cancellationToken: ct))
+        {
+            seen.Add(state);
+            if (state.Status == WorkflowExecutionStatus.WaitingForApproval)
+            {
+                await orchestrator.ApproveAsync(state.ExecutionId, new ApprovalDecision { Approved = false, Feedback = "no" });
+            }
+        }
+
+        Assert.Equal("REJECTED", seen[^1].CurrentStateId);
+    }
+
+    [Fact]
+    public async Task HumanGate_Never_PassesWithoutWaiting()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var orchestrator = CreateOrchestrator();
+
+        // A short timeout: if the gate waited at all, the run would fail with "Approval timeout exceeded".
+        var states = await orchestrator.ExecuteAsync(GateWorkflow(HumanGateApprovalMode.Never, TimeSpan.FromMilliseconds(50)), "input", cancellationToken: ct)
+            .ToListAsync(cancellationToken: ct);
+
+        Assert.DoesNotContain(states, s => s.Status == WorkflowExecutionStatus.WaitingForApproval);
+        Assert.Equal(WorkflowExecutionStatus.Completed, states[^1].Status);
+        Assert.Equal("APPROVED", states[^1].CurrentStateId);
+    }
+
+    [Fact]
+    public async Task HumanGate_AlwaysRequire_WithoutAnAnswer_TimesOut()
+    {
+        // Positive control for the test above: the same workflow with the gate on does wait.
+        var ct = TestContext.Current.CancellationToken;
+        var orchestrator = CreateOrchestrator();
+
+        var states = await orchestrator.ExecuteAsync(GateWorkflow(HumanGateApprovalMode.AlwaysRequire, TimeSpan.FromMilliseconds(50)), "input", cancellationToken: ct)
+            .ToListAsync(cancellationToken: ct);
+
+        Assert.Equal(WorkflowExecutionStatus.Failed, states[^1].Status);
+        Assert.Equal("Approval timeout exceeded", states[^1].ErrorMessage);
+    }
+
     private sealed class MockCheckpointStore : ICheckpointStore
     {
         public Dictionary<string, OrchestrationCheckpoint> SavedCheckpoints { get; } = new();
