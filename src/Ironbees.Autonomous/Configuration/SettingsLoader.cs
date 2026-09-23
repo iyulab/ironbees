@@ -150,8 +150,7 @@ public sealed class SettingsLoader
             TopP = yaml.TopP,
             FrequencyPenalty = yaml.FrequencyPenalty,
             PresencePenalty = yaml.PresencePenalty,
-            TimeoutSeconds = yaml.TimeoutSeconds ?? 60,
-            EnableDebugOutput = yaml.EnableDebugOutput ?? false
+            TimeoutSeconds = yaml.TimeoutSeconds ?? 60
         };
     }
 
@@ -277,10 +276,7 @@ public sealed class SettingsLoader
 
         return new DebugSettings
         {
-            Enabled = yaml.Enabled ?? false,
-            ShowLlmResponses = yaml.ShowLlmResponses ?? false,
-            ShowTokenUsage = yaml.ShowTokenUsage ?? false,
-            ShowReasoning = yaml.ShowReasoning ?? false
+            Enabled = yaml.Enabled ?? false
         };
     }
 
@@ -328,7 +324,6 @@ public sealed class SettingsLoader
         public float? FrequencyPenalty { get; set; }
         public float? PresencePenalty { get; set; }
         public int? TimeoutSeconds { get; set; }
-        public bool? EnableDebugOutput { get; set; }
     }
 
     private sealed class YamlOrchestrationSettings
@@ -389,9 +384,6 @@ public sealed class SettingsLoader
     private sealed class YamlDebugSettings
     {
         public bool? Enabled { get; set; }
-        public bool? ShowLlmResponses { get; set; }
-        public bool? ShowTokenUsage { get; set; }
-        public bool? ShowReasoning { get; set; }
     }
 
     #endregion

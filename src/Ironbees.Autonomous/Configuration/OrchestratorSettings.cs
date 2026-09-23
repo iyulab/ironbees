@@ -243,19 +243,4 @@ public record DebugSettings
     /// Enable verbose debug output
     /// </summary>
     public bool Enabled { get; init; }
-
-    /// <summary>
-    /// Show full LLM responses
-    /// </summary>
-    public bool ShowLlmResponses { get; init; }
-
-    /// <summary>
-    /// Show token usage
-    /// </summary>
-    public bool ShowTokenUsage { get; init; }
-
-    /// <summary>
-    /// Show reasoning/thinking content if available
-    /// </summary>
-    public bool ShowReasoning { get; init; }
 }

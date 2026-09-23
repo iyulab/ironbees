@@ -72,7 +72,6 @@ public class SettingsLoaderTests : IDisposable
         Assert.Equal(0.1f, settings.Llm.FrequencyPenalty);
         Assert.Equal(0.2f, settings.Llm.PresencePenalty);
         Assert.Equal(30, settings.Llm.TimeoutSeconds);
-        Assert.True(settings.Llm.EnableDebugOutput);
     }
 
     [Fact]
@@ -86,7 +85,6 @@ public class SettingsLoaderTests : IDisposable
         Assert.Equal(200, settings.Llm.MaxOutputTokens);
         Assert.Equal(0.7f, settings.Llm.Temperature);
         Assert.Equal(60, settings.Llm.TimeoutSeconds);
-        Assert.False(settings.Llm.EnableDebugOutput);
     }
 
     [Fact]
@@ -249,9 +247,6 @@ public class SettingsLoaderTests : IDisposable
         var settings = _loader.LoadFromString(yaml);
 
         Assert.True(settings.Debug.Enabled);
-        Assert.True(settings.Debug.ShowLlmResponses);
-        Assert.True(settings.Debug.ShowTokenUsage);
-        Assert.True(settings.Debug.ShowReasoning);
     }
 
     [Fact]

@@ -241,11 +241,6 @@ public sealed record HumanGateSettings
     /// Target state on rejection.
     /// </summary>
     public string? OnReject { get; init; }
-
-    /// <summary>
-    /// Notification settings for approval requests.
-    /// </summary>
-    public string? NotifyEmail { get; init; }
 }
 
 /// <summary>
@@ -267,15 +262,4 @@ public sealed record WorkflowSettings
     /// Enable checkpointing for state persistence.
     /// </summary>
     public bool EnableCheckpointing { get; init; } = true;
-
-    /// <summary>
-    /// Directory for checkpoint storage.
-    /// </summary>
-    public string CheckpointDirectory { get; init; } = ".ironbees/checkpoints";
-
-    /// <summary>
-    /// List of agent names that require human approval before execution.
-    /// Used with HITL (Human-in-the-Loop) orchestration patterns.
-    /// </summary>
-    public ImmutableList<string>? RequireApprovalForAgents { get; init; }
 }

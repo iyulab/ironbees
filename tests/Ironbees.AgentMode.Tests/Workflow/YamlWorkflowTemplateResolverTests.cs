@@ -386,8 +386,6 @@ public class YamlWorkflowTemplateResolverTests : IDisposable
         Assert.Contains("test goal", result.Description?.ToLowerInvariant() ?? "");
         Assert.Equal(5, result.Settings.DefaultMaxIterations);
         Assert.True(result.Settings.EnableCheckpointing);
-        // CheckpointDirectory from template parameter substitution
-        Assert.Contains("checkpoints", result.Settings.CheckpointDirectory);
         Assert.Equal("code-agent", result.States[1].Executor);
         Assert.Equal("review-agent", result.States[2].Executor);
     }

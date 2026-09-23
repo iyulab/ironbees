@@ -13,7 +13,6 @@ llm:
   timeout_seconds: 60
 
   # Enable debug output to see raw LLM responses
-  enable_debug_output: true
 
 orchestration:
   # Game allows up to 20 questions
@@ -51,6 +50,3 @@ orchestration:
 
 debug:
   enabled: true
-  show_llm_responses: true
-  show_token_usage: true
-  show_reasoning: true

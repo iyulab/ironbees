@@ -32,6 +32,3 @@ orchestration:
 
 debug:
   enabled: true
-  show_llm_responses: false
-  show_token_usage: false
-  show_reasoning: false

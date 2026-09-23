@@ -189,11 +189,6 @@ public record CheckpointSettings
     public bool Enabled { get; init; } = true;
 
     /// <summary>
-    /// Interval between automatic checkpoints.
-    /// </summary>
-    public TimeSpan? Interval { get; init; }
-
-    /// <summary>
     /// Whether to checkpoint after each iteration.
     /// </summary>
     public bool AfterEachIteration { get; init; } = true;

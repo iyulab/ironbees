@@ -180,7 +180,6 @@ public class YamlWorkflowLoaderTests
         Assert.Equal(TimeSpan.FromMinutes(45), result.Settings.DefaultTimeout);
         Assert.Equal(10, result.Settings.DefaultMaxIterations);
         Assert.False(result.Settings.EnableCheckpointing);
-        Assert.Equal(".custom/checkpoints", result.Settings.CheckpointDirectory);
     }
 
     [Fact]

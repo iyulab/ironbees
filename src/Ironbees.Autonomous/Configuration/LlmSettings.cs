@@ -52,11 +52,6 @@ public record LlmSettings
     public int TimeoutSeconds { get; init; } = 60;
 
     /// <summary>
-    /// Enable debug output for API responses
-    /// </summary>
-    public bool EnableDebugOutput { get; init; }
-
-    /// <summary>
     /// Resolves the API key, expanding environment variable references
     /// </summary>
     public string ResolveApiKey()

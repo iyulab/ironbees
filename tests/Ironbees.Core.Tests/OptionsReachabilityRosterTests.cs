@@ -25,9 +25,8 @@ public class OptionsReachabilityRosterTests
         // Contract members: settings the library loads (SettingsLoader, AgentDefinitionLoader, GameConfigLoader,
         // FileSystemGoalLoader) and hands to the consumer, which applies them - the library makes no LLM calls of its own
         // and the goal schema is executed by the agent framework. Read by samples and documented as such.
-        // DebugSettings.Show* and LlmSettings.EnableDebugOutput: removal candidates - nothing reads them, samples included.
-        ["Ironbees.Autonomous.Configuration.DebugSettings"] = ["Enabled", "ShowLlmResponses", "ShowReasoning", "ShowTokenUsage"],
-        ["Ironbees.Autonomous.Configuration.LlmSettings"] = ["EnableDebugOutput", "FrequencyPenalty", "MaxOutputTokens", "PresencePenalty", "Temperature", "TimeoutSeconds", "TopP"],
+        ["Ironbees.Autonomous.Configuration.DebugSettings"] = ["Enabled"],
+        ["Ironbees.Autonomous.Configuration.LlmSettings"] = ["FrequencyPenalty", "MaxOutputTokens", "PresencePenalty", "Temperature", "TimeoutSeconds", "TopP"],
         ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
         ["Ironbees.Autonomous.Executors.AgentLlmSettings"] = ["MaxOutputTokens", "Temperature", "TopP"],
         ["Ironbees.Autonomous.Executors.ValidationSettings"] = ["ChoicePatterns", "InvalidPatterns", "Messages"],
@@ -35,15 +34,11 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Core.Goals.ConfidenceSettings"] = ["MinConfidenceForHitl", "StabilityWindow", "Threshold", "TrackHistory"],
         ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
         ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
-        // CheckpointSettings.Interval: removal candidate - its siblings are wired, time-based checkpoints are not implemented.
-        ["Ironbees.Core.Goals.CheckpointSettings"] = ["Interval"],
         //
-        // Not yet decided (enforcing them changes behaviour, or they duplicate a wired knob): YAML workflow iteration
-        // cap and timeout, approval mode, core orchestrator checkpointing and approval flag, and two with no reader at
-        // all, which are removal candidates (notification e-mail, checkpoint directory - IronhiveOptions.CheckpointDirectory is
-        // the wired one - and RequireApprovalForAgents, which the YAML loader never maps).
-        ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode", "NotifyEmail"],
-        ["Ironbees.AgentMode.Workflow.WorkflowSettings"] = ["CheckpointDirectory", "DefaultMaxIterations", "DefaultTimeout", "RequireApprovalForAgents"],
+        // Not yet decided - enforcing them changes behaviour, or they overlap a wired knob: the YAML workflow iteration
+        // cap and timeout, the approval mode, and the core orchestrator's checkpointing and approval flags.
+        ["Ironbees.AgentMode.Workflow.HumanGateSettings"] = ["ApprovalMode"],
+        ["Ironbees.AgentMode.Workflow.WorkflowSettings"] = ["DefaultMaxIterations", "DefaultTimeout"],
         ["Ironbees.Core.Orchestration.OrchestratorSettings"] = ["EnableCheckpointing", "RequireApproval"],
     };
 

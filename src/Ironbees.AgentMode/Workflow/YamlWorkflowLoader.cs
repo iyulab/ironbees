@@ -299,8 +299,7 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
             ApprovalMode = yaml.ApprovalMode ?? "always_require",
             Timeout = yaml.Timeout != null ? ParseTimeSpan(yaml.Timeout) : TimeSpan.FromHours(24),
             OnApprove = yaml.OnApprove,
-            OnReject = yaml.OnReject,
-            NotifyEmail = yaml.NotifyEmail
+            OnReject = yaml.OnReject
         };
 
     private static WorkflowSettings MapSettings(YamlWorkflowSettings? yaml) =>
@@ -312,8 +311,7 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
                     ? ParseTimeSpan(yaml.DefaultTimeout)
                     : TimeSpan.FromMinutes(30),
                 DefaultMaxIterations = yaml.DefaultMaxIterations ?? 5,
-                EnableCheckpointing = yaml.EnableCheckpointing ?? true,
-                CheckpointDirectory = yaml.CheckpointDirectory ?? ".ironbees/checkpoints"
+                EnableCheckpointing = yaml.EnableCheckpointing ?? true
             };
 
     private static TimeSpan ParseTimeSpan(string value)
@@ -397,7 +395,6 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
         public string? Timeout { get; set; }
         public string? OnApprove { get; set; }
         public string? OnReject { get; set; }
-        public string? NotifyEmail { get; set; }
     }
 
     private sealed class YamlWorkflowSettings
@@ -405,7 +402,6 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
         public string? DefaultTimeout { get; set; }
         public int? DefaultMaxIterations { get; set; }
         public bool? EnableCheckpointing { get; set; }
-        public string? CheckpointDirectory { get; set; }
     }
 
     #endregion

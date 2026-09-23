@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.17.4] - 2026-09-23
+## [0.18.0] - 2026-09-23
+
+### Removed
+
+- **Settings nothing read.** `HumanGateSettings.NotifyEmail` (the library sends no notifications),
+  `WorkflowSettings.CheckpointDirectory` (the checkpoint store is injected; `IronhiveOptions.CheckpointDirectory` is the
+  one that is used), `WorkflowSettings.RequireApprovalForAgents` (never loaded from YAML; `IronhiveOptions.ApprovalHandler`
+  receives the agent name), `DebugSettings.ShowLlmResponses` / `ShowTokenUsage` / `ShowReasoning` and
+  `LlmSettings.EnableDebugOutput` (the library makes no LLM calls to show), and `CheckpointSettings.Interval`
+  (time-based checkpoints are not implemented). **Breaking** for code that set them — delete the assignment; YAML
+  keys with these names are ignored as before.
+
+### Changed
+
+- `docs/AGENTIC-PATTERNS.md` states that `GoalDefinition.Agentic` is schema only: Ironbees loads it, nothing in
+  Ironbees applies it.
 
 ### Fixed
 

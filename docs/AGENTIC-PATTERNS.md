@@ -6,6 +6,12 @@ Agentic Patterns enable iterative, human-supervised workflows where an AI agent 
 
 **Core Principle**: Ironbees **declares** patterns; execution is delegated to MS Agent Framework (MAF).
 
+> **Schema only — what Ironbees does and does not do.** Ironbees loads `GoalDefinition.Agentic` (sampling,
+> confidence, HITL) from the goal file and hands it to you. Nothing in Ironbees — including
+> `Ironbees.AgentFramework` — converts these settings to MAF or applies them: no sampling loop, confidence
+> calculation or HITL trigger runs because a value is set here. Your executor reads `goal.Agentic` and drives the
+> loop, as the consumer examples below do. The "Convert" step in the diagram is yours to write.
+
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                    Ironbees (Declaration)                   │

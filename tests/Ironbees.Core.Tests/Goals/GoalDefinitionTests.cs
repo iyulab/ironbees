@@ -115,7 +115,6 @@ public class GoalDefinitionTests
 
         // Assert
         Assert.True(settings.Enabled);
-        Assert.Null(settings.Interval);
         Assert.True(settings.AfterEachIteration);
         Assert.Equal("checkpoints", settings.CheckpointDirectory);
     }

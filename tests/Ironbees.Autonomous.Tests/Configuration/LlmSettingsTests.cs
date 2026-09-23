@@ -21,7 +21,6 @@ public class LlmSettingsTests
         Assert.Null(settings.FrequencyPenalty);
         Assert.Null(settings.PresencePenalty);
         Assert.Equal(60, settings.TimeoutSeconds);
-        Assert.False(settings.EnableDebugOutput);
     }
 
     // --- ResolveApiKey ---
