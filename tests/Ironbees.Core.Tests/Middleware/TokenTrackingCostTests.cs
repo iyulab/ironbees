@@ -53,6 +53,30 @@ public class TokenTrackingCostTests
     }
 
     [Fact]
+    public async Task CachedInput_IsPricedAtTheCacheReadRate()
+    {
+        // A cache hit is part of the input the provider reports; pricing it at the full input rate overstated the cost.
+        var costCalculator = CostCalculator.Default();
+        var model = costCalculator.GetModel("gpt-4o");
+        Assert.NotNull(model?.CacheReadPricePerMillion);
+        var response = new ChatResponse(new ChatMessage(ChatRole.Assistant, "Hello"))
+        {
+            ModelId = "gpt-4o",
+            Usage = new UsageDetails { InputTokenCount = 1_000_000, OutputTokenCount = 0, CachedInputTokenCount = 1_000_000 }
+        };
+        _mockInnerClient
+            .GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(response);
+        var middleware = new TokenTrackingMiddleware(_mockInnerClient, _store, new TokenTrackingOptions { EnableCostTracking = true }, costCalculator);
+
+        await middleware.GetResponseAsync([new ChatMessage(ChatRole.User, "Hi")], cancellationToken: TestContext.Current.CancellationToken);
+
+        var usage = Assert.Single(await _store.GetUsageAsync(DateTimeOffset.MinValue, DateTimeOffset.MaxValue, TestContext.Current.CancellationToken));
+        Assert.Equal(1_000_000, usage.CachedInputTokens);
+        Assert.Equal(model!.CacheReadPricePerMillion, usage.EstimatedCost);
+    }
+
+    [Fact]
     public async Task WithoutCostCalculator_NoCost()
     {
         // Arrange

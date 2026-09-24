@@ -65,6 +65,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
     {
         long totalInputTokens = 0;
         long totalOutputTokens = 0;
+        long totalCachedInputTokens = 0;
         string? modelId = null;
 
         await foreach (var update in base.GetStreamingResponseAsync(messages, options, cancellationToken))
@@ -78,6 +79,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
                     {
                         totalInputTokens += usageContent.Details?.InputTokenCount ?? 0;
                         totalOutputTokens += usageContent.Details?.OutputTokenCount ?? 0;
+                        totalCachedInputTokens += usageContent.Details?.CachedInputTokenCount ?? 0;
                     }
                 }
             }
@@ -94,6 +96,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
                 modelId ?? options?.ModelId ?? "unknown",
                 totalInputTokens,
                 totalOutputTokens,
+                totalCachedInputTokens,
                 options);
 
             await RecordUsageInternalAsync(usage, cancellationToken);
@@ -115,6 +118,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
             response.ModelId ?? options?.ModelId ?? "unknown",
             response.Usage.InputTokenCount ?? 0,
             response.Usage.OutputTokenCount ?? 0,
+            response.Usage.CachedInputTokenCount ?? 0,
             options);
 
         await RecordUsageInternalAsync(usage, cancellationToken);
@@ -124,6 +128,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
         string modelId,
         long inputTokens,
         long outputTokens,
+        long cachedInputTokens,
         ChatOptions? options)
     {
         var metadata = new Dictionary<string, string>();
@@ -157,7 +162,9 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
         decimal? estimatedCost = null;
         if (_options.EnableCostTracking && _costCalculator is not null)
         {
-            estimatedCost = _costCalculator.CalculateCost(modelId, (int)inputTokens, (int)outputTokens);
+            // Cached input is part of the input the provider reports; it is priced at the cache-read rate.
+            var cached = Math.Clamp(cachedInputTokens, 0, inputTokens);
+            estimatedCost = _costCalculator.CalculateCost(modelId, (int)(inputTokens - cached), (int)outputTokens, (int)cached, cacheWriteTokens: 0);
         }
 
         return new TokenUsage
@@ -166,6 +173,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
             AgentName = agentName,
             InputTokens = inputTokens,
             OutputTokens = outputTokens,
+            CachedInputTokens = cachedInputTokens,
             SessionId = sessionId,
             Metadata = metadata.Count > 0 ? metadata : null,
             EstimatedCost = estimatedCost

@@ -32,6 +32,12 @@ public sealed record TokenUsage
     public long OutputTokens { get; init; }
 
     /// <summary>
+    /// How many of <see cref="InputTokens"/> the provider read from its prompt cache (priced at the cache-read rate).
+    /// 0 when the provider did not report it.
+    /// </summary>
+    public long CachedInputTokens { get; init; }
+
+    /// <summary>
     /// Total tokens used (input + output).
     /// </summary>
     public long TotalTokens => InputTokens + OutputTokens;

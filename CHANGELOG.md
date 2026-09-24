@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - Unreleased
+
+### Fixed
+- **`TokenTrackingMiddleware` prices prompt-cache reads at the cache-read rate.** A provider reports cache reads as part
+  of the input (`UsageDetails.CachedInputTokenCount`), and every input token was priced at the full input rate, so a
+  cache hit was recorded at up to ten times its cost. Cached input is now priced at the model's cache-read rate (the
+  input rate when the catalog has none).
+
+### Added
+- `TokenUsage.CachedInputTokens` — how much of the recorded input was read from the prompt cache.
+
 ## [0.19.4] - 2026-09-24
 
 ### Changed
