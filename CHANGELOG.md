@@ -92,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   question patterns, validation messages and player prompts were silently replaced by the built-in defaults. Keys a
   file leaves out keep their defaults.
 
-## [0.17.1] - unreleased
+## [0.17.1] - 2026-09-19
 
 ### Fixed
 
@@ -102,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The README's orchestration section showed an `orchestration.yaml` that nothing reads.** It now shows the
   `OrchestratorSettings` record the adapter actually takes; there is no YAML loader for it.
 
-## [0.17.0] - unreleased
+## [0.17.0] - 2026-09-19
 
 ### Changed
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.31.0 -> 0.32.0, `IronHive.Core` 0.31.0 -> 0.32.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
