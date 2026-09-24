@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.2] - 2026-09-24
+
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.34.0 -> 0.35.0, `IronHive.Core` 0.34.0 -> 0.35.0, `TokenMeter` 0.7.7 -> 0.7.8 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+
 ## [0.19.1] - 2026-09-24
 
 ### Changed

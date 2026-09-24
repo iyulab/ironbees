@@ -29,7 +29,7 @@
          0.9.0: IronHive 0.14.0 페어링 + 구조화 표면 신설 — ProcessOptions.Suggestions
          패스스루(중립 SuggestionRequest), IAgentOrchestrator/ILLMFrameworkAdapter의
          *StructuredAsync(AgentRunResult/StreamChunk), 텍스트 표면은 projection. -->
-    <Version>0.19.1</Version>
+    <Version>0.19.2</Version>
 
     <!-- Authors and Company -->
     <Authors>iyulab</Authors>
