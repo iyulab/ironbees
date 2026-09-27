@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="IronHive.Abstractions" />
     <PackageReference Include="IronHive.Core" />
+    <PackageReference Include="IronHive.Extensions.AI" />
   </ItemGroup>
   
   <ItemGroup>

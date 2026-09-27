@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - Unreleased
+
+### Dependencies
+- IronHive 0.41.0 -> 0.42.0. `Ironbees.Ironhive` now also references `IronHive.Extensions.AI`, where IronHive 0.42.0 moved
+  `ChatClientAdapter` (namespace `IronHive.Extensions.AI`). A host that used `IronHive.Core.Microsoft` types through
+  Ironbees' transitive `IronHive.Core` reference must switch that `using` — see IronHive 0.42.0's migration note.
+
 ## [0.20.4] - 2026-09-26
 
 ### Changed

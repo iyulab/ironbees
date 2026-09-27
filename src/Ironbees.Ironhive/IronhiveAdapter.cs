@@ -8,7 +8,7 @@ using IronHive.Abstractions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
 using IronHive.Abstractions.Tools;
-using IronHive.Core.Microsoft;
+using IronHive.Extensions.AI;
 using IronHive.Core.Tools;
 using IronHiveAgentParametersConfig = IronHive.Abstractions.Agent.AgentParametersConfig;
 using IronHiveInvokeOptions = IronHive.Abstractions.Agent.AgentInvokeOptions;
