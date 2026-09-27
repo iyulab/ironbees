@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.21.0] - Unreleased
+## [0.21.0] - 2026-09-27
 
 ### Dependencies
 - IronHive 0.41.0 -> 0.42.0. `Ironbees.Ironhive` now also references `IronHive.Extensions.AI`, where IronHive 0.42.0 moved
