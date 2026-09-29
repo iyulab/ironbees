@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.6] - Unreleased
+
+### Fixed
+- **Every C# example in the README now compiles as written against the current API.** Each block states the usings it needs, so a block copied on its own builds once the packages it names are installed; CI compiles every block.
+  - The Autonomous SDK example showed an API that does not exist (`await foreach` over `StartAsync`) and omitted the required `WithRequestFactory`, so `Build()` threw. It now shows the real flow: `WithRequestFactory`, `OnEvent`, `EnqueuePrompt`, `await StartAsync()`.
+  - The token tracking section described tokenizer-based counting; the middleware records the usage each provider reports and prices it with TokenMeter. The example now builds the client and uses the `out InMemoryTokenUsageStore` overload.
+  - The tools section said there is no `ProcessOptions.Tools`; there is, and it replaces the agent's tools for one call. The per-request options table gains the `MaxToolTurns` row.
+
 ## [0.21.5] - 2026-09-29
 
 ### Changed

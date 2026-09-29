@@ -19,7 +19,7 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 | **Observable** | All state lives in the filesystem - debug with `ls`, `grep`, `cat` |
 | **Portable** | Swap between IronHive and Microsoft Agent Framework without changing agent definitions |
 | **Intelligent Routing** | Keyword, embedding, and hybrid agent selection out of the box |
-| **Cost Tracking** | Accurate token counting and cost estimation via [TokenMeter](https://github.com/iyulab/TokenMeter) |
+| **Cost Tracking** | Records the token usage each provider reports and prices it with [TokenMeter](https://github.com/iyulab/TokenMeter) |
 
 ## Packages
 
@@ -47,7 +47,8 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 - **Goals** (`Ironbees.AgentFramework`) — `IGoalExecutionBridge.ExecuteGoalAsync(goal, input, new GoalExecutionOptions { MaxIterations = …, Timeout = …, Parameters = … })`
   runs a goal's workflow template. The per-call options override the goal's own constraints and checkpoint settings. A goal that exceeds its `Timeout` (or
   `Constraints.MaxDuration`) ends with a `GoalFailed` event marked `timedOut`.
-- **Autonomous execution** (`Ironbees.Autonomous`) — `AutonomousOrchestrator.Create<TRequest, TResult>().WithExecutor(…).WithOracle(…).Build()`. Context tracking is on by default;
+- **Autonomous execution** (`Ironbees.Autonomous`) — `AutonomousOrchestrator.Create<TRequest, TResult>().WithExecutor(…).WithRequestFactory(…).WithOracle(…).Build()`
+  (executor and request factory are required), then `EnqueuePrompt(…)` and `await StartAsync()`; progress arrives on the `OnEvent` event. Context tracking is on by default;
   `WithoutContext()` turns it off. `AutonomousConfig.MaxContextLearnings` (`context.max_learnings` in settings) caps the learnings kept between iterations.
   `services.AddAutonomousContext(…)` registers the context manager for DI.
 - **Token tracking and cost estimation** — see [Token Tracking & Cost Estimation](#token-tracking--cost-estimation).
@@ -151,18 +152,24 @@ tools: [search-code, run-tests]
 ```
 
 ```csharp
+using IronHive.Abstractions;          // AddOpenAIProviders
+using IronHive.Core.Tools;            // ToolCollection
+using IronHive.Providers.OpenAI;      // OpenAIConfig
+using Ironbees.Ironhive;              // AddIronbeesIronhive
+
 services.AddIronbeesIronhive(options =>
 {
     options.AgentsDirectory = "./agents";
     options.ConfigureHive = hive => hive.AddOpenAIProviders("openai", new OpenAIConfig { ApiKey = apiKey });
-    options.Tools = new ToolCollection([mySearchCodeTool, myRunTestsTool]); // IronHive.Abstractions.Tools.ITool instances
+    options.Tools = new ToolCollection([mySearchCodeTool, myRunTestsTool]); // your IronHive.Abstractions.Tools.ITool instances
 });
 ```
 
 A tool name with no match in the registered pool fails agent creation loud, at
 `orchestrator.LoadAgentsAsync()` time, rather than silently running the agent without it. Tools
-are a fixed per-agent property (like `model`), not a per-request option — there is no
-`ProcessOptions.Tools`. Tool execution surfaces on the structured stream as
+are a fixed per-agent property (like `model`). To give one request a different tool set — say a
+tool bound to the current workspace — pass `ProcessOptions.Tools` (Microsoft.Extensions.AI `AITool`s);
+it replaces the agent's tools for that call only. Tool execution surfaces on the structured stream as
 `ToolCallStartChunk`/`ToolCallCompleteChunk` (see the streaming example below); the text-only
 `StreamAsync` surface only sees the resulting answer text, not the intermediate tool calls.
 
@@ -174,7 +181,16 @@ without them (no `ITool`/pool concept exists there today).
 
 ### With IronHive
 
+```bash
+dotnet add package Ironbees.Ironhive
+dotnet add package IronHive.Providers.OpenAI
+```
+
 ```csharp
+using IronHive.Abstractions;          // AddOpenAIProviders
+using IronHive.Providers.OpenAI;      // OpenAIConfig
+using Ironbees.Ironhive;              // AddIronbeesIronhive
+
 services.AddIronbeesIronhive(options =>
 {
     options.AgentsDirectory = "./agents";
@@ -188,6 +204,8 @@ services.AddIronbeesIronhive(options =>
 ### With Azure OpenAI
 
 ```csharp
+using Ironbees.AgentFramework;        // AddIronbees
+
 services.AddIronbees(options =>
 {
     options.AzureOpenAIEndpoint = "https://your-resource.openai.azure.com";
@@ -208,6 +226,10 @@ dotnet add package IronHive.Providers.OpenAI.Compatible
 ```
 
 ```csharp
+using IronHive.Abstractions;                   // AddOpenAICompatibleProviders
+using IronHive.Providers.OpenAI.Compatible;    // OpenAICompatibleConfig
+using Ironbees.Ironhive;
+
 services.AddIronbeesIronhive(options =>
 {
     options.AgentsDirectory = "./agents";
@@ -237,6 +259,10 @@ LMSupply and has it on by default.
 ### Use the Agent
 
 ```csharp
+using Ironbees.Core;
+using Ironbees.Core.Streaming;        // TextChunk, ThinkingChunk, SuggestionsChunk
+using Microsoft.Extensions.DependencyInjection;
+
 var orchestrator = serviceProvider.GetRequiredService<IAgentOrchestrator>();
 await orchestrator.LoadAgentsAsync();
 
@@ -246,7 +272,7 @@ var response = await orchestrator.ProcessAsync(
     agentName: "coding-agent");
 
 // Automatic routing
-var response = await orchestrator.ProcessAsync(
+var routed = await orchestrator.ProcessAsync(
     "fibonacci in C#"); // Routes based on keywords/embeddings
 
 // Streaming
@@ -256,12 +282,12 @@ await foreach (var chunk in orchestrator.StreamAsync("Write a blog post"))
 }
 
 // Per-request system prompt override (RAG context, per-workspace instructions)
-var ragContext = await ragService.SearchAsync(query, workspaceId);
+string ragContext = "...";            // e.g. the passages your retrieval step returned for `query`
 await foreach (var chunk in orchestrator.StreamAsync(query, new ProcessOptions
 {
     AgentName = "rag-agent",
     ConversationId = sessionId,
-    SystemPromptOverride = $"Context:\n{ragContext}\n\nInstructions: {workspace.Instructions}",
+    SystemPromptOverride = $"Context:\n{ragContext}\n\nAnswer only from the context above.",
 }))
 {
     Console.Write(chunk);
@@ -290,8 +316,11 @@ await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new Proces
     switch (chunk)
     {
         case TextChunk text: Console.Write(text.Content); break;
-        case ThinkingChunk thinking: RenderReasoning(thinking.Content); break; // reasoning models (extended thinking)
-        case SuggestionsChunk s: RenderSuggestions(s.Suggestions); break; // Question + Items
+        case ThinkingChunk thinking: Console.Write(thinking.Content); break; // reasoning models (extended thinking)
+        case SuggestionsChunk s:
+            foreach (var suggestion in s.Suggestions)
+                Console.WriteLine($"{suggestion.Question}: {string.Join(" | ", suggestion.Items)}");
+            break;
     }
 }
 // Non-streaming: var result = await orchestrator.ProcessStructuredAsync(query, options);
@@ -307,6 +336,7 @@ Which per-request options an adapter applies. An option the adapter cannot apply
 | `ThinkingEffort` | applied | throws |
 | `Tools` | applied | throws |
 | `Suggestions` | applied | throws |
+| `MaxToolTurns` | applied | throws |
 
 ### ASP.NET Core Integration
 
@@ -320,7 +350,11 @@ dotnet add package IronHive.Providers.OpenAI
 **`ConfigureHive` is a property assignment, not a method call:**
 
 ```csharp
-services.AddIronbeesIronhive(opts =>
+using IronHive.Abstractions;
+using IronHive.Providers.OpenAI;
+using Ironbees.Ironhive;
+
+builder.Services.AddIronbeesIronhive(opts =>
 {
     opts.AgentsDirectory = "agents";
     opts.ConfigureHive = hive =>       // ← property assignment (not a method call)
@@ -336,6 +370,9 @@ Both registration paths (`ConfigureHive` and a pre-built `HiveService` instance)
 **`LoadAgentsAsync()` must be called after DI build, before `app.Run()`:**
 
 ```csharp
+using Ironbees.Core;
+using Microsoft.Extensions.DependencyInjection;   // already a global using in a web project
+
 var app = builder.Build();
 
 var orchestrator = app.Services.GetRequiredService<IAgentOrchestrator>();
@@ -350,6 +387,10 @@ Ironbees.Ironhive builds an IronHive orchestrator from an `OrchestratorSettings`
 streams the run as goal events:
 
 ```csharp
+using Ironbees.Core.Orchestration;    // OrchestratorSettings, MiddlewareSettings, RetrySettings, ...
+using Ironbees.Ironhive;              // IronhiveAdapter
+using Microsoft.Extensions.DependencyInjection;
+
 var adapter = serviceProvider.GetRequiredService<IronhiveAdapter>();   // registered by AddIronbeesIronhive
 
 var settings = new OrchestratorSettings
@@ -364,7 +405,14 @@ var settings = new OrchestratorSettings
     },
 };
 
-var orchestrator = await adapter.CreateOrchestratorAsync(settings, agentConfigs);
+// Which agents each agent may hand off to (Handoff only); without it no agent has a target to hand to.
+var handoffs = new Dictionary<string, IReadOnlyList<HandoffTargetDefinition>>
+{
+    ["triage"] = [new() { AgentName = "billing", Description = "Invoices and payments" },
+                  new() { AgentName = "tech-support", Description = "Technical problems" }],
+};
+
+var orchestrator = await adapter.CreateOrchestratorAsync(settings, agentConfigs, handoffs);   // agentConfigs: IReadOnlyList<AgentConfig>
 await foreach (var evt in adapter.RunOrchestrationAsync(orchestrator, input, goalId, executionId))
 {
     // AgentStarted, AgentCompleted, ..., GoalCompleted / GoalFailed
@@ -374,6 +422,8 @@ await foreach (var evt in adapter.RunOrchestrationAsync(orchestrator, input, goa
 **Graph-based workflows** for complex pipelines:
 
 ```csharp
+using Ironbees.Core.Orchestration;
+
 var settings = new OrchestratorSettings
 {
     Type = OrchestratorType.Graph,
@@ -404,15 +454,25 @@ returning `false` stops the orchestration, which then fails.
 
 ## Token Tracking & Cost Estimation
 
-Ironbees integrates [TokenMeter](https://github.com/iyulab/TokenMeter) for accurate tiktoken-based token counting and cost estimation across 40+ models (OpenAI, Anthropic, Google, xAI, Azure).
+`UseTokenTracking` adds a middleware to a Microsoft.Extensions.AI chat client pipeline. It records the token
+usage each response reports (input, output and cached input tokens, as the provider counted them) and, with cost
+tracking on, prices it with [TokenMeter](https://github.com/iyulab/TokenMeter)'s model catalog. A model the catalog
+does not know is recorded without a cost.
 
 ```csharp
-// Middleware pipeline with cost tracking
-var builder = new ChatClientBuilder(innerClient)
+using Ironbees.Core.Middleware;       // UseTokenTracking, TokenTrackingOptions
+using Microsoft.Extensions.AI;        // ChatClientBuilder, IChatClient
+using TokenMeter;                     // CostCalculator
+
+// Middleware pipeline with cost tracking; `innerClient` is your provider's IChatClient
+IChatClient client = new ChatClientBuilder(innerClient)
     .UseTokenTracking(
-        store,
+        out InMemoryTokenUsageStore store,   // or pass your own ITokenUsageStore (e.g. FileSystemTokenUsageStore)
         new TokenTrackingOptions { EnableCostTracking = true },
-        CostCalculator.Default());
+        CostCalculator.Default())
+    .Build();
+
+// ... use `client` ...
 
 // Query cost statistics
 var stats = await store.GetStatisticsAsync();
@@ -426,17 +486,26 @@ Console.WriteLine($"By model: {string.Join(", ",
 For iterative autonomous execution with oracle verification:
 
 ```csharp
-var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
-    .WithSettings(settings)
-    .WithExecutor(executor)
-    .WithOracle(oracle)
+using Ironbees.Autonomous;
+using Ironbees.Autonomous.Abstractions;   // ITaskRequest, ITaskResult, ITaskExecutor, IOracleVerifier
+
+var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
+    .WithExecutor(executor)               // your ITaskExecutor<MyRequest, MyResult> (required)
+    .WithRequestFactory((id, prompt) => new MyRequest(id, prompt))   // required
+    .WithOracle(oracle)                   // your IOracleVerifier (optional)
     .Build();
 
-await foreach (var evt in orchestrator.StartAsync(request))
-{
-    Console.WriteLine($"[{evt.Type}] {evt.Message}");
-}
+orchestrator.OnEvent += evt => Console.WriteLine($"[{evt.Type}] {evt.Message}");
+
+orchestrator.EnqueuePrompt("Find the failing test and fix it");
+await orchestrator.StartAsync();          // by default returns once the queue is empty or MaxIterations is reached
+
+public record MyRequest(string RequestId, string Prompt) : ITaskRequest;
+public record MyResult(string RequestId, bool Success, string Output, string? ErrorOutput = null) : ITaskResult;
 ```
+
+Settings can also come from a YAML file: `await AutonomousOrchestrator.FromSettingsFileAsync<MyRequest, MyResult>("settings.yaml")`
+returns the builder with them applied. See the [Autonomous SDK guide](docs/autonomous-sdk-guide.md).
 
 ## Design Principles
 
