@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.21.6] - Unreleased
+## [0.21.6] - 2026-09-30
 
 ### Fixed
 - **Every C# example in the README now compiles as written against the current API.** Each block states the usings it needs, so a block copied on its own builds once the packages it names are installed; CI compiles every block.
