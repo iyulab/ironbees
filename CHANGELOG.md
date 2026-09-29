@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The Autonomous SDK example showed an API that does not exist (`await foreach` over `StartAsync`) and omitted the required `WithRequestFactory`, so `Build()` threw. It now shows the real flow: `WithRequestFactory`, `OnEvent`, `EnqueuePrompt`, `await StartAsync()`.
   - The token tracking section described tokenizer-based counting; the middleware records the usage each provider reports and prices it with TokenMeter. The example now builds the client and uses the `out InMemoryTokenUsageStore` overload.
   - The tools section said there is no `ProcessOptions.Tools`; there is, and it replaces the agent's tools for one call. The per-request options table gains the `MaxToolTurns` row.
+- **`Tools = []` in the per-call options now runs the call with no tools on the IronHive adapter.** An empty list was treated like `null` and the agent kept its configured tools, contrary to the documented contract (only `null` leaves them unchanged) and to the AgentFramework adapter.
 
 ## [0.21.5] - 2026-09-29
 

@@ -359,7 +359,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             };
         }
 
-        if (options.Tools is { Count: > 0 } tools)
+        if (options.Tools is { } tools)
         {
             mapped.Tools = new ToolCollection(tools.Select(t => (ITool)new AIToolAdapter(t)));
         }

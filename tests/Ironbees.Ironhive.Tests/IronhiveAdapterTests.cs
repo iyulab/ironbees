@@ -185,6 +185,36 @@ public class IronhiveAdapterTests
     }
 
     [Fact]
+    public async Task RunStructuredAsync_WithEmptyRunOptionsTools_OverridesTheAgentToolsWithNone()
+    {
+        // Arrange
+        var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
+        AgentInvokeOptions? capturedOptions = null;
+        var response = new MessageResponse
+        {
+            Message = new Message
+            {
+                Role = MessageRole.Assistant,
+                Content = new List<MessageContent> { new TextMessageContent { Value = "ok" } }
+            }
+        };
+        mockIronhiveAgent
+            .InvokeAsync(Arg.Any<IEnumerable<Message>>(), Arg.Do<AgentInvokeOptions?>(o => capturedOptions = o), Arg.Any<CancellationToken>())
+            .Returns(response);
+
+        var config = CreateTestConfig();
+        var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);
+
+        // Act — an empty list is an override ("no tools for this call"); only null leaves the agent's tools
+        await _adapter.RunStructuredAsync(wrapper, "hi", options: new AgentRunOptions { Tools = [] }, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(capturedOptions);
+        Assert.NotNull(capturedOptions!.Tools);
+        Assert.Empty(capturedOptions.Tools!);
+    }
+
+    [Fact]
     public async Task StreamAsync_TextDeltas_YieldsTextOnly()
     {
         // Arrange
