@@ -24,27 +24,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.21.5] - 2026-09-29
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.45.0 -> 0.45.1, `IronHive.Core` 0.45.0 -> 0.45.1, `IronHive.Extensions.AI` 0.45.0 -> 0.45.1 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.45.0 -> 0.45.1, `IronHive.Core` 0.45.0 -> 0.45.1, `IronHive.Extensions.AI` 0.45.0 -> 0.45.1 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.21.4] - 2026-09-28
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.44.0 -> 0.45.0, `IronHive.Core` 0.44.0 -> 0.45.0, `IronHive.Extensions.AI` 0.44.0 -> 0.45.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.44.0 -> 0.45.0, `IronHive.Core` 0.44.0 -> 0.45.0, `IronHive.Extensions.AI` 0.44.0 -> 0.45.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.21.3] - 2026-09-28
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.43.1 -> 0.44.0, `IronHive.Core` 0.43.1 -> 0.44.0, `IronHive.Extensions.AI` 0.43.1 -> 0.44.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.43.1 -> 0.44.0, `IronHive.Core` 0.43.1 -> 0.44.0, `IronHive.Extensions.AI` 0.43.1 -> 0.44.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.21.2] - 2026-09-28
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.43.0 -> 0.43.1, `IronHive.Core` 0.43.0 -> 0.43.1, `IronHive.Extensions.AI` 0.43.0 -> 0.43.1 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.43.0 -> 0.43.1, `IronHive.Core` 0.43.0 -> 0.43.1, `IronHive.Extensions.AI` 0.43.0 -> 0.43.1 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.21.1] - 2026-09-28
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.42.0 -> 0.43.0, `IronHive.Core` 0.42.0 -> 0.43.0, `IronHive.Extensions.AI` 0.42.0 -> 0.43.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.42.0 -> 0.43.0, `IronHive.Core` 0.42.0 -> 0.43.0, `IronHive.Extensions.AI` 0.42.0 -> 0.43.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.21.0] - 2026-09-27
 
@@ -56,22 +56,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.20.4] - 2026-09-26
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.40.0 -> 0.41.0, `IronHive.Core` 0.40.0 -> 0.41.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.40.0 -> 0.41.0, `IronHive.Core` 0.40.0 -> 0.41.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.20.3] - 2026-09-26
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.39.0 -> 0.40.0, `IronHive.Core` 0.39.0 -> 0.40.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.39.0 -> 0.40.0, `IronHive.Core` 0.39.0 -> 0.40.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.20.2] - 2026-09-26
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.38.0 -> 0.39.0, `IronHive.Core` 0.38.0 -> 0.39.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.38.0 -> 0.39.0, `IronHive.Core` 0.38.0 -> 0.39.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.20.1] - 2026-09-25
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.37.0 -> 0.38.0, `IronHive.Core` 0.37.0 -> 0.38.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.37.0 -> 0.38.0, `IronHive.Core` 0.37.0 -> 0.38.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.20.0] - 2026-09-25
 
@@ -87,22 +87,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.19.4] - 2026-09-24
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.36.0 -> 0.37.0, `IronHive.Core` 0.36.0 -> 0.37.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.36.0 -> 0.37.0, `IronHive.Core` 0.36.0 -> 0.37.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.19.3] - 2026-09-24
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.35.0 -> 0.36.0, `IronHive.Core` 0.35.0 -> 0.36.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.35.0 -> 0.36.0, `IronHive.Core` 0.35.0 -> 0.36.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.19.2] - 2026-09-24
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.34.0 -> 0.35.0, `IronHive.Core` 0.34.0 -> 0.35.0, `TokenMeter` 0.7.7 -> 0.7.8 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.34.0 -> 0.35.0, `IronHive.Core` 0.34.0 -> 0.35.0, `TokenMeter` 0.7.7 -> 0.7.8 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.19.1] - 2026-09-24
 
 ### Changed
-- Re-pinned sibling package(s) `TokenMeter` 0.7.6 -> 0.7.7 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `TokenMeter` 0.7.6 -> 0.7.7 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.19.0] - 2026-09-23
 
@@ -114,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or rejection moves it to `on_approve` / `on_reject`.
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.33.1 -> 0.34.0, `IronHive.Core` 0.33.1 -> 0.34.0, `TokenMeter` 0.7.5 -> 0.7.6 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.33.1 -> 0.34.0, `IronHive.Core` 0.33.1 -> 0.34.0, `TokenMeter` 0.7.5 -> 0.7.6 — re-consumption of already-consumed iyulab packages. No source changes.
 
 - **`approval_mode` is applied.** `HumanGateSettings.ApprovalMode` is now a `HumanGateApprovalMode` enum
   (`AlwaysRequire`, `Never`) instead of a string that nothing read. `never` lets the gate pass through to `on_approve`.
@@ -187,7 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.0] - 2026-09-19
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.31.0 -> 0.32.0, `IronHive.Core` 0.31.0 -> 0.32.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.31.0 -> 0.32.0, `IronHive.Core` 0.31.0 -> 0.32.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ### Removed
 
@@ -200,17 +200,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.3] - 2026-09-23
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.33.0 -> 0.33.1, `IronHive.Core` 0.33.0 -> 0.33.1 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.33.0 -> 0.33.1, `IronHive.Core` 0.33.0 -> 0.33.1 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.17.2] - 2026-09-20
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.32.0 -> 0.33.0, `IronHive.Core` 0.32.0 -> 0.33.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.32.0 -> 0.33.0, `IronHive.Core` 0.32.0 -> 0.33.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.16.0] - 2026-09-19
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.30.0 -> 0.31.0, `IronHive.Core` 0.30.0 -> 0.31.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.30.0 -> 0.31.0, `IronHive.Core` 0.30.0 -> 0.31.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ### Fixed
 - **Per-call `GoalExecutionOptions` take effect.** `MaxIterations`, `MaxTokens`, `CheckpointAfterEachIteration`,
@@ -251,8 +251,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registered by `AddIronbeesIronhive` receives these options.
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.29.1 -> 0.29.2, `IronHive.Core` 0.29.1 -> 0.29.2 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.29.2 -> 0.30.0, `IronHive.Core` 0.29.2 -> 0.30.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.29.1 -> 0.29.2, `IronHive.Core` 0.29.1 -> 0.29.2 — re-consumption of already-consumed iyulab packages. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.29.2 -> 0.30.0, `IronHive.Core` 0.29.2 -> 0.30.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ### Removed
 - **Breaking: `OracleConfig.Model`.** No verifier read it — the model that verifies is the one behind the client the
@@ -273,22 +273,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.12] - 2026-09-18
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.28.4 -> 0.29.1, `IronHive.Core` 0.28.4 -> 0.29.1 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.28.4 -> 0.29.1, `IronHive.Core` 0.28.4 -> 0.29.1 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.11] - 2026-09-17
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.28.2 -> 0.28.4, `IronHive.Core` 0.28.2 -> 0.28.4 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.28.2 -> 0.28.4, `IronHive.Core` 0.28.2 -> 0.28.4 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.10] - 2026-09-17
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.28.0 -> 0.28.2, `IronHive.Core` 0.28.0 -> 0.28.2 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.28.0 -> 0.28.2, `IronHive.Core` 0.28.0 -> 0.28.2 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.9] - 2026-09-16
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.27.0 -> 0.28.0, `IronHive.Core` 0.27.0 -> 0.28.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.27.0 -> 0.28.0, `IronHive.Core` 0.27.0 -> 0.28.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.8] - 2026-09-16
 
@@ -298,32 +298,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.14.7] - 2026-09-16
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.3 -> 0.27.0, `IronHive.Core` 0.26.3 -> 0.27.0, `TokenMeter` 0.7.4 -> 0.7.5 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.3 -> 0.27.0, `IronHive.Core` 0.26.3 -> 0.27.0, `TokenMeter` 0.7.4 -> 0.7.5 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.6] - 2026-09-15
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.2 -> 0.26.3, `IronHive.Core` 0.26.2 -> 0.26.3 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.2 -> 0.26.3, `IronHive.Core` 0.26.2 -> 0.26.3 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.5] - 2026-09-13
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.1 -> 0.26.2, `IronHive.Core` 0.26.1 -> 0.26.2 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.1 -> 0.26.2, `IronHive.Core` 0.26.1 -> 0.26.2 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.4] - 2026-09-12
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.0 -> 0.26.1, `IronHive.Core` 0.26.0 -> 0.26.1 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.26.0 -> 0.26.1, `IronHive.Core` 0.26.0 -> 0.26.1 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.3] - 2026-09-12
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.25.0 -> 0.26.0, `IronHive.Core` 0.25.0 -> 0.26.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.25.0 -> 0.26.0, `IronHive.Core` 0.25.0 -> 0.26.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.2] - 2026-09-11
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.24.1 -> 0.25.0, `IronHive.Core` 0.24.1 -> 0.25.0 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.24.1 -> 0.25.0, `IronHive.Core` 0.24.1 -> 0.25.0 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.14.1] - 2026-09-11
 
@@ -350,7 +350,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.6] - 2026-09-10
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.24.0 -> 0.24.1, `IronHive.Core` 0.24.0 -> 0.24.1, `TokenMeter` 0.7.3 -> 0.7.4 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.24.0 -> 0.24.1, `IronHive.Core` 0.24.0 -> 0.24.1, `TokenMeter` 0.7.3 -> 0.7.4 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.13.5] - 2026-09-09
 
@@ -361,7 +361,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.13.4] - 2026-09-08
 
 ### Changed
-- Re-pinned sibling package(s) `IronHive.Abstractions` 0.22.1 -> 0.22.2, `IronHive.Core` 0.22.1 -> 0.22.2 — re-consumption of already-consumed iyulab packages via `check-pin-drift.ps1 -Fix`. No source changes.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.22.1 -> 0.22.2, `IronHive.Core` 0.22.1 -> 0.22.2 — re-consumption of already-consumed iyulab packages. No source changes.
 
 ## [0.13.3] - 2026-09-01
 
