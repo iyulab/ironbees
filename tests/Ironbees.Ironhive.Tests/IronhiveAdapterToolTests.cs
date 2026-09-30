@@ -16,7 +16,7 @@ namespace Ironbees.Ironhive.Tests;
 /// <summary>
 /// Tool-calling surface tests for IronhiveAdapter: AgentConfig.Tools name resolution against
 /// IronhiveOptions.Tools, fail-loud behavior for missing pool/names, and streaming
-/// ToolCallStartChunk/ToolCallCompleteChunk mapping (HD-11).
+/// ToolCallStartChunk/ToolCallCompleteChunk mapping.
 /// </summary>
 public class IronhiveAdapterToolTests
 {

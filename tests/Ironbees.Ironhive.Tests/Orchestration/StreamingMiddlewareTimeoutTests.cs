@@ -16,7 +16,7 @@ using IronHiveAgent = IronHive.Abstractions.Agent.IAgent;
 namespace Ironbees.Ironhive.Tests.Orchestration;
 
 /// <summary>
-/// The consumer path behind IronHive's HD-91: a timeout configured in Ironbees' declarative middleware
+/// A timeout configured in Ironbees' declarative middleware
 /// settings reaches a streaming orchestration run. Until IronHive 0.26.0 the built-in middleware had no
 /// streaming half, so `IronhiveOrchestratorWrapper.RunStreamingAsync` - which is what Ironbees runs -
 /// silently dropped it, and an agent that hung was never cut by the timeout the operator had set.

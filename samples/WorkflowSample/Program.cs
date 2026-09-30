@@ -443,7 +443,6 @@ states:
             Path.Combine(Directory.GetCurrentDirectory(), "..", "..", ".env"),
             Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", ".env"),
             Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", ".env"),
-            @"D:\data\ironbees\.env"
         };
 
         foreach (var path in possiblePaths)

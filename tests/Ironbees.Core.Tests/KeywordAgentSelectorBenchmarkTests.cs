@@ -11,8 +11,7 @@ namespace Ironbees.Core.Tests;
 /// To skip performance tests during development:
 /// dotnet test --filter "Category!=Performance"
 ///
-/// Re-investigated 2026-08-27 (claudedocs/ironbees/issues/closed/
-/// ISSUE-ironbees-20260827-064725-keywordagentselector-perf-regression-net10.md): the two
+/// Re-investigated after the .NET 10 upgrade: the two
 /// thresholds relaxed after the .NET 10 upgrade (2025-11-18, ~18x/~50x) no longer describe
 /// typical performance — repeated runs measured 59-98ms (1000-iteration) and 3-4ms (TF-IDF)
 /// against the ~1800ms/~500ms this class's comments used to claim. Two things were true at

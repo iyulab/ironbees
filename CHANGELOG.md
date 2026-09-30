@@ -476,8 +476,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the framework default; `ThinkingEffort.None` is an explicit off. Closes the activation gap left
   after 0.9.1: IronHive's OpenAI-Compatible provider sends `enable_thinking:false` when the effort
   is null, so `ThinkingChunk` could never fire on GPUStack-class reasoning models via the
-  orchestrator path. Reported by SMI.AIMS dogfooding
-  (ISSUE-Ironbees-20260723-agentrunoptions-thinking-effort-passthrough).
+  orchestrator path.
 
 ## [0.9.1] - 2026-07-23
 
@@ -486,8 +485,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   thinking as `ThinkingDeltaContent`, but the adapter mapped only `TextDeltaContent` — structured
   stream consumers never received `ThinkingChunk` even though the vocabulary already existed.
   Thinking deltas are now mapped to `ThinkingChunk` in stream order; the legacy `StreamAsync`
-  string projection stays text-only (no reasoning leak). Reported by SMI.AIMS dogfooding
-  (orchestrator fallback path had `ThinkingChunk` pre-wired).
+  string projection stays text-only (no reasoning leak).
 
 ## [0.9.0] - 2026-07-22
 
@@ -496,8 +494,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`ProcessOptions.Suggestions` (`SuggestionRequest`):** request model-generated follow-up
   suggestions per request through the orchestrator path. `SuggestionRequest`
   (`Mode`/`MaxCount`/`MinItems`/`MaxItems`) is a framework-neutral mirror; the IronHive adapter
-  maps it to `AgentInvokeOptions.Suggestions` (IronHive 0.14.0). Reported by SMI.AIMS dogfooding
-  (orchestrator-path consumers could not reach pairing IronHive request options).
+  maps it to `AgentInvokeOptions.Suggestions` (IronHive 0.14.0), so orchestrator-path callers
+  can reach the paired IronHive request options.
 - **Structured surfaces:** `IAgentOrchestrator.ProcessStructuredAsync/StreamStructuredAsync` and
   `ILLMFrameworkAdapter.RunStructuredAsync/StreamStructuredAsync`. Non-streaming returns
   `AgentRunResult { Text, Suggestions }`; streaming yields typed `StreamChunk` events
@@ -529,7 +527,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`Cannot consume scoped service ... from singleton`), and unvalidated containers silently captured
   the first scope's instance (captive dependency). The registration now pins
   `ServiceLifetime.Singleton`, consistent with the pre-built `IronhiveOptions.HiveService` branch.
-  Reported by SMI.AIMS dogfooding (Ironbees 0.7.1 → 0.8.0 migration boot smoke).
 
 ## [0.8.0] - 2026-07-07
 
@@ -1648,7 +1645,7 @@ var embedding = await provider.GenerateEmbeddingAsync("Hello world");
 - Code coverage: Enhanced with 77 additional test cases
 
 ### Documentation
-- Added `claudedocs/KEYWORDSELECTOR_IMPROVEMENTS_v0.1.1.md` - Detailed improvement summary
+- Added a detailed improvement summary for the keyword selector
 
 ### Technical Details
 - No breaking changes - fully backward compatible

@@ -217,7 +217,7 @@ public class ServiceCollectionExtensionsTests
     [Fact, Trait("Category", "Integration")]
     public async Task AddIronbees_WithDefaultModelDeployment_LoadsAgentOmittingDeployment()
     {
-        // Reproduces the AIMS repro: an agent.yaml omits model.deployment and relies on the
+        // An agent.yaml that omits model.deployment relies on the
         // DI-configured default. Without forwarding DefaultModelDeployment to the core orchestrator,
         // the agent fails to load ("Failed to load any agents").
         using var agents = new TempAgentsDirectory();

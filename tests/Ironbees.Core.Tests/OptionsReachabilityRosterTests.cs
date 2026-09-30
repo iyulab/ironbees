@@ -20,7 +20,7 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Autonomous.Models.OracleConfig"] = ["MaxTokens", "ReflectionSystemPrompt", "SystemPrompt", "Temperature", "Timeout"],
         ["Ironbees.Core.AgentConfig"] = ["Metadata"],
 
-        // *Settings types came into the scan with the suffix (run 62). Classified; each group states why it is unread.
+        // *Settings types are in the scan too. Classified; each group states why it is unread.
         //
         // Contract members: settings the library loads (SettingsLoader, AgentDefinitionLoader, GameConfigLoader,
         // FileSystemGoalLoader) and hands to the consumer, which applies them - the library makes no LLM calls of its own

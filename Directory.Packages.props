@@ -51,11 +51,10 @@
     <!-- Utilities -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
     <PackageVersion Include="YamlDotNet" Version="18.1.0" />
-    <!-- Pinned to 1.24.4, matching modules/lm-supply and flux/FluxGuard's intentional floor
-         (DirectML LayerNormalization crash on 1.25+, docket iyulab/FluxGuard#156). This project
-         only calls the plain `new InferenceSession(path)` constructor (OnnxEmbeddingProvider.cs),
-         so nothing here needs 1.25/1.26; re-pinning down avoids re-creating the same
-         cross-submodule contradiction that NuGet's higher-floor-wins resolution silently papered over. -->
+    <!-- This project only calls the plain `new InferenceSession(path)` constructor
+         (OnnxEmbeddingProvider.cs), so its ORT floor should track what the other ORT packages in a
+         consumer's graph need rather than run ahead of them: NuGet's highest-floor-wins resolution
+         makes the highest floor the effective one for every consumer. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
     <PackageVersion Include="DotNetEnv" Version="3.2.0" />
     <!-- Resilience and Caching -->
