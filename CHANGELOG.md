@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.7] - 2026-09-30
+
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.45.1 -> 0.45.2, `IronHive.Core` 0.45.1 -> 0.45.2, `IronHive.Extensions.AI` 0.45.1 -> 0.45.2, `IronHive.Providers.OpenAI` 0.45.1 -> 0.45.2, `IronHive.Providers.OpenAI.Compatible` 0.45.1 -> 0.45.2. No source changes.
+
 ## [0.21.6] - 2026-09-30
 
 ### Fixed
