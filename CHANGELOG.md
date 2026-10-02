@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.11] - Unreleased
+
+### Fixed
+- **Every package carries the LICENSE text.** The nuspec named the MIT license only; the text with the copyright line a
+  consumer's third-party notices need is now packed at the package root.
+
 ## [0.21.10] - 2026-10-02
 
 ### Changed
