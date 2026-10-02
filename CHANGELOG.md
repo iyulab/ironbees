@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.21.11] - Unreleased
 
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.46.0 -> 0.46.1, `IronHive.Core` 0.46.0 -> 0.46.1, `IronHive.Extensions.AI` 0.46.0 -> 0.46.1, `IronHive.Providers.OpenAI` 0.46.0 -> 0.46.1, `IronHive.Providers.OpenAI.Compatible` 0.46.0 -> 0.46.1.
+
 ### Fixed
 - **Every package carries the LICENSE text.** The nuspec named the MIT license only; the text with the copyright line a
   consumer's third-party notices need is now packed at the package root.
