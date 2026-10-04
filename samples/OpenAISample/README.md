@@ -181,4 +181,3 @@ ironbees/
 
 - [OpenAI API 문서](https://platform.openai.com/docs)
 - [Ironbees README](../../README.md)
-- [Usage Guide](../../docs/USAGE.md)

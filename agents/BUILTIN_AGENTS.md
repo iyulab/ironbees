@@ -313,10 +313,9 @@ dotnet test
 
 ## 🔗 관련 문서
 
-- [Main README](../../README.md)
-- [Web API Sample](../../samples/WebApiSample/README.md)
-- [Usage Guide](../../docs/USAGE.md)
-- [Architecture](../../docs/ARCHITECTURE.md)
+- [Main README](../README.md)
+- [Web API Sample](../samples/WebApiSample/README.md)
+- [Architecture](../docs/ARCHITECTURE.md)
 
 ## 💡 추가 에이전트 아이디어
 

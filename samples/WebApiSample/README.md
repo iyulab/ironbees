@@ -441,7 +441,6 @@ _logger.LogInformation("Processing chat request for agent: {AgentName}", agentNa
 - [ASP.NET Core Web API](https://learn.microsoft.com/aspnet/core/web-api)
 - [Swagger/OpenAPI](https://swagger.io/docs/)
 - [Ironbees Framework](../../README.md)
-- [Usage Guide](../../docs/USAGE.md)
 
 ---
 

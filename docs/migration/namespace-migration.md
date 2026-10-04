@@ -376,7 +376,6 @@ Ironbees.Core              # Core primitives (agent loading, routing, middleware
 
 ### Tools
 - [Migration Script](../../scripts/migrate-namespaces.ps1)
-- [ReSharper Profile](../../scripts/namespace-migration.DotSettings) (optional)
 
 ### Support
 - [GitHub Issues](https://github.com/iyulab/ironbees/issues)

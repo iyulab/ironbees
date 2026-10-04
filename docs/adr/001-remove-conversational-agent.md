@@ -256,7 +256,7 @@ Improve existing class rather than remove.
 
 - **ADR-002**: Adopt ChatClientBuilder Pattern (replaces LLMProviderFactoryRegistry)
 - **ADR-003**: Namespace Restructuring (removes `.Core` suffix)
-- **Philosophy Document**: [PHILOSOPHY.md](../../PHILOSOPHY.md) - Thin Wrapper principle
+- **Philosophy Document**: [PHILOSOPHY.md](../PHILOSOPHY.md) - Thin Wrapper principle
 
 ---
 

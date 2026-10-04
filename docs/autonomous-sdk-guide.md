@@ -463,6 +463,4 @@ return OracleVerdict.ContinueToNextIteration("continue");
 
 ## Related Documentation
 
-- [Lessons Learned: TwentyQuestions](../local-docs/LESSONS_LEARNED_TWENTYQUESTIONS.md)
-- [Agentic Patterns Documentation](./agentic-patterns.md)
-- [Configuration Reference](./autonomous-config-reference.md)
+- [Agentic Patterns Documentation](./AGENTIC-PATTERNS.md)
