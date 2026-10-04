@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.21.16] - Unreleased
 
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.50.0 -> 0.51.0, `IronHive.Core` 0.50.0 -> 0.51.0, `IronHive.Extensions.AI` 0.50.0 -> 0.51.0, `IronHive.Providers.OpenAI` 0.50.0 -> 0.51.0, `IronHive.Providers.OpenAI.Compatible` 0.50.0 -> 0.51.0, `TokenMeter` 0.7.8 -> 0.7.9.
+
 ### Dependencies
 - Microsoft.Extensions.AI 10.10.0, Microsoft.Extensions.AI.Abstractions 10.10.1, Microsoft.Extensions.AI.OpenAI 10.10.1, OpenAI 2.14.0, Microsoft.Agents.AI 1.23.0 (from 1.19.0); Microsoft.AspNetCore.OpenApi 10.0.12.
 
