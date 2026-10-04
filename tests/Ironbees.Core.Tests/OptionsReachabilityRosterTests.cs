@@ -10,7 +10,7 @@ namespace Ironbees.Core.Tests;
 /// </summary>
 public class OptionsReachabilityRosterTests
 {
-    private static readonly Assembly[] Libraries = [Assembly.Load("Ironbees.Core"), Assembly.Load("Ironbees.Autonomous"), Assembly.Load("Ironbees.AgentMode"), Assembly.Load("Ironbees.AgentFramework"), Assembly.Load("Ironbees.Ironhive")];
+    internal static readonly Assembly[] Libraries = [Assembly.Load("Ironbees.Core"), Assembly.Load("Ironbees.Autonomous"), Assembly.Load("Ironbees.AgentMode"), Assembly.Load("Ironbees.AgentFramework"), Assembly.Load("Ironbees.Ironhive")];
 
     /// <summary>Options accepted as unread today, each with the reason. Shrink this list; never grow it silently.</summary>
     private static readonly Dictionary<string, string[]> KnownUnread = new()
