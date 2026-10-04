@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.21.16] - Unreleased
+## [0.21.16] - 2026-10-05
 
 ### Changed
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.50.0 -> 0.51.0, `IronHive.Core` 0.50.0 -> 0.51.0, `IronHive.Extensions.AI` 0.50.0 -> 0.51.0, `IronHive.Providers.OpenAI` 0.50.0 -> 0.51.0, `IronHive.Providers.OpenAI.Compatible` 0.50.0 -> 0.51.0, `TokenMeter` 0.7.8 -> 0.7.9.
