@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.16] - Unreleased
+
+### Dependencies
+- Microsoft.Extensions.AI 10.10.0, Microsoft.Extensions.AI.Abstractions 10.10.1, Microsoft.Extensions.AI.OpenAI 10.10.1, OpenAI 2.14.0, Microsoft.Agents.AI 1.23.0 (from 1.19.0); Microsoft.AspNetCore.OpenApi 10.0.12.
+
 ## [0.21.15] - 2026-10-04
 
 ### Changed
