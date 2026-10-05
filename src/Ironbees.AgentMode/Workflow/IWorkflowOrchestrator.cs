@@ -39,28 +39,32 @@ public interface IWorkflowOrchestrator<TState> where TState : class
     /// </summary>
     /// <param name="executionId">Workflow execution identifier.</param>
     /// <param name="decision">Approval decision.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task that completes when approval is processed.</returns>
-    Task ApproveAsync(string executionId, ApprovalDecision decision);
+    Task ApproveAsync(string executionId, ApprovalDecision decision, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cancels an active workflow execution.
     /// </summary>
     /// <param name="executionId">Workflow execution identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task that completes when cancellation is processed.</returns>
-    Task CancelAsync(string executionId);
+    Task CancelAsync(string executionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the current state of a workflow execution.
     /// </summary>
     /// <param name="executionId">Workflow execution identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Current state snapshot.</returns>
-    Task<TState> GetStateAsync(string executionId);
+    Task<TState> GetStateAsync(string executionId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Lists active workflow executions.
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Collection of active execution summaries.</returns>
-    Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync();
+    Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

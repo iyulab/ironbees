@@ -225,7 +225,7 @@ public sealed partial class MafDrivenOrchestrator : IWorkflowOrchestrator<Workfl
     /// MAF handles human-in-the-loop through its own workflow patterns.
     /// Use CancellationToken for execution control.
     /// </exception>
-    public Task ApproveAsync(string executionId, ApprovalDecision decision)
+    public Task ApproveAsync(string executionId, ApprovalDecision decision, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(
             $"MafDrivenOrchestrator does not support ApproveAsync. " +
@@ -237,7 +237,7 @@ public sealed partial class MafDrivenOrchestrator : IWorkflowOrchestrator<Workfl
     /// <exception cref="NotSupportedException">
     /// MAF cancellation is handled through CancellationToken passed to ExecuteAsync.
     /// </exception>
-    public Task CancelAsync(string executionId)
+    public Task CancelAsync(string executionId, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(
             $"MafDrivenOrchestrator does not support CancelAsync. " +
@@ -249,7 +249,7 @@ public sealed partial class MafDrivenOrchestrator : IWorkflowOrchestrator<Workfl
     /// <exception cref="NotSupportedException">
     /// MAF execution state is emitted through the async enumerable returned by ExecuteAsync.
     /// </exception>
-    public Task<WorkflowRuntimeState> GetStateAsync(string executionId)
+    public Task<WorkflowRuntimeState> GetStateAsync(string executionId, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(
             $"MafDrivenOrchestrator does not support GetStateAsync. " +
@@ -261,7 +261,7 @@ public sealed partial class MafDrivenOrchestrator : IWorkflowOrchestrator<Workfl
     /// <exception cref="NotSupportedException">
     /// MAF manages its own execution tracking internally.
     /// </exception>
-    public Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync()
+    public Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync(CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException(
             "MafDrivenOrchestrator does not support ListActiveExecutionsAsync. " +

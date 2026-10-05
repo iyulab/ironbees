@@ -15,16 +15,18 @@ public interface IFinalIterationStrategy<TRequest, TResult>
     /// Return a modified request to enforce completion behavior.
     /// </summary>
     /// <param name="context">Current execution context</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Modified request for final iteration, or null to use original</returns>
-    Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context);
+    Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Called after the final iteration completes if no completion was achieved.
     /// Return a forced result to use as the final output.
     /// </summary>
     /// <param name="context">Final execution context with last result</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Forced completion result, or null to use actual result</returns>
-    Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context);
+    Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -71,10 +73,10 @@ public class NoOpFinalIterationStrategy<TRequest, TResult> : IFinalIterationStra
     where TRequest : ITaskRequest
     where TResult : ITaskResult
 {
-    public Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context)
+    public Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
         => Task.FromResult(default(TRequest));
 
-    public Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context)
+    public Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
         => Task.FromResult(default(TResult));
 }
 
@@ -99,7 +101,7 @@ public class PromptEnforcementFinalIterationStrategy<TRequest, TResult> : IFinal
         _completionEnforcer = completionEnforcer;
     }
 
-    public Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context)
+    public Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
     {
         if (!context.IsLastIteration)
             return Task.FromResult(default(TRequest));
@@ -107,7 +109,7 @@ public class PromptEnforcementFinalIterationStrategy<TRequest, TResult> : IFinal
         return Task.FromResult<TRequest?>(_requestModifier(context));
     }
 
-    public Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context)
+    public Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
     {
         if (_completionEnforcer == null)
             return Task.FromResult(default(TResult));

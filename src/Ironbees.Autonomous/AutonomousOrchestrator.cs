@@ -471,7 +471,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                     RaiseEvent(AutonomousEventType.FinalIterationApproaching,
                         $"Approaching final iteration ({finalContext.RemainingIterations} remaining)");
 
-                    var modifiedRequest = await _finalIterationStrategy.BeforeFinalIterationAsync(finalContext);
+                    var modifiedRequest = await _finalIterationStrategy.BeforeFinalIterationAsync(finalContext, cancellationToken);
                     if (modifiedRequest != null)
                     {
                         request = modifiedRequest;

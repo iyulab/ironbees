@@ -701,7 +701,7 @@ public class MafDrivenOrchestratorTests
 
         // Act & Assert - should throw NotSupportedException
         await Assert.ThrowsAsync<NotSupportedException>(() =>
-            orchestrator.ApproveAsync("execution-1", decision));
+            orchestrator.ApproveAsync("execution-1", decision, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -716,7 +716,7 @@ public class MafDrivenOrchestratorTests
 
         // Act & Assert - should throw NotSupportedException
         await Assert.ThrowsAsync<NotSupportedException>(() =>
-            orchestrator.CancelAsync("execution-1"));
+            orchestrator.CancelAsync("execution-1", cancellationToken: TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -732,7 +732,7 @@ public class MafDrivenOrchestratorTests
 
         // Act & Assert - should throw NotSupportedException
         await Assert.ThrowsAsync<NotSupportedException>(() =>
-            orchestrator.GetStateAsync(executionId));
+            orchestrator.GetStateAsync(executionId, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     #endregion
@@ -747,7 +747,7 @@ public class MafDrivenOrchestratorTests
 
         // Act & Assert - should throw NotSupportedException
         await Assert.ThrowsAsync<NotSupportedException>(() =>
-            orchestrator.ListActiveExecutionsAsync());
+            orchestrator.ListActiveExecutionsAsync(cancellationToken: TestContext.Current.CancellationToken));
     }
 
     #endregion

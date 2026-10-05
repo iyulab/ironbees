@@ -236,7 +236,7 @@ public class YamlDrivenOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<StateNotFoundException>(
-            () => orchestrator.GetStateAsync("non-existent-id"));
+            () => orchestrator.GetStateAsync("non-existent-id", cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -247,7 +247,7 @@ public class YamlDrivenOrchestratorTests
 
         // Act & Assert
         await Assert.ThrowsAsync<StateNotFoundException>(
-            () => orchestrator.CancelAsync("non-existent-id"));
+            () => orchestrator.CancelAsync("non-existent-id", cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -257,7 +257,7 @@ public class YamlDrivenOrchestratorTests
         var orchestrator = CreateOrchestrator();
 
         // Act
-        var executions = await orchestrator.ListActiveExecutionsAsync();
+        var executions = await orchestrator.ListActiveExecutionsAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Empty(executions);
@@ -850,8 +850,8 @@ public class YamlDrivenOrchestratorTests
             if (state.Status == WorkflowExecutionStatus.WaitingForApproval)
             {
                 Assert.Equal("GATE", state.CurrentStateId);
-                Assert.Equal(WorkflowExecutionStatus.WaitingForApproval, (await orchestrator.GetStateAsync(state.ExecutionId)).Status);
-                await orchestrator.ApproveAsync(state.ExecutionId, new ApprovalDecision { Approved = true });
+                Assert.Equal(WorkflowExecutionStatus.WaitingForApproval, (await orchestrator.GetStateAsync(state.ExecutionId, cancellationToken: TestContext.Current.CancellationToken)).Status);
+                await orchestrator.ApproveAsync(state.ExecutionId, new ApprovalDecision { Approved = true }, cancellationToken: TestContext.Current.CancellationToken);
             }
         }
 
@@ -872,7 +872,7 @@ public class YamlDrivenOrchestratorTests
             seen.Add(state);
             if (state.Status == WorkflowExecutionStatus.WaitingForApproval)
             {
-                await orchestrator.ApproveAsync(state.ExecutionId, new ApprovalDecision { Approved = false, Feedback = "no" });
+                await orchestrator.ApproveAsync(state.ExecutionId, new ApprovalDecision { Approved = false, Feedback = "no" }, cancellationToken: TestContext.Current.CancellationToken);
             }
         }
 

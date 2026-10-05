@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - Unreleased
+
+### Changed
+- **Breaking:** `IWorkflowOrchestrator<TState>.ApproveAsync`, `CancelAsync`, `GetStateAsync` and
+  `ListActiveExecutionsAsync`, and `IFinalIterationStrategy<TRequest, TResult>.BeforeFinalIterationAsync` and
+  `ForceCompletionAsync`, take an optional `CancellationToken`. Implementations add the parameter; the autonomous
+  orchestrator passes its run's token to the final-iteration strategy.
+
 ## [0.21.18] - 2026-10-05
 
 ### Changed

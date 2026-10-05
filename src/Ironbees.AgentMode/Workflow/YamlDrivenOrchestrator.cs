@@ -184,7 +184,7 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         }
     }
 
-    public Task ApproveAsync(string executionId, ApprovalDecision decision)
+    public Task ApproveAsync(string executionId, ApprovalDecision decision, CancellationToken cancellationToken = default)
     {
         if (!_executions.TryGetValue(executionId, out var execution))
         {
@@ -205,7 +205,7 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         return Task.CompletedTask;
     }
 
-    public Task CancelAsync(string executionId)
+    public Task CancelAsync(string executionId, CancellationToken cancellationToken = default)
     {
         if (!_executions.TryRemove(executionId, out var execution))
         {
@@ -213,12 +213,12 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         }
 
         execution.CancellationSource?.Cancel();
-        execution.ApprovalGate?.TrySetCanceled();
+        execution.ApprovalGate?.TrySetCanceled(CancellationToken.None);
 
         return Task.CompletedTask;
     }
 
-    public Task<WorkflowRuntimeState> GetStateAsync(string executionId)
+    public Task<WorkflowRuntimeState> GetStateAsync(string executionId, CancellationToken cancellationToken = default)
     {
         if (!_executions.TryGetValue(executionId, out var execution))
         {
@@ -237,7 +237,7 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         });
     }
 
-    public Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync()
+    public Task<IReadOnlyList<WorkflowExecutionSummary>> ListActiveExecutionsAsync(CancellationToken cancellationToken = default)
     {
         var summaries = _executions.Values
             .Select(e => new WorkflowExecutionSummary

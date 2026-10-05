@@ -15,16 +15,12 @@ namespace Ironbees.Core.Tests;
 /// </remarks>
 public class PublicApiConventionTests
 {
-    private static readonly string[] KnownUncancellable =
-    [
-        "Ironbees.AgentMode.Workflow.IWorkflowOrchestrator`1.ApproveAsync(String, ApprovalDecision)",
-        "Ironbees.AgentMode.Workflow.IWorkflowOrchestrator`1.CancelAsync(String)",
-        "Ironbees.AgentMode.Workflow.IWorkflowOrchestrator`1.GetStateAsync(String)",
-        "Ironbees.AgentMode.Workflow.IWorkflowOrchestrator`1.ListActiveExecutionsAsync()",
-        "Ironbees.Autonomous.Abstractions.IFinalIterationStrategy`2.BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult>)",
-        "Ironbees.Autonomous.Abstractions.IFinalIterationStrategy`2.ForceCompletionAsync(FinalIterationContext<TRequest, TResult>)",
-    ];
+    private static readonly string[] KnownUncancellable = [];
 
+    // Kept (2026-10-05), each a report rather than a failure channel: a tool call's result goes back to the model as
+    // data even when the tool failed (MCP isError); GetExecutionResultAsync reads how a finished goal run ended; an agent
+    // executor's and a multi-agent run's result is the run's outcome, which callers inspect and record. The calls throw
+    // for their own failures (unknown tool, cancellation).
     private static readonly string[] KnownResultReturns =
     [
         "Ironbees.AgentMode.Goals.IGoalExecutionBridge.GetExecutionResultAsync(String, CancellationToken)",
