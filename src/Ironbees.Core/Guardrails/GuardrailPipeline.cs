@@ -148,7 +148,7 @@ public sealed partial class GuardrailPipeline
             {
                 throw;
             }
-            catch (Exception ex) when (!_options.ThrowOnGuardrailError)
+            catch (Exception ex) when ((ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested) && (!_options.ThrowOnGuardrailError))
             {
                 if (_logger is not null)
                 {

@@ -129,7 +129,7 @@ internal sealed class IronhiveOrchestratorWrapper : IronbeesIMultiAgentOrchestra
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             success = false;
             errorMessage = ex.Message;

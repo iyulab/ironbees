@@ -155,7 +155,7 @@ public partial class IronhiveToolRegistry
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             LogFailedToLoadTools(_logger, ex, yamlPath);
         }

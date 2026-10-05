@@ -90,7 +90,7 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
             if (_logger is not null) { LogGoalNotFound(_logger, ex, goalId); }
             loadError = CreateErrorEvent(goalId, executionId, "GOAL_NOT_FOUND", ex);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             if (_logger is not null) { LogFailedToLoadGoal(_logger, ex, goalId); }
             loadError = CreateErrorEvent(goalId, executionId, "GOAL_LOAD_FAILED", ex);

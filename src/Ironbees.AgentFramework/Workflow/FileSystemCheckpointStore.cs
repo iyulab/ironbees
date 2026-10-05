@@ -324,7 +324,7 @@ public sealed partial class FileSystemCheckpointStore : ICheckpointStore, IDispo
             var json = await File.ReadAllTextAsync(filePath, cancellationToken);
             return JsonSerializer.Deserialize<CheckpointData>(json, _jsonOptions);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             if (_logger is not null) { LogFailedToReadCheckpoint(_logger, ex, filePath); }
             return null;

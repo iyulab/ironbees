@@ -57,7 +57,7 @@ public class AgentOrchestrator : IAgentOrchestrator
                 var agent = await _frameworkAdapter.CreateAgentAsync(resolvedConfig, cancellationToken);
                 _registry.Register(resolvedConfig.Name, agent);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 errors.Add(new AgentLoadError(
                     config.Name,

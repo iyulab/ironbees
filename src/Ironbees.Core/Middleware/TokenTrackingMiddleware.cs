@@ -194,7 +194,7 @@ public sealed partial class TokenTrackingMiddleware : DelegatingChatClient
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             // Don't fail the request if recording fails
             LogTokenUsageRecordingFailed(_logger, ex);

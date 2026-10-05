@@ -170,7 +170,7 @@ public static class AgentLoaderExtensions
                     report.SkippedAgents.Add(Path.GetFileName(agentDir));
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 report.FailedMigrations.Add(new MigrationFailure(
                     Path.GetFileName(agentDir),

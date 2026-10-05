@@ -107,7 +107,7 @@ public sealed class AgentDirectoryMigrator
             result.Message = "Successfully migrated to extended directory structure";
             result.DirectoriesCreated = GetCreatedDirectories(agentPath);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             result.Status = MigrationStatus.Failed;
             result.Message = ex.Message;

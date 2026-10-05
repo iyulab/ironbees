@@ -523,7 +523,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                     await RequestFeedbackAsync(request, cancellationToken);
                 }
             }
-            catch (Exception ex) when (_config.ContinueOnFailure)
+            catch (Exception ex) when ((ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested) && (_config.ContinueOnFailure))
             {
                 _lastError = ex.Message;
                 RaiseEvent(AutonomousEventType.TaskFailed, $"Task failed (continuing): {ex.Message}");
@@ -803,7 +803,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                         break; // No suggestion means we're done
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
                 {
                     LogOracleVerificationFailed(_logger, ex);
                     RaiseEvent(AutonomousEventType.OracleError, $"Oracle error: {ex.Message}");
@@ -936,7 +936,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                 _executionContext = _executionContext.WithHumanFeedback(feedback.Comments);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             LogHumanFeedbackFailed(_logger, ex);
         }

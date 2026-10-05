@@ -75,7 +75,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
                 LogWorkflowConverted(_logger, definition.Name);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             conversionException = ex;
             if (_logger is not null) { LogFailedToConvertWorkflow(_logger, ex, definition.Name); }
@@ -307,7 +307,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
                 LogWorkflowConverted(_logger, definition.Name);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             conversionException = ex;
             if (_logger is not null) { LogFailedToConvertWorkflow(_logger, ex, definition.Name); }
