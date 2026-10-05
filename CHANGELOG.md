@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.22.0] - Unreleased
+## [0.22.0] - 2026-10-05
 
 ### Fixed
 - **`WithFinalIterationEnforcement` enforces.** The last iteration now runs the original prompt with the warning in
