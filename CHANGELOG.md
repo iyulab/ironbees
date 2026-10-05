@@ -9,7 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.22.0] - Unreleased
 
+### Fixed
+- **`WithFinalIterationEnforcement` enforces.** The last iteration now runs the original prompt with the warning in
+  front of it (default `AutonomousOrchestratorBuilder<,>.DefaultFinalIterationWarning`), and when it ends without
+  reaching the goal the enforcer's result is recorded: a history entry and an `AutonomousEventType.ForcedCompletion`
+  event carrying it, and the run stops at max iterations. Before, the warning was stored and never read and
+  `IFinalIterationStrategy.ForceCompletionAsync` had no caller, so the method changed nothing.
+
 ### Changed
+- **Breaking:** `PromptEnforcementFinalIterationStrategy`'s constructor drops `finalIterationWarning` (the strategy
+  cannot build a request; pass a `requestModifier`, or use `WithFinalIterationEnforcement`, which builds one from the
+  request factory). With no `requestModifier` the strategy leaves the last request unchanged instead of reporting the
+  original request as a modification.
 - **Breaking:** `IWorkflowOrchestrator<TState>.ApproveAsync`, `CancelAsync`, `GetStateAsync` and
   `ListActiveExecutionsAsync`, and `IFinalIterationStrategy<TRequest, TResult>.BeforeFinalIterationAsync` and
   `ForceCompletionAsync`, take an optional `CancellationToken`. Implementations add the parameter; the autonomous

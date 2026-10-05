@@ -482,7 +482,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
 
             try
             {
-                var (goalAchieved, lastVerdict) = await ExecuteTaskWithOracleLoopAsync(request, cancellationToken);
+                var (goalAchieved, lastVerdict, lastResult) = await ExecuteTaskWithOracleLoopAsync(request, cancellationToken);
 
                 if (goalAchieved && _config.CompletionMode == CompletionMode.UntilGoalAchieved)
                 {
@@ -492,6 +492,16 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                 }
 
                 RaiseEvent(AutonomousEventType.IterationCompleted, $"Iteration {_currentIteration} completed");
+
+                // The last iteration ended without the goal: the final-iteration strategy may supply the outcome.
+                if (!goalAchieved
+                    && _currentIteration >= _config.MaxIterations
+                    && _config.EnableFinalIterationStrategy
+                    && _finalIterationStrategy != null
+                    && await ForceCompletionAsync(request, lastResult, cancellationToken))
+                {
+                    break;
+                }
 
                 // AutoContinue: Automatically enqueue next iteration if oracle says CanContinue
                 // Eliminates need for manual event handling in client code
@@ -555,13 +565,43 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
         }
     }
 
-    private async Task<(bool GoalAchieved, OracleVerdict? LastVerdict)> ExecuteTaskWithOracleLoopAsync(TRequest request, CancellationToken cancellationToken)
+    /// <summary>
+    /// Asks the final-iteration strategy for a forced outcome; when it gives one, records it as a history entry, raises
+    /// <see cref="AutonomousEventType.ForcedCompletion"/> and stops with <see cref="AutonomousState.StoppedByMaxIterations"/>.
+    /// </summary>
+    private async Task<bool> ForceCompletionAsync(TRequest request, TResult? lastResult, CancellationToken cancellationToken)
+    {
+        var forced = await _finalIterationStrategy!.ForceCompletionAsync(
+            CreateFinalIterationContext(request, lastResult), cancellationToken);
+        if (forced == null)
+            return false;
+
+        var entry = new ExecutionHistoryEntry
+        {
+            SessionId = _sessionId,
+            IterationNumber = _currentIteration,
+            ExecutionPrompt = request.Prompt,
+            ExecutionOutput = forced.Output,
+            Success = forced.Success,
+            ErrorMessage = forced.ErrorOutput,
+            CompletedAt = DateTimeOffset.UtcNow
+        };
+        _history[entry.Id] = entry;
+        _state = AutonomousState.StoppedByMaxIterations;
+        RaiseEvent(AutonomousEventType.ForcedCompletion,
+            $"Max iterations ({_config.MaxIterations}) reached without the goal; final-iteration strategy forced a result",
+            request.RequestId, historyEntry: entry);
+        return true;
+    }
+
+    private async Task<(bool GoalAchieved, OracleVerdict? LastVerdict, TResult? LastResult)> ExecuteTaskWithOracleLoopAsync(TRequest request, CancellationToken cancellationToken)
     {
         _currentTaskId = request.RequestId;
         _currentOracleIteration = 0;
         var currentPrompt = request.Prompt;
         var goalAchieved = false;
         OracleVerdict? lastVerdict = null;
+        TResult? lastResult = default;
 
         RaiseEvent(AutonomousEventType.TaskStarted, $"Task started: {request.RequestId}", request.RequestId);
 
@@ -592,6 +632,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                 currentRequest,
                 output => RaiseEvent(AutonomousEventType.TaskOutput, output.Content, request.RequestId),
                 cancellationToken);
+            lastResult = result;
 
             // Update history
             historyEntry = historyEntry with
@@ -784,7 +825,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
         RaiseEvent(AutonomousEventType.TaskCompleted, $"Task completed: {request.RequestId}", request.RequestId);
         _currentTaskId = null;
 
-        return (goalAchieved, lastVerdict);
+        return (goalAchieved, lastVerdict, lastResult);
     }
 
     private string BuildOraclePrompt(string originalPrompt, string executionOutput, string context)

@@ -87,23 +87,28 @@ public class PromptEnforcementFinalIterationStrategy<TRequest, TResult> : IFinal
     where TRequest : ITaskRequest
     where TResult : ITaskResult
 {
-    private readonly string _finalIterationWarning;
-    private readonly Func<FinalIterationContext<TRequest, TResult>, TRequest> _requestModifier;
+    private readonly Func<FinalIterationContext<TRequest, TResult>, TRequest>? _requestModifier;
     private readonly Func<FinalIterationContext<TRequest, TResult>, TResult>? _completionEnforcer;
 
+    /// <param name="requestModifier">
+    /// Builds the request the last iteration runs (typically the original prompt with a "final answer now" warning);
+    /// null leaves the request as it is. <see cref="AutonomousOrchestratorBuilder{TRequest, TResult}.WithFinalIterationEnforcement"/>
+    /// builds one from the orchestrator's request factory and its warning text.
+    /// </param>
+    /// <param name="completionEnforcer">
+    /// Produces the result to use when the last iteration ends without reaching the goal; null produces none.
+    /// </param>
     public PromptEnforcementFinalIterationStrategy(
-        string finalIterationWarning = "⚠️ This is your final iteration. You MUST provide a complete answer now.",
         Func<FinalIterationContext<TRequest, TResult>, TRequest>? requestModifier = null,
         Func<FinalIterationContext<TRequest, TResult>, TResult>? completionEnforcer = null)
     {
-        _finalIterationWarning = finalIterationWarning;
-        _requestModifier = requestModifier ?? (ctx => ctx.OriginalRequest);
+        _requestModifier = requestModifier;
         _completionEnforcer = completionEnforcer;
     }
 
     public Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
     {
-        if (!context.IsLastIteration)
+        if (!context.IsLastIteration || _requestModifier == null)
             return Task.FromResult(default(TRequest));
 
         return Task.FromResult<TRequest?>(_requestModifier(context));

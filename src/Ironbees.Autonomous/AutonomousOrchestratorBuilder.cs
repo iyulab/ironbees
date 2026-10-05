@@ -22,6 +22,10 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     private IHumanInTheLoop? _humanInTheLoop;
     private IFallbackStrategy<TRequest, TResult>? _fallbackStrategy;
     private IFinalIterationStrategy<TRequest, TResult>? _finalIterationStrategy;
+    private (Func<FinalIterationContext<TRequest, TResult>, TResult> Enforcer, string Warning)? _finalIterationEnforcement;
+
+    /// <summary>The warning <see cref="WithFinalIterationEnforcement"/> puts before the last iteration's prompt by default.</summary>
+    public const string DefaultFinalIterationWarning = "This is your final iteration. You MUST provide a complete answer now.";
     private ILogger? _logger;
     private AutonomousConfig _config = new();
     private OrchestratorSettings? _settings;
@@ -99,22 +103,24 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         IFinalIterationStrategy<TRequest, TResult> strategy)
     {
         _finalIterationStrategy = strategy;
+        _finalIterationEnforcement = null;
         _config = _config with { EnableFinalIterationStrategy = true };
         return this;
     }
 
     /// <summary>
-    /// Add final iteration strategy using a lambda for simple enforcement.
-    /// The function receives the context and should return a modified result for completion.
+    /// Enforces completion at the last iteration: that iteration runs the original prompt with
+    /// <paramref name="warningMessage"/> (default <see cref="DefaultFinalIterationWarning"/>) in front of it, and if it
+    /// still ends without reaching the goal, <paramref name="completionEnforcer"/>'s result is recorded as the outcome
+    /// (a history entry and an <see cref="AutonomousEventType.ForcedCompletion"/> event).
     /// </summary>
     public AutonomousOrchestratorBuilder<TRequest, TResult> WithFinalIterationEnforcement(
         Func<FinalIterationContext<TRequest, TResult>, TResult> completionEnforcer,
         string? warningMessage = null)
     {
-        _finalIterationStrategy = new PromptEnforcementFinalIterationStrategy<TRequest, TResult>(
-            warningMessage ?? "⚠️ This is your final iteration. You MUST provide a complete answer now.",
-            null,
-            completionEnforcer);
+        ArgumentNullException.ThrowIfNull(completionEnforcer);
+        _finalIterationEnforcement = (completionEnforcer, warningMessage ?? DefaultFinalIterationWarning);
+        _finalIterationStrategy = null;
         _config = _config with { EnableFinalIterationStrategy = true };
         return this;
     }
@@ -433,6 +439,16 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
         orchestrator.SetDefaultConfig(_config);
 
         // Set final iteration strategy if configured
+        if (_finalIterationEnforcement is var (enforcer, warning))
+        {
+            // Built here, not in WithFinalIterationEnforcement: the modifier needs the request factory, which may be set
+            // after it.
+            var requestFactory = _requestFactory;
+            _finalIterationStrategy = new PromptEnforcementFinalIterationStrategy<TRequest, TResult>(
+                ctx => requestFactory(ctx.OriginalRequest.RequestId, $"{warning}\n\n{ctx.OriginalRequest.Prompt}"),
+                enforcer);
+        }
+
         if (_finalIterationStrategy != null)
         {
             orchestrator.SetFinalIterationStrategy(_finalIterationStrategy);

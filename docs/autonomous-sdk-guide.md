@@ -111,13 +111,14 @@ return OracleVerdict.Stop("Cannot continue - resource exhausted");
 
 ### Final Iteration Strategy
 
-Enforce completion behavior when max iterations is reached:
+Enforce completion behavior when max iterations is reached. The last iteration runs the strategy's modified request,
+and when it still ends without reaching the goal the strategy's forced result is recorded as the outcome: a history
+entry and an `AutonomousEventType.ForcedCompletion` event carrying it (`e.HistoryEntry.ExecutionOutput`).
 
 ```csharp
 // Option 1: Use built-in strategy
 var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
     .WithFinalIterationStrategy(new PromptEnforcementFinalIterationStrategy<MyRequest, MyResult>(
-        finalIterationWarning: "This is your final chance. Make a decision NOW.",
         requestModifier: ctx => {
             // Modify the request for final iteration
             return ctx.OriginalRequest with { MustComplete = true };
@@ -128,7 +129,8 @@ var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
         }))
     .Build();
 
-// Option 2: Use lambda helper
+// Option 2: Use lambda helper — the last iteration runs the original prompt with the warning in front of it
+// (default: AutonomousOrchestratorBuilder<,>.DefaultFinalIterationWarning), built with your request factory
 var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
     .WithFinalIterationEnforcement(
         completionEnforcer: ctx => CreateFallbackResult(ctx),
