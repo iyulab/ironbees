@@ -60,6 +60,42 @@ tags:
         return goalPath;
     }
 
+    // The loader ignores unknown keys, so a goal written for the removed 'agentic' section would have loaded and done
+    // nothing — as it did while that section was parsed and never enforced. It fails instead, and says why.
+    [Fact]
+    public async Task LoadGoalAsync_RemovedAgenticSection_FailsWithTheReason()
+    {
+        var goalPath = CreateTestGoal("agentic-goal", """
+            id: agentic-goal
+            name: Agentic goal
+            workflowTemplate: goal-loop
+            agentic:
+              hitl:
+                policy: OnUncertainty
+            """);
+
+        var ex = await Assert.ThrowsAsync<GoalLoadException>(
+            () => _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken));
+
+        Assert.Contains("'agentic' section", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LoadGoalAsync_AgenticAsAParameterValue_IsNotMistakenForTheSection()
+    {
+        var goalPath = CreateTestGoal("param-goal", """
+            id: param-goal
+            name: Param goal
+            workflowTemplate: goal-loop
+            parameters:
+              agentic: true
+            """);
+
+        var goal = await _loader.LoadGoalAsync(goalPath, TestContext.Current.CancellationToken);
+
+        Assert.Equal("param-goal", goal.Id);
+    }
+
     [Fact]
     public async Task LoadGoalAsync_ValidGoal_Success()
     {

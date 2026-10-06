@@ -203,7 +203,6 @@ See [PROVIDERS.md](./PROVIDERS.md) for more provider configurations.
 
 - [PHILOSOPHY.md](./PHILOSOPHY.md) - Design principles
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
-- [AGENTIC-PATTERNS.md](./AGENTIC-PATTERNS.md) - Agentic workflow patterns
 - [autonomous-sdk-guide.md](./autonomous-sdk-guide.md) - Autonomous SDK guide
 
 ---

@@ -64,38 +64,13 @@ public enum GoalExecutionEventType
     GoalResuming,
 
     // ========================================
-    // Agentic Pattern Events
+    // Human-in-the-Loop Events
     // ========================================
 
     /// <summary>
     /// Human-in-the-Loop intervention is requested.
     /// </summary>
-    HitlRequested,
-
-    /// <summary>
-    /// Human-in-the-Loop response was received.
-    /// </summary>
-    HitlResponseReceived,
-
-    /// <summary>
-    /// Confidence level was updated during iterative processing.
-    /// </summary>
-    ConfidenceUpdated,
-
-    /// <summary>
-    /// Sampling progress update for progressive data processing.
-    /// </summary>
-    SamplingProgress,
-
-    /// <summary>
-    /// Pattern was discovered during analysis.
-    /// </summary>
-    PatternDiscovered,
-
-    /// <summary>
-    /// Rules stability was achieved (no new patterns for N iterations).
-    /// </summary>
-    RulesStabilized
+    HitlRequested
 }
 
 /// <summary>
@@ -164,24 +139,10 @@ public sealed record GoalExecutionEvent
     /// </summary>
     public int? ProgressPercentage { get; init; }
 
-    // ========================================
-    // Agentic Pattern Properties
-    // ========================================
-
     /// <summary>
     /// Gets HITL request details when Type is HitlRequested.
     /// </summary>
     public HitlRequestDetails? HitlRequest { get; init; }
-
-    /// <summary>
-    /// Gets confidence information when Type is ConfidenceUpdated.
-    /// </summary>
-    public ConfidenceInfo? Confidence { get; init; }
-
-    /// <summary>
-    /// Gets sampling progress when Type is SamplingProgress.
-    /// </summary>
-    public SamplingProgressInfo? Sampling { get; init; }
 }
 
 /// <summary>
@@ -295,95 +256,6 @@ public sealed record HitlOption
     /// Gets additional data associated with this option.
     /// </summary>
     public IReadOnlyDictionary<string, object>? Data { get; init; }
-}
-
-/// <summary>
-/// Information about confidence level during iterative processing.
-/// </summary>
-public sealed record ConfidenceInfo
-{
-    /// <summary>
-    /// Gets the current confidence level (0.0 - 1.0).
-    /// </summary>
-    public required double CurrentConfidence { get; init; }
-
-    /// <summary>
-    /// Gets the target confidence threshold.
-    /// </summary>
-    public double TargetThreshold { get; init; }
-
-    /// <summary>
-    /// Gets the number of samples processed.
-    /// </summary>
-    public int SamplesProcessed { get; init; }
-
-    /// <summary>
-    /// Gets the number of consecutive stable iterations.
-    /// </summary>
-    public int StableIterations { get; init; }
-
-    /// <summary>
-    /// Gets whether the rules are considered stable.
-    /// </summary>
-    public bool IsStable { get; init; }
-
-    /// <summary>
-    /// Gets the change in confidence from the previous iteration.
-    /// </summary>
-    public double? ConfidenceDelta { get; init; }
-
-    /// <summary>
-    /// Gets the number of patterns discovered so far.
-    /// </summary>
-    public int PatternsDiscovered { get; init; }
-}
-
-/// <summary>
-/// Information about sampling progress during progressive processing.
-/// </summary>
-public sealed record SamplingProgressInfo
-{
-    /// <summary>
-    /// Gets the current batch number.
-    /// </summary>
-    public required int CurrentBatch { get; init; }
-
-    /// <summary>
-    /// Gets the number of samples in the current batch.
-    /// </summary>
-    public required int SamplesInBatch { get; init; }
-
-    /// <summary>
-    /// Gets the total samples processed across all batches.
-    /// </summary>
-    public required int TotalProcessed { get; init; }
-
-    /// <summary>
-    /// Gets the total dataset size if known.
-    /// </summary>
-    public int? TotalDatasetSize { get; init; }
-
-    /// <summary>
-    /// Gets the processing percentage if total size is known.
-    /// </summary>
-    public double? ProcessingPercentage => TotalDatasetSize > 0
-        ? (double)TotalProcessed / TotalDatasetSize * 100
-        : null;
-
-    /// <summary>
-    /// Gets the patterns discovered in this batch.
-    /// </summary>
-    public IReadOnlyList<string>? DiscoveredPatterns { get; init; }
-
-    /// <summary>
-    /// Gets the exceptions found in this batch.
-    /// </summary>
-    public int ExceptionsInBatch { get; init; }
-
-    /// <summary>
-    /// Gets the current error rate.
-    /// </summary>
-    public double? ErrorRate { get; init; }
 }
 
 /// <summary>

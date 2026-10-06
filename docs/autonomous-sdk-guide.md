@@ -465,4 +465,3 @@ return OracleVerdict.ContinueToNextIteration("continue");
 
 ## Related Documentation
 
-- [Agentic Patterns Documentation](./AGENTIC-PATTERNS.md)

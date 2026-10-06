@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -86,6 +87,18 @@ public partial class FileSystemGoalLoader : IGoalLoader, IDisposable
         try
         {
             var yamlContent = await File.ReadAllTextAsync(goalYamlPath, cancellationToken);
+
+            // The loader ignores keys it does not know, so a removed section would be accepted and do nothing — the
+            // way `agentic:` was accepted for releases while nothing enforced its sampling, confidence or HITL settings.
+            if (RemovedAgenticSectionRegex().IsMatch(yamlContent))
+            {
+                throw new GoalLoadException(
+                    "goal.yaml has an 'agentic' section, which is no longer supported: nothing ever enforced its " +
+                    "sampling, confidence or HITL settings. Remove the section; approval gates belong to the " +
+                    "orchestrator (IronhiveOptions.ApprovalHandler).",
+                    goalPath);
+            }
+
             GoalDefinition goal;
 
             try
@@ -371,6 +384,9 @@ public partial class FileSystemGoalLoader : IGoalLoader, IDisposable
             _fileWatcher = null;
         }
     }
+
+    [GeneratedRegex(@"^agentic\s*:", RegexOptions.Multiline)]
+    private static partial Regex RemovedAgenticSectionRegex();
 }
 
 /// <summary>

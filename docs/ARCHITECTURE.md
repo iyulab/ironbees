@@ -377,7 +377,6 @@ orchestration:
 ✅ **Good fit when**:
 - State machine workflows with branching logic
 - Human-in-the-Loop (HITL) checkpoints
-- Agentic patterns (sampling, confidence thresholds)
 - Multi-agent collaboration workflows
 
 **Configuration**:
@@ -415,7 +414,7 @@ states:
 ```
 
 **Examples**:
-- Data preprocessing with human approval gates (`workflows/templates/agentic-loop.yaml`)
+- Data preprocessing with human approval gates (`IronhiveOptions.ApprovalHandler`)
 - Multi-step validation workflows
 - Complex decision trees
 
@@ -508,7 +507,6 @@ await executor.ExecuteAsync(mafWorkflow);
 
 - [Philosophy](./PHILOSOPHY.md) - Design principles and scope boundaries
 - [README](../README.md) - Getting started and quick examples
-- [Agentic Patterns](./AGENTIC-PATTERNS.md)
 - [Autonomous SDK Guide](./autonomous-sdk-guide.md)
 - [LLM Providers](./PROVIDERS.md)
 - [Deployment](./DEPLOYMENT.md)

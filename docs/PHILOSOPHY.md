@@ -153,7 +153,6 @@ Declaration → Ironbees        Execution → MAF/User Code
 | DAG task scheduler | Execution | MAF ❌ |
 | ICheckpointStore interface | Declaration | Ironbees ✅ |
 | Checkpoint storage logic | Execution | User Code ❌ |
-| AgenticSettings type | Declaration | Ironbees ✅ |
 | Sampling algorithm | Execution | User Code ❌ |
 
 ### Question 2: Does it belong in YAML or Code?
@@ -238,13 +237,11 @@ var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
 ### 3. Template Method (Declarative Patterns)
 
 ```yaml
-# Template defines the pattern
-name: "agentic-loop"
+# Template defines the pattern (workflows/templates/goal-loop.yaml)
+name: "{{goal.id}}-workflow"
 states:
   - id: START
-    next: SAMPLE
-  - id: SAMPLE
-    next: ANALYZE
+    next: INITIALIZE
   # ... MAF executes the pattern
 ```
 
@@ -433,7 +430,6 @@ Ironbees provides **integration and abstraction** for all these scenarios.
 ## Related Documents
 
 - [Architecture](./ARCHITECTURE.md) - System architecture and layer diagram
-- [Agentic Patterns](./AGENTIC-PATTERNS.md) - Declarative agentic pattern examples
 - [README](../README.md) - Getting started guide
 
 ---

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - Unreleased
+
+### Removed
+- **Breaking — goal YAML `agentic:` (sampling, confidence, HITL) is gone, and a goal that still has it fails to load.**
+  `GoalDefinition.Agentic` and `AgenticSettings`/`SamplingSettings`/`ConfidenceSettings`/`HitlSettings` (with
+  `SamplingStrategy`, `HitlPolicy`, `HitlTimeoutAction`) were parsed and never enforced — a declared HITL policy gated
+  nothing. `FileSystemGoalLoader` now throws `GoalLoadException` naming the section instead of loading a goal whose
+  safety setting would silently do nothing. Migration: delete the `agentic:` section; for an approval gate set
+  `IronhiveOptions.ApprovalHandler`.
+- **Breaking — goal events nothing emitted.** `GoalExecutionEventType.HitlResponseReceived`, `ConfidenceUpdated`,
+  `SamplingProgress`, `PatternDiscovered`, `RulesStabilized`, `GoalExecutionEvent.Confidence`/`.Sampling` and
+  `ConfidenceInfo`/`SamplingProgressInfo`. `HitlRequested` (emitted by the IronHive orchestration) stays; the other
+  event types keep their numeric values. Migration: drop handlers for the removed cases.
+- The `agentic-loop` workflow template and the `incremental-preprocessing` sample goal, which depended on them (the
+  template's `{{goal.agentic.*}}` placeholders were never filled), and `docs/AGENTIC-PATTERNS.md`.
+
 ## [0.23.0] - 2026-10-06
 
 ### Changed

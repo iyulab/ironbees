@@ -521,7 +521,6 @@ returns the builder with them applied. See the [Autonomous SDK guide](docs/auton
 | [Architecture](docs/ARCHITECTURE.md) | System design and interfaces |
 | [Philosophy](docs/PHILOSOPHY.md) | Design principles and scope |
 | [Autonomous SDK](docs/autonomous-sdk-guide.md) | Autonomous execution guide |
-| [Agentic Patterns](docs/AGENTIC-PATTERNS.md) | HITL, sampling, confidence |
 | [Providers](docs/PROVIDERS.md) | LLM provider configuration |
 
 ## Samples

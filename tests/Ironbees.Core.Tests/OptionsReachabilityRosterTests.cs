@@ -30,10 +30,6 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
         ["Ironbees.Autonomous.Executors.AgentLlmSettings"] = ["MaxOutputTokens", "Temperature", "TopP"],
         ["Ironbees.Autonomous.Executors.ValidationSettings"] = ["ChoicePatterns", "InvalidPatterns", "Messages"],
-        ["Ironbees.Core.Goals.AgenticSettings"] = ["Confidence", "Hitl", "Sampling"],
-        ["Ironbees.Core.Goals.ConfidenceSettings"] = ["MinConfidenceForHitl", "StabilityWindow", "Threshold", "TrackHistory"],
-        ["Ironbees.Core.Goals.HitlSettings"] = ["Checkpoints", "Policy", "ResponseTimeout", "TimeoutAction", "UncertaintyThreshold"],
-        ["Ironbees.Core.Goals.SamplingSettings"] = ["GrowthFactor", "InitialBatchSize", "MaxSamples", "MinSamplesForConfidence", "Strategy"],
     };
 
     [Fact]
