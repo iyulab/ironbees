@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.23.0] - Unreleased
 
+### Changed
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.53.1 -> 0.54.0, `IronHive.Core` 0.53.1 -> 0.54.0, `IronHive.Extensions.AI` 0.53.1 -> 0.54.0, `IronHive.Providers.OpenAI` 0.53.1 -> 0.54.0, `IronHive.Providers.OpenAI.Compatible` 0.53.1 -> 0.54.0.
+
 ### Removed
 - **Breaking: public types that nothing used are removed.** No code path in this library constructed, returned or accepted them, and no implementation existed where they were interfaces. Code that never named them is unaffected; code that did can delete the reference - there was no behaviour behind it.
   Removed: `WorkflowContext` and `NoOpFinalIterationStrategy<TRequest, TResult>`.
