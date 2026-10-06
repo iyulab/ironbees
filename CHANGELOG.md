@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.24.0] - Unreleased
+## [0.24.0] - 2026-10-06
 
 ### Removed
 - **Breaking — goal YAML `agentic:` (sampling, confidence, HITL) is gone, and a goal that still has it fails to load.**
