@@ -67,20 +67,6 @@ public record FinalIterationContext<TRequest, TResult>
 }
 
 /// <summary>
-/// Default no-op final iteration strategy
-/// </summary>
-public class NoOpFinalIterationStrategy<TRequest, TResult> : IFinalIterationStrategy<TRequest, TResult>
-    where TRequest : ITaskRequest
-    where TResult : ITaskResult
-{
-    public Task<TRequest?> BeforeFinalIterationAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
-        => Task.FromResult(default(TRequest));
-
-    public Task<TResult?> ForceCompletionAsync(FinalIterationContext<TRequest, TResult> context, CancellationToken cancellationToken = default)
-        => Task.FromResult(default(TResult));
-}
-
-/// <summary>
 /// Final iteration strategy that modifies the prompt to encourage completion
 /// </summary>
 public class PromptEnforcementFinalIterationStrategy<TRequest, TResult> : IFinalIterationStrategy<TRequest, TResult>
