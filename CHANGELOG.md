@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.6] - 2026-10-08
+
+### Changed
+- Re-pinned sibling package(s) `TokenMeter` 0.7.9 -> 0.7.10. No source changes.
+
 ## [0.24.5] - 2026-10-07
 
 ### Changed
