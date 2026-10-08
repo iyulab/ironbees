@@ -13,4 +13,9 @@
     <PackageReference Include="TokenMeter" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Shared source, not a reference: this SDK does not depend on Ironbees.Core. -->
+    <Compile Include="..\Ironbees.Core\Yaml\YamlUnknownKeys.cs" Link="Yaml\YamlUnknownKeys.cs" />
+  </ItemGroup>
+
 </Project>

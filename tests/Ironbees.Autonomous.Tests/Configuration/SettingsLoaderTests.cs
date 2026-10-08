@@ -58,7 +58,6 @@ public class SettingsLoaderTests : IDisposable
               frequency_penalty: 0.1
               presence_penalty: 0.2
               timeout_seconds: 30
-              enable_debug_output: true
             """;
 
         var settings = _loader.LoadFromString(yaml);
@@ -239,9 +238,6 @@ public class SettingsLoaderTests : IDisposable
         var yaml = """
             debug:
               enabled: true
-              show_llm_responses: true
-              show_token_usage: true
-              show_reasoning: true
             """;
 
         var settings = _loader.LoadFromString(yaml);

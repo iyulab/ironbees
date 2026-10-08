@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Ironbees.AgentMode.Exceptions;
+using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -49,6 +50,15 @@ public sealed class YamlWorkflowLoader : IWorkflowLoader
         try
         {
             var yamlModel = _deserializer.Deserialize<YamlWorkflowModel>(yamlContent);
+            var unknown = YamlUnknownKeys.Find(yamlContent, typeof(YamlWorkflowModel), UnderscoredNamingConvention.Instance);
+            if (unknown.Count > 0)
+            {
+                // A key no field reads would otherwise become the default without a word (workflow keys are snake_case).
+                throw new WorkflowParseException(
+                    $"Workflow YAML has keys that are not read (keys are snake_case): {string.Join("; ", unknown)}",
+                    filePath);
+            }
+
             var definition = MapToDefinition(yamlModel);
             return Task.FromResult(definition);
         }

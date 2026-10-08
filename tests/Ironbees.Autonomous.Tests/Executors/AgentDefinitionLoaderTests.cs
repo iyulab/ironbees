@@ -67,7 +67,6 @@ public class AgentDefinitionLoaderTests : IDisposable
               items:
                 - "Is it alive?"
                 - "Is it man-made?"
-              strategy: "random"
             variables:
               category: "animals"
               difficulty: "easy"

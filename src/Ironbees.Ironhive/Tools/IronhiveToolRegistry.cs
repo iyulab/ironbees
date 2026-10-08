@@ -3,6 +3,7 @@
 
 using IronHive.Abstractions.Tools;
 using Microsoft.Extensions.Logging;
+using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -140,6 +141,11 @@ public partial class IronhiveToolRegistry
         {
             var yamlContent = await File.ReadAllTextAsync(yamlPath, cancellationToken);
             var toolsConfig = _yamlDeserializer.Deserialize<AgentToolsYaml>(yamlContent);
+            foreach (var unknown in YamlUnknownKeys.Find(yamlContent, typeof(AgentToolsYaml), UnderscoredNamingConvention.Instance))
+            {
+                // A key no field reads would otherwise become the default without a word (tool keys are snake_case).
+                LogUnknownToolKey(_logger, yamlPath, unknown.ToString());
+            }
 
             if (toolsConfig?.Tools is null)
             {
@@ -220,6 +226,9 @@ public partial class IronhiveToolRegistry
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load tools from {YamlPath}")]
     private static partial void LogFailedToLoadTools(ILogger logger, Exception exception, string yamlPath);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{YamlPath}: {Finding} (tool keys are snake_case)")]
+    private static partial void LogUnknownToolKey(ILogger logger, string yamlPath, string finding);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "MCP tool reference will be resolved at runtime: {Ref}")]
     private static partial void LogMcpToolReferenceWillResolve(ILogger logger, string @ref);

@@ -1,4 +1,5 @@
 using Ironbees.Autonomous.Models;
+using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -44,6 +45,14 @@ public sealed class SettingsLoader
         try
         {
             var yamlModel = _deserializer.Deserialize<YamlOrchestratorSettings>(yamlContent);
+            var unknown = YamlUnknownKeys.Find(yamlContent, typeof(YamlOrchestratorSettings), UnderscoredNamingConvention.Instance);
+            if (unknown.Count > 0)
+            {
+                // A key no field reads would otherwise become the default without a word (settings keys are snake_case).
+                throw new SettingsParseException(
+                    $"Settings YAML has keys that are not read (keys are snake_case): {string.Join("; ", unknown)}");
+            }
+
             return MapToSettings(yamlModel);
         }
         catch (YamlDotNet.Core.YamlException ex)

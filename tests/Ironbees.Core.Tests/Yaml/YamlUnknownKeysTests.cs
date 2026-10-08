@@ -175,13 +175,14 @@ public sealed class YamlUnknownKeysTests : IDisposable
     }
 
     [Fact]
-    public async Task Every_bundled_example_agent_loads_strictly_without_findings()
+    public async Task Every_bundled_example_and_sample_agent_loads_strictly_without_findings()
     {
         var agents = FindRepoAgentsDirectory();
         var loader = new FileSystemAgentLoader(new FileSystemAgentLoaderOptions { StrictValidation = true, EnableCaching = false });
 
         var failures = new List<string>();
-        foreach (var dir in Directory.GetDirectories(agents))
+        var workflowSampleAgents = Path.Combine(Path.GetDirectoryName(agents)!, "samples", "WorkflowSample", "agents");
+        foreach (var dir in Directory.GetDirectories(agents).Concat(Directory.GetDirectories(workflowSampleAgents)))
         {
             try { await loader.LoadConfigAsync(dir, TestContext.Current.CancellationToken); }
             catch (Exception ex) { failures.Add($"{Path.GetFileName(dir)}: {ex.Message}"); }

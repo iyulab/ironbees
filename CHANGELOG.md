@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Validation errors are logged in the default (non-strict) mode.** An agent whose result had errors but no warnings
   loaded without a word.
 - **A `systemPrompt` key in `agent.yaml` is reported as ignored** — the prompt comes from `system-prompt.md`.
+- **The autonomous SDK reads the `resilience`, `guess_rules`, `fallback.default` and `fallback.pools` sections of an agent
+  definition.** `AgentDefinition` declared them, but `AgentDefinitionLoader` had no field for them, so they were always
+  empty (`Resilience`/`GuessRules` null) — the TwentyQuestions sample's retry and deduction settings never applied.
+- **The snake_case loaders name a key no field reads instead of dropping it**: `AgentDefinitionLoader` and `GameConfigLoader`
+  throw `InvalidDataException`, `SettingsLoader` throws `SettingsParseException`, `YamlWorkflowLoader` throws
+  `WorkflowParseException`, and a `tools.yaml` key is logged as a warning. **Breaking**: a file carrying such a key no longer
+  loads — remove the key (the 0.18.0 removal of unread settings left `debug.show_*`, `llm.enable_debug_output` and
+  `settings.checkpoint_directory` in some files) or fix its spelling.
 - The bundled example agents load cleanly: five used `max_tokens` and an inline `system_prompt` (neither read), had no
   `version`, and kept `examples` at the top level (now under `metadata`).
 

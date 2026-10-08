@@ -1,3 +1,4 @@
+using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -39,6 +40,13 @@ public sealed class AgentDefinitionLoader
         // Load agent.yaml
         var yamlContent = await File.ReadAllTextAsync(agentYamlPath, cancellationToken);
         var yamlModel = _deserializer.Deserialize<YamlAgentDefinition>(yamlContent);
+        var unknown = YamlUnknownKeys.Find(yamlContent, typeof(YamlAgentDefinition), UnderscoredNamingConvention.Instance);
+        if (unknown.Count > 0)
+        {
+            // A key no field reads would otherwise become the default without a word (keys are snake_case).
+            throw new InvalidDataException(
+                $"{agentYamlPath} has keys that are not read (keys are snake_case): {string.Join("; ", unknown)}");
+        }
 
         // Load system-prompt.md if exists
         var systemPrompt = File.Exists(systemPromptPath)
@@ -119,11 +127,15 @@ public sealed class AgentDefinitionLoader
                 Temperature = yaml.Llm.Temperature,
                 TopP = yaml.Llm.TopP
             } : null,
+            Resilience = yaml.Resilience,
             Fallback = yaml.Fallback != null ? new FallbackConfig
             {
                 Enabled = yaml.Fallback.Enabled ?? true,
-                Items = yaml.Fallback.Items ?? new List<string>()
+                Items = yaml.Fallback.Items ?? new List<string>(),
+                Default = yaml.Fallback.Default ?? new List<string>(),
+                Pools = yaml.Fallback.Pools
             } : null,
+            GuessRules = yaml.GuessRules,
             Variables = yaml.Variables ?? new Dictionary<string, string>()
         };
     }
@@ -139,7 +151,9 @@ public sealed class AgentDefinitionLoader
         public string? SystemPrompt { get; set; }
         public YamlOutputFormat? Output { get; set; }
         public YamlAgentLlmSettings? Llm { get; set; }
+        public ResilienceConfig? Resilience { get; set; }
         public YamlFallbackConfig? Fallback { get; set; }
+        public List<GuessRule>? GuessRules { get; set; }
         public Dictionary<string, string>? Variables { get; set; }
     }
 
@@ -161,6 +175,8 @@ public sealed class AgentDefinitionLoader
     {
         public bool? Enabled { get; set; }
         public List<string>? Items { get; set; }
+        public List<string>? Default { get; set; }
+        public List<FallbackPool>? Pools { get; set; }
     }
 
     private sealed class YamlFallbackItems

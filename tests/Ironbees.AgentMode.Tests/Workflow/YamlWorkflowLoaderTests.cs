@@ -212,7 +212,6 @@ public class YamlWorkflowLoaderTests
               default_timeout: "45m"
               default_max_iterations: 10
               enable_checkpointing: false
-              checkpoint_directory: ".custom/checkpoints"
             states:
               - id: START
                 type: start
