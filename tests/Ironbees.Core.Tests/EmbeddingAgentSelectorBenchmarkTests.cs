@@ -75,7 +75,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
         var embeddings = GenerateDistinctEmbeddings(5);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
@@ -135,7 +135,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
                 // Simulate some delay for embedding generation
@@ -186,7 +186,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
         var embeddings = GenerateDistinctEmbeddings(10);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
@@ -224,7 +224,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
         var embeddings = GenerateDistinctEmbeddings(5);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
@@ -290,7 +290,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange - The hybrid selector runs both selectors in parallel
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(callInfo =>
             {
                 // Simulate some delay
@@ -416,7 +416,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_testEmbedding);
 
         _mockEmbeddingProvider
@@ -451,7 +451,7 @@ public class EmbeddingAgentSelectorBenchmarkTests
     {
         // Arrange
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(_testEmbedding);
 
         _mockEmbeddingProvider

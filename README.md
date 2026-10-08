@@ -34,7 +34,7 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 ## Features
 
 - **Agents from files** — `agent.yaml` + `system-prompt.md` per agent directory, loaded by the orchestrator. An agent that lists `tools` gets exactly those.
-- **Routing** — `IAgentOrchestrator.SelectAgentAsync(input)` picks an agent by keyword, embedding or hybrid selection. Call `ProcessAsync(input, agentName)` to address one directly.
+- **Routing** — `IAgentOrchestrator.SelectAgentAsync(input)` picks an agent by keyword, embedding or hybrid selection. Call `ProcessAsync(input, agentName)` to address one directly. Embedding selection embeds agent descriptions with `IEmbeddingProvider.GenerateEmbeddingsAsync` and the request with `GenerateQueryEmbeddingAsync` (defaults to `GenerateEmbeddingAsync`; a provider for an asymmetric model such as E5 implements it with its query convention).
 - **Guardrails** — `services.AddGuardrails()` returns a `GuardrailBuilder` for input and output checks. They are opt-in.
 - **Multi-agent orchestration** (`Ironbees.Ironhive`) — `IIronhiveOrchestratorFactory.CreateOrchestrator(settings, agents)` with an `OrchestratorSettings`:
   `Type` (Sequential / Parallel / HubSpoke / Handoff / GroupChat / Graph), `Middleware` (retry, circuit breaker, bulkhead, rate limit, timeout),

@@ -57,7 +57,7 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.9f, 0.1f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -100,7 +100,7 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.8f, 0.2f, 0.0f); // Closer to writing embedding
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -293,7 +293,7 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.7f, 0.3f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -323,7 +323,7 @@ public class HybridAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         _mockEmbeddingProvider
@@ -389,7 +389,7 @@ public class HybridAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         _mockEmbeddingProvider
@@ -423,7 +423,7 @@ public class HybridAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -453,7 +453,7 @@ public class HybridAgentSelectorTests
         var embedding2 = CreateNormalizedVector(0.0f, 1.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding1);
 
         _mockEmbeddingProvider
@@ -487,7 +487,7 @@ public class HybridAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         _mockEmbeddingProvider

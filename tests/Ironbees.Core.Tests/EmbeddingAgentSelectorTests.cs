@@ -57,7 +57,7 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.9f, 0.1f, 0.0f); // Closer to coding
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -182,7 +182,7 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.8f, 0.2f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -214,7 +214,7 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         _mockEmbeddingProvider
@@ -254,7 +254,7 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(0.0f, 1.0f, 0.0f); // Orthogonal
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -299,7 +299,7 @@ public class EmbeddingAgentSelectorTests
 
         // Now make a selection - should not call GenerateEmbeddingsAsync again
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         await selector.SelectAgentAsync("Query", agents, TestContext.Current.CancellationToken);
@@ -321,7 +321,7 @@ public class EmbeddingAgentSelectorTests
             .Returns(new[] { embedding1, embedding2 });
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding1);
 
         var selector = new EmbeddingAgentSelector(_mockEmbeddingProvider);
@@ -352,7 +352,7 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         _mockEmbeddingProvider
@@ -381,7 +381,7 @@ public class EmbeddingAgentSelectorTests
         var embedding2 = CreateNormalizedVector(0.0f, 1.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding1);
 
         _mockEmbeddingProvider
@@ -420,7 +420,7 @@ public class EmbeddingAgentSelectorTests
         var embedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(embedding);
 
         _mockEmbeddingProvider
@@ -458,7 +458,7 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(-1.0f, 0.0f, 0.0f); // Opposite direction
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider
@@ -487,7 +487,7 @@ public class EmbeddingAgentSelectorTests
         var queryEmbedding = CreateNormalizedVector(1.0f, 0.0f, 0.0f);
 
         _mockEmbeddingProvider
-            .GenerateEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .GenerateQueryEmbeddingAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(queryEmbedding);
 
         _mockEmbeddingProvider

@@ -56,8 +56,8 @@ public class EmbeddingAgentSelector : IAgentSelector, IDisposable
         // Ensure all agents have embeddings cached
         await EnsureAgentEmbeddingsAsync(availableAgents, cancellationToken);
 
-        // Generate query embedding
-        var queryEmbedding = await _embeddingProvider.GenerateEmbeddingAsync(input, cancellationToken);
+        // Embed the request on the query side; agent texts are the documents it is matched against
+        var queryEmbedding = await _embeddingProvider.GenerateQueryEmbeddingAsync(input, cancellationToken);
 
         // Calculate similarity scores for each agent
         var scores = new List<AgentScore>();

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`IEmbeddingProvider.GenerateQueryEmbeddingAsync` — embedding selection embeds the request on the query side.** An
+  asymmetric embedding model (E5 `query: `/`passage: `, Nomic, a BGE query instruction) embeds a request differently from
+  the agent descriptions it is matched against. `EmbeddingAgentSelector` (and so `HybridAgentSelector`) now embeds the
+  request with the new method; it defaults to `GenerateEmbeddingAsync`, so a symmetric provider needs no change.
+  **Breaking for test doubles**: a substitute that set up `GenerateEmbeddingAsync` to answer the request must set up
+  `GenerateQueryEmbeddingAsync` instead — a mocking library intercepts the default member and returns its own default.
+
 ## [0.24.6] - 2026-10-08
 
 ### Changed
