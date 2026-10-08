@@ -4,8 +4,10 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Ironbees.Autonomous.Executors;
 
 /// <summary>
-/// Loads agent definitions from filesystem following Ironbees convention:
-/// agents/{name}/agent.yaml + system-prompt.md
+/// Loads autonomous-SDK agent definitions (<see cref="AgentDefinition"/>: role, output format, LLM settings, fallback,
+/// variables) from <c>agents/{name}/agent.yaml</c> + <c>system-prompt.md</c>. This is a different schema from the
+/// orchestrator's <c>Ironbees.Core.AgentConfig</c> and its keys are snake_case (<c>system_prompt</c>, <c>max_output_tokens</c>);
+/// the two loaders do not read each other's files.
 /// </summary>
 public sealed class AgentDefinitionLoader
 {

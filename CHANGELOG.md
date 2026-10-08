@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Breaking for test doubles**: a substitute that set up `GenerateEmbeddingAsync` to answer the request must set up
   `GenerateQueryEmbeddingAsync` instead — a mocking library intercepts the default member and returns its own default.
 
+### Fixed
+- **A key in `agent.yaml` or `goal.yaml` that no field reads is reported instead of dropped.** The loaders ignored unmatched
+  keys, so `max_tokens` in a camelCase file silently became the default (`maxTokens` 4000). Such a key is now a validation
+  error that names it and the spelling that is read (`model.max_tokens … did you mean 'maxTokens'?`). **Breaking** with
+  `StrictValidation`: the load now fails — rename the key, or move a custom value under `metadata:`.
+- **Validation errors are logged in the default (non-strict) mode.** An agent whose result had errors but no warnings
+  loaded without a word.
+- **A `systemPrompt` key in `agent.yaml` is reported as ignored** — the prompt comes from `system-prompt.md`.
+- The bundled example agents load cleanly: five used `max_tokens` and an inline `system_prompt` (neither read), had no
+  `version`, and kept `examples` at the top level (now under `metadata`).
+
 ## [0.24.6] - 2026-10-08
 
 ### Changed

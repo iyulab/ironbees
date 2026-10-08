@@ -24,4 +24,12 @@
     <PackageReference Include="OpenAI" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- YamlUnknownKeys is shared by the YAML loaders of the sibling packages; it is not public API. -->
+    <InternalsVisibleTo Include="Ironbees.Autonomous" />
+    <InternalsVisibleTo Include="Ironbees.AgentMode" />
+    <InternalsVisibleTo Include="Ironbees.Ironhive" />
+    <InternalsVisibleTo Include="Ironbees.Core.Tests" />
+  </ItemGroup>
+
 </Project>

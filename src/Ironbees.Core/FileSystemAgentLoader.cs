@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
+using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Ironbees.Core;
@@ -128,18 +129,19 @@ public partial class FileSystemAgentLoader : IAgentLoader, IDisposable
             // Validate configuration (if enabled)
             if (_options.EnableValidation)
             {
-                var validationResult = AgentConfigValidator.Validate(finalConfig, agentPath);
+                var validationResult = WithYamlFindings(
+                    AgentConfigValidator.Validate(finalConfig, agentPath), yamlContent, config);
 
-                if (!validationResult.IsValid)
+                if (!validationResult.IsValid && _options.StrictValidation)
                 {
-                    if (_options.StrictValidation)
-                    {
-                        throw new AgentConfigurationException(agentPath, validationResult);
-                    }
-                    else if (validationResult.Warnings.Count > 0 && _options.LogWarnings && _logger is not null)
-                    {
-                        LogAgentValidationWarnings(_logger, validationResult.GetFormattedErrors());
-                    }
+                    throw new AgentConfigurationException(agentPath, validationResult);
+                }
+
+                // Errors are reported in the default (non-strict) mode too - they used to be logged only when the
+                // result also carried a warning, so an agent with only errors loaded without a word.
+                if ((validationResult.Errors.Count > 0 || validationResult.Warnings.Count > 0) && _options.LogWarnings && _logger is not null)
+                {
+                    LogAgentValidationFindings(_logger, validationResult.GetFormattedErrors());
                 }
             }
 
@@ -375,8 +377,31 @@ public partial class FileSystemAgentLoader : IAgentLoader, IDisposable
         OnFileChanged(sender, e);
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent validation warnings: {Warnings}")]
-    private static partial void LogAgentValidationWarnings(ILogger logger, string warnings);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent validation findings: {Findings}")]
+    private static partial void LogAgentValidationFindings(ILogger logger, string findings);
+
+    /// <summary>
+    /// Adds what the YAML text says that the typed config cannot: keys no property reads (an error - the value is
+    /// silently replaced by the default; custom values belong under <c>metadata</c>) and a <c>systemPrompt</c> key, which
+    /// this loader ignores in favour of <c>system-prompt.md</c> (a warning).
+    /// </summary>
+    private static ValidationResult WithYamlFindings(ValidationResult result, string yamlContent, AgentConfig parsed)
+    {
+        var errors = new List<string>(result.Errors);
+        var warnings = new List<string>(result.Warnings);
+
+        foreach (var key in YamlUnknownKeys.Find(yamlContent, typeof(AgentConfig), CamelCaseNamingConvention.Instance))
+        {
+            errors.Add($"{key} - agent.yaml keys are camelCase; put custom values under 'metadata'");
+        }
+
+        if (!string.IsNullOrWhiteSpace(parsed.SystemPrompt))
+        {
+            warnings.Add($"'systemPrompt' in {AgentConfigFileName} is ignored - the prompt is read from {SystemPromptFileName}");
+        }
+
+        return result with { Errors = errors, Warnings = warnings, IsValid = errors.Count == 0 };
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Duplicate agent names: {Message}")]
     private static partial void LogDuplicateAgentNames(ILogger logger, string message);

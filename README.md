@@ -103,6 +103,7 @@ agents/
 ```yaml
 name: coding-agent
 description: Expert software developer
+version: 1.0.0
 capabilities: [code-generation, code-review]
 model:
   provider: openai
@@ -114,6 +115,11 @@ model:
 ```markdown
 You are an expert software developer specializing in C# and .NET...
 ```
+
+`agent.yaml` (and `goal.yaml`) keys are **camelCase** (`maxTokens`, `topP`). A key no field reads — `max_tokens`, or a
+custom key at the top level — is a validation error naming the key and the spelling that is read: logged when the agent
+loads, and thrown with `FileSystemAgentLoaderOptions.StrictValidation`. Put your own values under `metadata:`. The prompt
+always comes from `system-prompt.md`; a `systemPrompt` key in `agent.yaml` is ignored (with a warning).
 
 #### Sampling parameters
 

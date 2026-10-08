@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using YamlDotNet.Serialization;
+using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace Ironbees.Core.Goals;
@@ -120,6 +121,15 @@ public partial class FileSystemGoalLoader : IGoalLoader, IDisposable
             if (_options.EnableValidation)
             {
                 var validationResult = GoalValidator.Validate(goal);
+
+                // Keys no property reads would otherwise become defaults without a word (goal.yaml keys are camelCase).
+                var unknownKeys = YamlUnknownKeys.Find(yamlContent, typeof(GoalDefinition), CamelCaseNamingConvention.Instance);
+                if (unknownKeys.Count > 0)
+                {
+                    var errors = new List<string>(validationResult.Errors);
+                    errors.AddRange(unknownKeys.Select(k => $"{k} - goal.yaml keys are camelCase"));
+                    validationResult = validationResult with { Errors = errors, IsValid = false };
+                }
 
                 if (!validationResult.IsValid)
                 {
