@@ -166,7 +166,8 @@ public partial class FileSystemGoalLoader : IGoalLoader, IDisposable
 
             return goal;
         }
-        catch (Exception ex) when (ex is not GoalLoadException and not GoalValidationException)
+        catch (Exception ex) when (ex is not GoalLoadException and not GoalValidationException
+            && (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested))
         {
             throw new GoalLoadException($"Failed to load goal from '{goalPath}'", goalPath, ex);
         }
@@ -195,7 +196,7 @@ public partial class FileSystemGoalLoader : IGoalLoader, IDisposable
                 var goal = await LoadGoalAsync(goalDir, cancellationToken);
                 goals.Add(goal);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 errors.Add((goalDir, ex));
 

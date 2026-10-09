@@ -153,7 +153,8 @@ public partial class FileSystemAgentLoader : IAgentLoader, IDisposable
 
             return finalConfig;
         }
-        catch (Exception ex) when (ex is not AgentConfigurationException and not InvalidAgentDirectoryException)
+        catch (Exception ex) when (ex is not AgentConfigurationException and not InvalidAgentDirectoryException
+            && (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested))
         {
             throw new AgentLoadException($"Failed to load agent from '{agentPath}'", ex);
         }
@@ -182,7 +183,7 @@ public partial class FileSystemAgentLoader : IAgentLoader, IDisposable
                 var config = await LoadConfigAsync(agentDir, cancellationToken);
                 configs.Add(config);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
             {
                 errors.Add((agentDir, ex));
 

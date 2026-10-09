@@ -142,7 +142,7 @@ public partial class AgentFrameworkAdapter : ILLMFrameworkAdapter
 
             return content;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             LogErrorRunningAgent(_logger, ex, agent.Name);
             throw new AgentLoadException($"Failed to run agent '{agent.Name}'", ex);

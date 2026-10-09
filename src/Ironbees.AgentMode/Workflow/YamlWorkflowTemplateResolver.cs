@@ -102,7 +102,7 @@ public partial class YamlWorkflowTemplateResolver : IWorkflowTemplateResolver
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             throw new WorkflowTemplateResolutionException(templateName, ex.Message, ex);
         }

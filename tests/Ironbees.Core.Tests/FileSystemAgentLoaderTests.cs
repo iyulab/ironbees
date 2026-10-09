@@ -57,6 +57,29 @@ tags:
     }
 
     [Fact]
+    public async Task LoadConfigAsync_CallerCancels_ThrowsOperationCanceled()
+    {
+        // The caller's cancellation is not a load failure: it reaches the caller as itself, not as AgentLoadException.
+        var agentPath = CreateTestAgent("cancelled-agent");
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _loader.LoadConfigAsync(agentPath, cts.Token));
+    }
+
+    [Fact]
+    public async Task LoadAllConfigsAsync_CallerCancels_ThrowsOperationCanceled()
+    {
+        // A cancelled sweep is not «every agent failed to load»: it must not return a partial list as if it finished.
+        CreateTestAgent("first-agent");
+        CreateTestAgent("second-agent");
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _loader.LoadAllConfigsAsync(_testDirectory, cts.Token));
+    }
+
+    [Fact]
     public async Task LoadConfigAsync_ValidAgent_Success()
     {
         // Arrange

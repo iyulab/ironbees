@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking: a caller's cancellation now reaches the caller as `OperationCanceledException`.** Seven calls wrapped it
+  in their own failure type or counted it as a failed item. Old → new, per call, when the caller cancels:
+  - `FileSystemAgentLoader.LoadConfigAsync`: `AgentLoadException` → `OperationCanceledException`.
+  - `FileSystemAgentLoader.LoadAllConfigsAsync`: returned normally with the agents loaded so far (the cancel was logged
+    as a per-agent load warning) → `OperationCanceledException`.
+  - `FileSystemGoalLoader.LoadGoalAsync`: `GoalLoadException` → `OperationCanceledException`.
+  - `FileSystemGoalLoader.LoadAllGoalsAsync`: returned normally with the goals loaded so far → `OperationCanceledException`.
+  - `YamlWorkflowTemplateResolver.ResolveAsync`: `WorkflowTemplateResolutionException` → `OperationCanceledException`.
+  - `AgentFrameworkAdapter.RunAsync`: `AgentLoadException` → `OperationCanceledException`.
+  - `ModelDownloader.EnsureModelAsync`: `InvalidOperationException` → `OperationCanceledException`; the
+    partial download is still deleted.
+  A timeout or any other failure keeps its old type. Migration: catch `OperationCanceledException` where you handle
+  cancellation; a `catch (AgentLoadException)` no longer sees a cancelled load.
+
 ### Removed
 - **Breaking: `AgentDirectoryMigrator` and its types are gone.** `AgentDirectoryMigrator`, `MigratorOptions`,
   `MigrationStatus`, `AgentMigrationResult` and `BatchMigrationResult` — nothing used them, and they duplicated the

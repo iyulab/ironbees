@@ -136,6 +136,12 @@ public partial class ModelDownloader
             {
                 Directory.Delete(modelPath, recursive: true);
             }
+
+            if (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
             throw new InvalidOperationException($"Failed to download model '{modelName}': {ex.Message}", ex);
         }
     }
