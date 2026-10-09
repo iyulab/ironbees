@@ -108,34 +108,3 @@ public interface IMessageQueue
     /// <returns>A disposable subscription.</returns>
     IDisposable Subscribe(Func<AgentMessage, CancellationToken, Task> handler, CancellationToken cancellationToken = default);
 }
-
-/// <summary>
-/// Factory for creating message queues.
-/// </summary>
-public interface IMessageQueueFactory
-{
-    /// <summary>
-    /// Creates or gets a message queue for the specified agent.
-    /// </summary>
-    /// <param name="agentName">The agent name.</param>
-    /// <returns>The message queue for the agent.</returns>
-    IMessageQueue GetQueue(string agentName);
-
-    /// <summary>
-    /// Sends a message from one agent to another.
-    /// </summary>
-    /// <param name="fromAgent">The sender agent name.</param>
-    /// <param name="toAgent">The target agent name.</param>
-    /// <param name="messageType">The message type.</param>
-    /// <param name="payload">Optional payload.</param>
-    /// <param name="priority">Message priority.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The message ID.</returns>
-    Task<string> SendAsync(
-        string fromAgent,
-        string toAgent,
-        string messageType,
-        object? payload = null,
-        MessagePriority priority = MessagePriority.Normal,
-        CancellationToken cancellationToken = default);
-}

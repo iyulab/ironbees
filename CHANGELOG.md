@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Breaking: `AgentDirectoryMigrator` and its types are gone.** `AgentDirectoryMigrator`, `MigratorOptions`,
+  `MigrationStatus`, `AgentMigrationResult` and `BatchMigrationResult` — nothing used them, and they duplicated the
+  loader extensions. Migration: use `IAgentLoader.MigrateAgentAsync` / `MigrateAllAgentsAsync` (`AgentLoaderExtensions`).
+- **Breaking: `FileSystemMessageQueueFactory` and `IMessageQueueFactory` are gone.** Nothing implemented the interface
+  besides that class, and nothing used either. Migration: create a queue per agent with
+  `AgentWithDirectory.GetMessageQueue()` or `new FileSystemMessageQueue(directory)`.
+- **Breaking: `NullContextProvider`, `NullMemoryStore` and `NullSaturationMonitor` are gone.** Nothing used them, and no
+  option defaults to them. Migration: keep a local no-op implementation of `IAutonomousContextProvider`,
+  `IAutonomousMemoryStore` or `IContextSaturationMonitor` if you need one.
+
 ### Dependencies
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.58.0 -> 0.59.0, `IronHive.Core` 0.58.0 -> 0.59.0, `IronHive.Extensions.AI` 0.58.0 -> 0.59.0, `IronHive.Providers.OpenAI` 0.58.0 -> 0.59.0, `IronHive.Providers.OpenAI.Compatible` 0.58.0 -> 0.59.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.7.10 -> 0.8.0.
