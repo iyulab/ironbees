@@ -266,160 +266,167 @@ public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRunti
         WorkflowRuntimeState state,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        while (!IsTerminalState(workflow, state.CurrentStateId)
-            && state.Status == WorkflowExecutionStatus.Running
-            && !cancellationToken.IsCancellationRequested)
+        try
         {
-            var currentStateDef = workflow.States.FirstOrDefault(s => s.Id == state.CurrentStateId);
-            if (currentStateDef == null)
+            while (!IsTerminalState(workflow, state.CurrentStateId)
+                && state.Status == WorkflowExecutionStatus.Running)
             {
-                state = state with
-                {
-                    Status = WorkflowExecutionStatus.Failed,
-                    ErrorMessage = $"State not found: {state.CurrentStateId}",
-                    LastUpdatedAt = DateTimeOffset.UtcNow
-                };
-                yield return state;
-                break;
-            }
+                // A cancel between two states throws; ending the stream would read as a workflow that stopped by itself.
+                cancellationToken.ThrowIfCancellationRequested();
 
-            // Evaluate trigger if present
-            if (currentStateDef.Trigger != null)
-            {
-                var triggerSatisfied = await EvaluateTriggerAsync(
-                    currentStateDef.Trigger,
-                    execution.Context,
-                    cancellationToken);
-
-                if (!triggerSatisfied)
+                var currentStateDef = workflow.States.FirstOrDefault(s => s.Id == state.CurrentStateId);
+                if (currentStateDef == null)
                 {
                     state = state with
                     {
-                        Status = WorkflowExecutionStatus.WaitingForTrigger,
+                        Status = WorkflowExecutionStatus.Failed,
+                        ErrorMessage = $"State not found: {state.CurrentStateId}",
                         LastUpdatedAt = DateTimeOffset.UtcNow
                     };
                     yield return state;
-
-                    // Wait and retry trigger evaluation
-                    await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-                    continue;
+                    break;
                 }
-            }
 
-            // A gate that waits must be visible as waiting before it waits: ApproveAsync only accepts an execution
-            // whose current state says WaitingForApproval, and a caller streaming the run learns it has to answer
-            // from this state. The gate is created first so an answer that arrives right after the yield is not lost.
-            if (currentStateDef.Type == WorkflowStateType.HumanGate &&
-                (currentStateDef.HumanGate?.ApprovalMode ?? HumanGateApprovalMode.AlwaysRequire) == HumanGateApprovalMode.AlwaysRequire)
-            {
-                execution.ApprovalGate = new TaskCompletionSource<ApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
-                state = state with
+                // Evaluate trigger if present
+                if (currentStateDef.Trigger != null)
                 {
-                    Status = WorkflowExecutionStatus.WaitingForApproval,
-                    LastUpdatedAt = DateTimeOffset.UtcNow
-                };
-                execution.CurrentState = state;
-                yield return state;
-            }
+                    var triggerSatisfied = await EvaluateTriggerAsync(
+                        currentStateDef.Trigger,
+                        execution.Context,
+                        cancellationToken);
 
-            // Execute state based on type
-            WorkflowRuntimeState? newState = null;
-            var limited = currentStateDef.Type is WorkflowStateType.Agent or WorkflowStateType.Parallel;
-            var iterationLimit = currentStateDef.MaxIterations ?? workflow.Settings.DefaultMaxIterations;
-            var timeout = currentStateDef.Timeout ?? workflow.Settings.DefaultTimeout;
-            using var stateTimeout = limited && timeout.HasValue
-                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-                : null;
-            stateTimeout?.CancelAfter(timeout!.Value);
-            var stateToken = stateTimeout?.Token ?? cancellationToken;
-            try
-            {
-                if (limited && iterationLimit is { } maxRuns)
-                {
-                    var runs = execution.StateRuns.GetValueOrDefault(currentStateDef.Id);
-                    if (runs >= maxRuns)
+                    if (!triggerSatisfied)
                     {
-                        throw new OrchestratorException(
-                            $"State '{currentStateDef.Id}' reached its iteration limit ({maxRuns}).",
-                            execution.ExecutionId,
-                            currentStateDef.Id);
+                        state = state with
+                        {
+                            Status = WorkflowExecutionStatus.WaitingForTrigger,
+                            LastUpdatedAt = DateTimeOffset.UtcNow
+                        };
+                        yield return state;
+
+                        // Wait and retry trigger evaluation
+                        await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                        continue;
                     }
-
-                    execution.StateRuns[currentStateDef.Id] = runs + 1;
                 }
 
-                newState = currentStateDef.Type switch
+                // A gate that waits must be visible as waiting before it waits: ApproveAsync only accepts an execution
+                // whose current state says WaitingForApproval, and a caller streaming the run learns it has to answer
+                // from this state. The gate is created first so an answer that arrives right after the yield is not lost.
+                if (currentStateDef.Type == WorkflowStateType.HumanGate &&
+                    (currentStateDef.HumanGate?.ApprovalMode ?? HumanGateApprovalMode.AlwaysRequire) == HumanGateApprovalMode.AlwaysRequire)
                 {
-                    WorkflowStateType.Start => await ExecuteStartStateAsync(state, currentStateDef, cancellationToken),
-                    WorkflowStateType.Agent => await ExecuteAgentStateAsync(state, currentStateDef, execution, stateToken),
-                    WorkflowStateType.Parallel => await ExecuteParallelStateAsync(state, currentStateDef, execution, stateToken),
-                    WorkflowStateType.HumanGate => await ExecuteHumanGateAsync(state, currentStateDef, execution, cancellationToken),
-                    WorkflowStateType.Escalation => await ExecuteEscalationAsync(state, currentStateDef, cancellationToken),
-                    WorkflowStateType.Terminal => state with { Status = WorkflowExecutionStatus.Completed },
-                    _ => throw new OrchestratorException($"Unknown state type: {currentStateDef.Type}", execution.ExecutionId, currentStateDef.Id)
-                };
-            }
-            catch (OperationCanceledException) when (stateTimeout is { IsCancellationRequested: true } && !cancellationToken.IsCancellationRequested)
-            {
-                newState = state with
-                {
-                    Status = WorkflowExecutionStatus.Failed,
-                    ErrorMessage = $"State '{currentStateDef.Id}' timed out after {timeout!.Value}.",
-                    LastUpdatedAt = DateTimeOffset.UtcNow
-                };
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                newState = state with
-                {
-                    Status = WorkflowExecutionStatus.Failed,
-                    ErrorMessage = ex.Message,
-                    LastUpdatedAt = DateTimeOffset.UtcNow
-                };
-            }
-
-            if (newState != null)
-            {
-                state = newState;
-                execution.CurrentState = state;
-                yield return state;
-
-                // Save checkpoint after each state transition (when a store is registered and the workflow allows it)
-                if (_checkpointStore != null && workflow.Settings.EnableCheckpointing && state.Status == WorkflowExecutionStatus.Running)
-                {
-                    await SaveCheckpointAsync(execution, state, workflow, cancellationToken);
-                }
-            }
-
-            // Determine next state
-            if (state.Status == WorkflowExecutionStatus.Running)
-            {
-                var nextStateId = DetermineNextState(currentStateDef, state);
-                if (nextStateId != null)
-                {
+                    execution.ApprovalGate = new TaskCompletionSource<ApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously);
                     state = state with
                     {
-                        CurrentStateId = nextStateId,
+                        Status = WorkflowExecutionStatus.WaitingForApproval,
+                        LastUpdatedAt = DateTimeOffset.UtcNow
+                    };
+                    execution.CurrentState = state;
+                    yield return state;
+                }
+
+                // Execute state based on type
+                WorkflowRuntimeState? newState = null;
+                var limited = currentStateDef.Type is WorkflowStateType.Agent or WorkflowStateType.Parallel;
+                var iterationLimit = currentStateDef.MaxIterations ?? workflow.Settings.DefaultMaxIterations;
+                var timeout = currentStateDef.Timeout ?? workflow.Settings.DefaultTimeout;
+                using var stateTimeout = limited && timeout.HasValue
+                    ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                    : null;
+                stateTimeout?.CancelAfter(timeout!.Value);
+                var stateToken = stateTimeout?.Token ?? cancellationToken;
+                try
+                {
+                    if (limited && iterationLimit is { } maxRuns)
+                    {
+                        var runs = execution.StateRuns.GetValueOrDefault(currentStateDef.Id);
+                        if (runs >= maxRuns)
+                        {
+                            throw new OrchestratorException(
+                                $"State '{currentStateDef.Id}' reached its iteration limit ({maxRuns}).",
+                                execution.ExecutionId,
+                                currentStateDef.Id);
+                        }
+
+                        execution.StateRuns[currentStateDef.Id] = runs + 1;
+                    }
+
+                    newState = currentStateDef.Type switch
+                    {
+                        WorkflowStateType.Start => await ExecuteStartStateAsync(state, currentStateDef, cancellationToken),
+                        WorkflowStateType.Agent => await ExecuteAgentStateAsync(state, currentStateDef, execution, stateToken),
+                        WorkflowStateType.Parallel => await ExecuteParallelStateAsync(state, currentStateDef, execution, stateToken),
+                        WorkflowStateType.HumanGate => await ExecuteHumanGateAsync(state, currentStateDef, execution, cancellationToken),
+                        WorkflowStateType.Escalation => await ExecuteEscalationAsync(state, currentStateDef, cancellationToken),
+                        WorkflowStateType.Terminal => state with { Status = WorkflowExecutionStatus.Completed },
+                        _ => throw new OrchestratorException($"Unknown state type: {currentStateDef.Type}", execution.ExecutionId, currentStateDef.Id)
+                    };
+                }
+                catch (OperationCanceledException) when (stateTimeout is { IsCancellationRequested: true } && !cancellationToken.IsCancellationRequested)
+                {
+                    newState = state with
+                    {
+                        Status = WorkflowExecutionStatus.Failed,
+                        ErrorMessage = $"State '{currentStateDef.Id}' timed out after {timeout!.Value}.",
                         LastUpdatedAt = DateTimeOffset.UtcNow
                     };
                 }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    newState = state with
+                    {
+                        Status = WorkflowExecutionStatus.Failed,
+                        ErrorMessage = ex.Message,
+                        LastUpdatedAt = DateTimeOffset.UtcNow
+                    };
+                }
+
+                if (newState != null)
+                {
+                    state = newState;
+                    execution.CurrentState = state;
+                    yield return state;
+
+                    // Save checkpoint after each state transition (when a store is registered and the workflow allows it)
+                    if (_checkpointStore != null && workflow.Settings.EnableCheckpointing && state.Status == WorkflowExecutionStatus.Running)
+                    {
+                        await SaveCheckpointAsync(execution, state, workflow, cancellationToken);
+                    }
+                }
+
+                // Determine next state
+                if (state.Status == WorkflowExecutionStatus.Running)
+                {
+                    var nextStateId = DetermineNextState(currentStateDef, state);
+                    if (nextStateId != null)
+                    {
+                        state = state with
+                        {
+                            CurrentStateId = nextStateId,
+                            LastUpdatedAt = DateTimeOffset.UtcNow
+                        };
+                    }
+                }
+            }
+
+            // Mark as completed if reached terminal
+            if (IsTerminalState(workflow, state.CurrentStateId) && state.Status == WorkflowExecutionStatus.Running)
+            {
+                state = state with
+                {
+                    Status = WorkflowExecutionStatus.Completed,
+                    CompletedAt = DateTimeOffset.UtcNow,
+                    LastUpdatedAt = DateTimeOffset.UtcNow
+                };
+                yield return state;
             }
         }
-
-        // Mark as completed if reached terminal
-        if (IsTerminalState(workflow, state.CurrentStateId) && state.Status == WorkflowExecutionStatus.Running)
+        finally
         {
-            state = state with
-            {
-                Status = WorkflowExecutionStatus.Completed,
-                CompletedAt = DateTimeOffset.UtcNow,
-                LastUpdatedAt = DateTimeOffset.UtcNow
-            };
-            yield return state;
+            // Cancelled, failed or finished, the execution is no longer running.
+            _executions.TryRemove(execution.ExecutionId, out _);
         }
-
-        // Cleanup
-        _executions.TryRemove(execution.ExecutionId, out _);
     }
 
     #endregion

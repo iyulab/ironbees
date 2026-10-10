@@ -384,6 +384,31 @@ public class YamlDrivenOrchestratorTests
         Assert.True(agentStates.Count >= 2);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_CancelledBetweenStates_Throws_AndForgetsTheExecution()
+    {
+        // The state loop tested the token in its condition: a cancel between two states (the agent did not observe it)
+        // ended the stream as if the workflow had stopped on its own - the last state still Running.
+        var orchestrator = CreateOrchestrator();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        string? executionId = null;
+
+        var act = async () =>
+        {
+            await foreach (var state in orchestrator.ExecuteAsync(CreateEndlessLoop(), "input", cancellationToken: cts.Token))
+            {
+                executionId ??= state.ExecutionId;
+                if (state.CurrentStateId == "AGENT")
+                    cts.Cancel();
+            }
+        };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(act);
+        Assert.NotNull(executionId);
+        await Assert.ThrowsAsync<StateNotFoundException>(
+            () => orchestrator.GetStateAsync(executionId!, TestContext.Current.CancellationToken));
+    }
+
     private static WorkflowDefinition CreateEndlessLoop(int? stateCap = null, TimeSpan? stateTimeout = null, WorkflowSettings? settings = null, string? exitCondition = null) => new()
     {
         Name = "LoopWorkflow",

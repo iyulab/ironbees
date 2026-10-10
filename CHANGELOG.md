@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking: `AutonomousOrchestratorBuilder.Configure` takes a function and its result is used.** It took
   `Action<AutonomousConfig>` over an immutable record, so nothing a caller wrote reached the orchestrator. It is now
   `Configure(Func<AutonomousConfig, AutonomousConfig>)`. Migration: `b.Configure(c => c with { MaxIterations = 20 })`.
+- **Breaking: a cancelled workflow run throws.** `YamlDrivenOrchestrator.ExecuteAsync` and `ResumeFromCheckpointAsync`
+  ended the state stream quietly when the caller cancelled between two states, the last state still `Running`; they now
+  throw `OperationCanceledException`. The execution is forgotten (`GetStateAsync` no longer finds it) however the run ends
+  (before, a failed run stayed registered). Migration: catch `OperationCanceledException` where you cancel.
 
 ### Fixed
 - **`Status` and `CurrentConfig` describe the built configuration before the first run.** They reported the defaults
