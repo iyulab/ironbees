@@ -5,6 +5,7 @@ using Ironbees.Core.Orchestration;
 using Ironbees.Core.Streaming;
 using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
+using IronHive.Abstractions.Exceptions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
 using IronHive.Abstractions.Tools;
@@ -242,8 +243,18 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogStreamingIronHiveAgent(_logger, agent.Name, input.Length);
         }
 
-        await foreach (var chunk in ironhiveAgent.InvokeStreamingAsync(messages, MapInvokeOptions(options), cancellationToken))
+        await foreach (var (chunk, failure) in UntilProviderFailure(
+            ironhiveAgent.InvokeStreamingAsync(messages, MapInvokeOptions(options), cancellationToken), cancellationToken))
         {
+            if (failure is not null)
+            {
+                // The provider failed the response after it started (IronHive's ProviderResponseException): what streamed
+                // before it is incomplete. Same shape a consumer of this stream has always received for it.
+                LogIronHiveStreamingError(_logger, failure.ErrorCode, failure.Message);
+                yield return new ErrorChunk(failure.Message, IsFatal: true, ErrorCode: failure.ErrorCode);
+                yield break;
+            }
+
             if (chunk is StreamingContentDeltaResponse delta)
             {
                 if (delta.Delta is TextDeltaContent textDelta)
@@ -297,15 +308,45 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
                     yield return new SuggestionsChunk(suggestions);
                 }
             }
-            else if (chunk is StreamingMessageErrorResponse error)
-            {
-                LogIronHiveStreamingError(_logger, error.Code, error.Message);
-                yield return new ErrorChunk(error.Message ?? "", IsFatal: true, ErrorCode: error.Code);
-                yield break;
-            }
         }
 
         yield return new CompletionChunk();
+    }
+
+    /// <summary>
+    /// The IronHive stream, with a <see cref="ProviderResponseException"/> — the provider failing a response it had
+    /// started — turned into a final item instead of an exception, so the caller can end its own stream with an
+    /// <see cref="ErrorChunk"/> (an iterator cannot yield from a catch block). Every other exception propagates.
+    /// </summary>
+    private static async IAsyncEnumerable<(StreamingMessageResponse? Chunk, ProviderResponseException? Failure)> UntilProviderFailure(
+        IAsyncEnumerable<StreamingMessageResponse> source,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        await using var enumerator = source.GetAsyncEnumerator(cancellationToken);
+        while (true)
+        {
+            ProviderResponseException? failure = null;
+            var hasNext = false;
+            try
+            {
+                hasNext = await enumerator.MoveNextAsync().ConfigureAwait(false);
+            }
+            catch (ProviderResponseException ex)
+            {
+                failure = ex;
+            }
+
+            if (failure is not null)
+            {
+                yield return (null, failure);
+                yield break;
+            }
+
+            if (!hasNext)
+                yield break;
+
+            yield return (enumerator.Current, null);
+        }
     }
 
     /// <summary>

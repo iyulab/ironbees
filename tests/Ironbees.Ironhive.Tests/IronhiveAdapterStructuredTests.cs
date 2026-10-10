@@ -2,6 +2,7 @@ using Ironbees.Core;
 using Ironbees.Core.Streaming;
 using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
+using IronHive.Abstractions.Exceptions;
 using IronHive.Abstractions.Messages;
 using IronHive.Abstractions.Messages.Content;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -344,9 +345,11 @@ public class IronhiveAdapterStructuredTests
 
         static async IAsyncEnumerable<StreamingMessageResponse> Stream()
         {
-            yield return new StreamingMessageErrorResponse { Code = "500", Message = "boom" };
-            yield return new StreamingContentDeltaResponse { Index = 0, Delta = new TextDeltaContent { Value = "never" } };
             await Task.CompletedTask;
+            throw new ProviderResponseException("boom") { ErrorCode = "500" };
+#pragma warning disable CS0162 // Unreachable: the stream must not continue past the failure.
+            yield return new StreamingContentDeltaResponse { Index = 0, Delta = new TextDeltaContent { Value = "never" } };
+#pragma warning restore CS0162
         }
 
         // Act
@@ -376,8 +379,8 @@ public class IronhiveAdapterStructuredTests
         static async IAsyncEnumerable<StreamingMessageResponse> Stream()
         {
             yield return new StreamingContentDeltaResponse { Index = 0, Delta = new TextDeltaContent { Value = "partial" } };
-            yield return new StreamingMessageErrorResponse { Code = "429", Message = "rate limited" };
             await Task.CompletedTask;
+            throw new ProviderResponseException("rate limited") { ErrorCode = "429" };
         }
 
         // Act

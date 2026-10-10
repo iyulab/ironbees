@@ -1,6 +1,7 @@
 using Ironbees.Core;
 using Ironbees.Ironhive.Orchestration;
 using IronHive.Abstractions;
+using IronHive.Abstractions.Exceptions;
 using IronHive.Abstractions.Messages;
 using AgentInvokeOptions = IronHive.Abstractions.Agent.AgentInvokeOptions;
 using IronHive.Abstractions.Messages.Content;
@@ -579,28 +580,20 @@ public class IronhiveAdapterTests
     {
         // Arrange
         var mockIronhiveAgent = Substitute.For<IronHiveAgent>();
-        var streamingResponses = new List<StreamingMessageResponse>
+        static async IAsyncEnumerable<StreamingMessageResponse> FailingStream()
         {
-            new StreamingContentDeltaResponse
+            yield return new StreamingContentDeltaResponse
             {
                 Index = 0,
                 Delta = new TextDeltaContent { Value = "partial" }
-            },
-            new StreamingMessageErrorResponse
-            {
-                Code = "500",
-                Message = "Internal server error"
-            },
-            new StreamingContentDeltaResponse
-            {
-                Index = 0,
-                Delta = new TextDeltaContent { Value = "should not appear" }
-            }
-        };
+            };
+            await Task.CompletedTask;
+            throw new ProviderResponseException("Internal server error") { ErrorCode = "500" };
+        }
 
         mockIronhiveAgent
             .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
-            .Returns(streamingResponses.ToAsyncEnumerable());
+            .Returns(FailingStream());
 
         var config = CreateTestConfig();
         var wrapper = new IronhiveAgentWrapper(mockIronhiveAgent, config);

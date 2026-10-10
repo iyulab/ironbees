@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Breaking: every provider's failure after the stream started now ends `IronhiveAdapter` streams with a fatal
+  `ErrorChunk`.** IronHive 0.60.0 reports such a failure as `ProviderResponseException` for all four providers (before,
+  only an OpenAI `response.failed` reached this adapter, as a frame; a Chat Completions error line arrived as an
+  `HttpRequestException`, and Anthropic/Gemini/most OpenAI stream errors ended the stream as if it had completed). The
+  chunk carries the vendor's code as `ErrorCode`; the text projection prints it as `[Error <code>]: <message>`.
+  Migration: a caller that caught `HttpRequestException` around a GPUStack stream reads the `ErrorChunk` instead.
 - **Breaking: a caller's cancellation now reaches the caller as `OperationCanceledException`.** Seven calls wrapped it
   in their own failure type or counted it as a failed item. Old → new, per call, when the caller cancels:
   - `FileSystemAgentLoader.LoadConfigAsync`: `AgentLoadException` → `OperationCanceledException`.
@@ -37,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.58.0 -> 0.59.0, `IronHive.Core` 0.58.0 -> 0.59.0, `IronHive.Extensions.AI` 0.58.0 -> 0.59.0, `IronHive.Providers.OpenAI` 0.58.0 -> 0.59.0, `IronHive.Providers.OpenAI.Compatible` 0.58.0 -> 0.59.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.7.10 -> 0.8.0.
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.59.0 -> 0.59.1, `IronHive.Core` 0.59.0 -> 0.59.1, `IronHive.Extensions.AI` 0.59.0 -> 0.59.1, `IronHive.Providers.OpenAI` 0.59.0 -> 0.59.1, `IronHive.Providers.OpenAI.Compatible` 0.59.0 -> 0.59.1.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.59.1 -> 0.60.0, `IronHive.Core` 0.59.1 -> 0.60.0, `IronHive.Extensions.AI` 0.59.1 -> 0.60.0, `IronHive.Providers.OpenAI` 0.59.1 -> 0.60.0, `IronHive.Providers.OpenAI.Compatible` 0.59.1 -> 0.60.0.
 
 ## [0.25.0] - 2026-10-08
 
