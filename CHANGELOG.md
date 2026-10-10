@@ -5,7 +5,7 @@ All notable changes to the Ironbees project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.27.0] - 2026-10-10
 
 ### Changed
 - **Breaking: `AutonomousOrchestratorBuilder.Configure` takes a function and its result is used.** It took
@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-pinned sibling package(s) `TokenMeter` 0.8.0 -> 0.9.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.9.0 -> 0.10.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.10.0 -> 0.11.0.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.60.0 -> 0.61.0, `IronHive.Core` 0.60.0 -> 0.61.0, `IronHive.Extensions.AI` 0.60.0 -> 0.61.0, `IronHive.Providers.OpenAI` 0.60.0 -> 0.61.0, `IronHive.Providers.OpenAI.Compatible` 0.60.0 -> 0.61.0.
 
 ## [0.26.0] - 2026-10-10
 
