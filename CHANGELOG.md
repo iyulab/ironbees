@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.8.0 -> 0.9.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.9.0 -> 0.10.0.
+- Re-pinned sibling package(s) `TokenMeter` 0.10.0 -> 0.11.0.
 
 ## [0.26.0] - 2026-10-10
 
