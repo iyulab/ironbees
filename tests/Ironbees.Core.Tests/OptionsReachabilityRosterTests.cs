@@ -30,10 +30,14 @@ public class OptionsReachabilityRosterTests
         ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
         ["Ironbees.Autonomous.Executors.AgentLlmSettings"] = ["MaxOutputTokens", "Temperature", "TopP"],
         ["Ironbees.Autonomous.Executors.ValidationSettings"] = ["ChoicePatterns", "InvalidPatterns", "Messages"],
+        // The settings objects ValidationSettings holds (found once the scan followed nested settings, kit 0.6.0): the same
+        // contract - loaded and handed to the consumer's input validation.
+        ["Ironbees.Autonomous.Executors.InvalidPatterns"] = ["All", "English", "Korean"],
+        ["Ironbees.Autonomous.Executors.ValidationMessages"] = ["Choice", "Empty", "Examples", "OpenEnded"],
     };
 
     [Fact]
     public void EveryPublicOption_IsRead() =>
-        OptionsReachability.Scan(Libraries, OptionsTypes.NamedWith("Options", "Config", "Settings"))
+        OptionsReachability.Scan(Libraries, OptionsTypes.WithNestedSettings(Libraries, OptionsTypes.NamedWith("Options", "Config", "Settings")))
             .ShouldMatchRoster(KnownUnread);
 }
