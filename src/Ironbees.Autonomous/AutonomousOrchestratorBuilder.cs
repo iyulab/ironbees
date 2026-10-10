@@ -273,12 +273,14 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     }
 
     /// <summary>
-    /// Apply custom configuration
+    /// Apply custom configuration: <paramref name="configure"/> receives the configuration built so far and returns the one
+    /// to use (<see cref="AutonomousConfig"/> is immutable — <c>c =&gt; c with { MaxIterations = 20 }</c>).
     /// </summary>
     public AutonomousOrchestratorBuilder<TRequest, TResult> Configure(
-        Action<AutonomousConfig> configure)
+        Func<AutonomousConfig, AutonomousConfig> configure)
     {
-        configure(_config);
+        ArgumentNullException.ThrowIfNull(configure);
+        _config = configure(_config) ?? throw new InvalidOperationException("The configure function returned null.");
         return this;
     }
 

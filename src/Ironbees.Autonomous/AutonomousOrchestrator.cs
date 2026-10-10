@@ -144,6 +144,8 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
     internal void SetDefaultConfig(AutonomousConfig config)
     {
         _defaultConfig = config;
+        // Until a run starts, Status and CurrentConfig describe the configuration it will use.
+        _config = config;
     }
 
     /// <summary>

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Breaking: `AutonomousOrchestratorBuilder.Configure` takes a function and its result is used.** It took
+  `Action<AutonomousConfig>` over an immutable record, so nothing a caller wrote reached the orchestrator. It is now
+  `Configure(Func<AutonomousConfig, AutonomousConfig>)`. Migration: `b.Configure(c => c with { MaxIterations = 20 })`.
+
+### Fixed
+- **`Status` and `CurrentConfig` describe the built configuration before the first run.** They reported the defaults
+  (`MaxIterations` 10 …) until `StartAsync` applied the builder's configuration.
+
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.8.0 -> 0.9.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.9.0 -> 0.10.0.
