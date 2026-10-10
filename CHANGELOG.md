@@ -5,6 +5,13 @@ All notable changes to the Ironbees project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **The packages from this repository depend on each other at exactly the same version** (`[x.y.z]`), not a floor.
+  A consumer that moves one of them while another resolves at an older version now gets restore warning NU1608 naming
+  the pair (an error where warnings are errors) — before, the mixed versions restored silently and could fail at run time.
+
 ## [0.27.0] - 2026-10-10
 
 ### Changed
