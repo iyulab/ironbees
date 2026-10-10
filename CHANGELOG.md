@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **`Status` and `CurrentConfig` describe the built configuration before the first run.** They reported the defaults
   (`MaxIterations` 10 …) until `StartAsync` applied the builder's configuration.
+- **`Stop()` while a task runs ends the session as stopped by the user.** When the stop landed while an executor that
+  does not observe the token was working, the session reported the iteration completed (`IterationCompleted`, and could
+  auto-continue or force a final result) and `StartAsync` returned with `State` still `Running`. It now ends with
+  `StoppedByUser` and the `Stopped` event, as a stop at any other moment does.
 
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.8.0 -> 0.9.0.

@@ -401,10 +401,14 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
 
     private async Task ExecuteLoopAsync(CancellationToken cancellationToken)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        // Cancellation (Stop) ends the session by throwing: StartAsync turns it into StoppedByUser. A loop condition that
+        // tested the token would end the session quietly, still Running.
+        while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             // Wait while paused
-            while (_state == AutonomousState.Paused && !cancellationToken.IsCancellationRequested)
+            while (_state == AutonomousState.Paused)
             {
                 await Task.Delay(100, cancellationToken);
             }
@@ -607,8 +611,9 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
 
         RaiseEvent(AutonomousEventType.TaskStarted, $"Task started: {request.RequestId}", request.RequestId);
 
-        while (_currentOracleIteration < _config.MaxOracleIterations && !cancellationToken.IsCancellationRequested)
+        while (_currentOracleIteration < _config.MaxOracleIterations)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             _currentOracleIteration++;
 
             // Update context for oracle iteration
