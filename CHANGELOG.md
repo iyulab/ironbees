@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The packages from this repository depend on each other at exactly the same version** (`[x.y.z]`), not a floor.
   A consumer that moves one of them while another resolves at an older version now gets restore warning NU1608 naming
   the pair (an error where warnings are errors) — before, the mixed versions restored silently and could fail at run time.
+- **A non-text block in a streamed tool result is named `[image content omitted]`.** This applies to `ToolCallCompleteChunk`
+  `Result`/`Error`. It was `[ImageMessageContent omitted — non-text tool output is not carried on this stream]`. The
+  adapter now flattens with IronHive's `ToolOutput.ToText()`, so it uses the same wording as IronHive. Text results are
+  unchanged.
 
 ### Dependencies
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.61.0 -> 0.62.0, `IronHive.Core` 0.61.0 -> 0.62.0, `IronHive.Extensions.AI` 0.61.0 -> 0.62.0, `IronHive.Providers.OpenAI` 0.61.0 -> 0.62.0, `IronHive.Providers.OpenAI.Compatible` 0.61.0 -> 0.62.0.

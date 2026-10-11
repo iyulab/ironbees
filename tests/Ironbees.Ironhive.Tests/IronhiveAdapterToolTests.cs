@@ -198,4 +198,46 @@ public class IronhiveAdapterToolTests
         Assert.Null(complete.Result);
         Assert.Equal("directory not found", complete.Error);
     }
+
+    [Fact]
+    public async Task StreamStructuredAsync_ToolResultWithAnImage_CarriesTheTextAndNamesTheImage()
+    {
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        mockAgent
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(Stream());
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+        var adapter = CreateAdapter(Substitute.For<IHiveService>());
+
+        static async IAsyncEnumerable<StreamingMessageResponse> Stream()
+        {
+            yield return new StreamingContentCompletedResponse
+            {
+                Index = 0,
+                Content = new ToolMessageContent
+                {
+                    Id = "call-3",
+                    Name = "render-chart",
+                    IsApproved = true,
+                    Output = ToolOutput.Success(
+                    [
+                        new TextMessageContent { Value = "chart ready" },
+                        new ImageMessageContent { Format = ImageFormat.Png, Base64 = "AAAA" },
+                    ]),
+                },
+            };
+            yield return new StreamingMessageDoneResponse();
+            await Task.CompletedTask;
+        }
+
+        var chunks = new List<StreamChunk>();
+        await foreach (var chunk in adapter.StreamStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken))
+        {
+            chunks.Add(chunk);
+        }
+
+        var complete = Assert.IsType<ToolCallCompleteChunk>(chunks[0]);
+        Assert.True(complete.Success);
+        Assert.Equal("chart ready\n[image content omitted]", complete.Result);
+    }
 }
