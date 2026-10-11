@@ -46,7 +46,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
     <!-- Release Notes -->
-    <PackageReleaseNotes>See CHANGELOG.md for release notes</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/iyulab/ironbees/releases/tag/v$(Version)</PackageReleaseNotes>
 
     <!-- Common Tags -->
     <PackageTagsBase>ai;agents;multi-agent;orchestration</PackageTagsBase>
