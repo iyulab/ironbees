@@ -147,25 +147,23 @@ jobs:
           echo "⚠️ No packages to publish"
         fi
 
+    # Release notes = this version's CHANGELOG.md section. Every iyulab publish workflow carries this awk program
+    # verbatim; change it in all of them or in none.
+    - name: Release notes (this version's CHANGELOG section)
+      if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && github.event_name == 'push' }}
+      shell: bash
+      run: |
+        VERSION=$(grep -oP '<(Version|VersionPrefix)>\K[^<]+' Directory.Build.props | head -1)
+        awk -v v="$VERSION" '/^## /{if(p)exit;h=$0;sub(/^## +\[?v?/,"",h);c=substr(h,length(v)+1,1);if(index(h,v)==1&&(c==""||c=="]"||c==" "||c=="\t")){p=1;next}}p&&(n||$0!~/^[ \t]*$/){l[++n]=$0}END{while(n&&(l[n]~/^[ \t]*$/||l[n]~/^---+$/))n--;for(i=1;i<=n;i++)print l[i]}' CHANGELOG.md > release-notes.md
+        if [ ! -s release-notes.md ]; then echo "::error::CHANGELOG.md has no section for $VERSION"; exit 1; fi
+
     - name: Create GitHub Release
       if: ${{ (steps.check_version.outputs.should_publish == 'true' || inputs.force_publish) && github.event_name == 'push' }}
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v${{ steps.extract_version.outputs.version }}
+        body_path: release-notes.md
         name: Release v${{ steps.extract_version.outputs.version }}
-        body: |
-          ## Ironbees v${{ steps.extract_version.outputs.version }}
-
-          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
-
-          ### 📦 Published Packages
-
-          **Core Packages:**
-          - [Ironbees.Core ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Core/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentFramework ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentFramework/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.AgentMode ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.AgentMode/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.Autonomous ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Autonomous/${{ steps.extract_version.outputs.version }})
-          - [Ironbees.Ironhive ${{ steps.extract_version.outputs.version }}](https://www.nuget.org/packages/Ironbees.Ironhive/${{ steps.extract_version.outputs.version }})
         draft: false
         prerelease: ${{ contains(steps.extract_version.outputs.version, 'preview') || contains(steps.extract_version.outputs.version, 'beta') || contains(steps.extract_version.outputs.version, 'alpha') }}
         files: ./packages/*.nupkg
