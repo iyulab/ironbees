@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A consumer that moves one of them while another resolves at an older version now gets restore warning NU1608 naming
   the pair (an error where warnings are errors) — before, the mixed versions restored silently and could fail at run time.
 
+### Dependencies
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.61.0 -> 0.62.0, `IronHive.Core` 0.61.0 -> 0.62.0, `IronHive.Extensions.AI` 0.61.0 -> 0.62.0, `IronHive.Providers.OpenAI` 0.61.0 -> 0.62.0, `IronHive.Providers.OpenAI.Compatible` 0.61.0 -> 0.62.0.
+
 ## [0.27.0] - 2026-10-10
 
 ### Changed
