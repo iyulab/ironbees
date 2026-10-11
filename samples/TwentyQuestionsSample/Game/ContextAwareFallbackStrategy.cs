@@ -1,7 +1,7 @@
 using Ironbees.Autonomous.Abstractions;
 using Ironbees.Autonomous.Executors;
 
-namespace Ironbees.Autonomous.Strategies;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Fallback strategy that selects questions based on conversation context.

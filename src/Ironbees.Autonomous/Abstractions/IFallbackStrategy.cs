@@ -68,29 +68,3 @@ public record FallbackContext<TRequest>
     public IReadOnlyDictionary<string, object> Metadata { get; init; } =
         new Dictionary<string, object>();
 }
-
-/// <summary>
-/// Fallback strategy that does nothing (returns null).
-/// Used as default when no fallback is configured.
-/// </summary>
-/// <typeparam name="TRequest">Request type</typeparam>
-/// <typeparam name="TResult">Result type</typeparam>
-public sealed class NoOpFallbackStrategy<TRequest, TResult> : IFallbackStrategy<TRequest, TResult>
-    where TRequest : ITaskRequest
-    where TResult : ITaskResult
-{
-    /// <summary>
-    /// Singleton instance
-    /// </summary>
-    public static readonly NoOpFallbackStrategy<TRequest, TResult> Instance = new();
-
-    private NoOpFallbackStrategy() { }
-
-    /// <inheritdoc />
-    public bool CanProvideFallback(FallbackContext<TRequest> context) => false;
-
-    /// <inheritdoc />
-    public Task<TResult?> GetFallbackAsync(
-        FallbackContext<TRequest> context,
-        CancellationToken cancellationToken = default) => Task.FromResult<TResult?>(default);
-}

@@ -271,6 +271,40 @@ public class IronhiveAdapterStructuredTests
     }
 
     [Fact]
+    public async Task StreamStructuredAsync_Should_Report_Model_ResponseId_And_FinishReason_At_The_End()
+    {
+        var mockAgent = Substitute.For<IronHiveAgent>();
+        mockAgent
+            .InvokeStreamingAsync(Arg.Any<IEnumerable<Message>>(), Arg.Any<AgentInvokeOptions?>(), Arg.Any<CancellationToken>())
+            .Returns(Stream());
+        var wrapper = new IronhiveAgentWrapper(mockAgent, CreateTestConfig());
+
+        static async IAsyncEnumerable<StreamingMessageResponse> Stream()
+        {
+            yield return new StreamingContentDeltaResponse { Index = 0, Delta = new TextDeltaContent { Value = "cut" } };
+            yield return new StreamingMessageDoneResponse
+            {
+                Model = "model-a",
+                ResponseId = "resp-1",
+                DoneReason = MessageDoneReason.MaxTokens,
+            };
+            await Task.CompletedTask;
+        }
+
+        var chunks = new List<StreamChunk>();
+        await foreach (var chunk in _adapter.StreamStructuredAsync(wrapper, "Hi", cancellationToken: TestContext.Current.CancellationToken))
+        {
+            chunks.Add(chunk);
+        }
+
+        var metadata = chunks.OfType<MetadataChunk>().ToDictionary(c => c.Key, c => c.Value);
+        Assert.Equal("model-a", metadata[MetadataChunk.ModelKey]);
+        Assert.Equal("resp-1", metadata[MetadataChunk.ResponseIdKey]);
+        var completion = Assert.IsType<CompletionChunk>(chunks[^1]);
+        Assert.Equal(nameof(MessageDoneReason.MaxTokens), completion.FinishReason);
+    }
+
+    [Fact]
     public async Task StreamStructuredAsync_Should_Map_ThinkingDeltas_To_ThinkingChunks()
     {
         // Arrange — reasoning models interleave thinking deltas with text deltas

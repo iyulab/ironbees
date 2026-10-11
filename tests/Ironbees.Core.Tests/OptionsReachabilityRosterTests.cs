@@ -22,18 +22,12 @@ public class OptionsReachabilityRosterTests
 
         // *Settings types are in the scan too. Classified; each group states why it is unread.
         //
-        // Contract members: settings the library loads (SettingsLoader, AgentDefinitionLoader, GameConfigLoader,
+        // Contract members: settings the library loads (SettingsLoader,
         // FileSystemGoalLoader) and hands to the consumer, which applies them - the library makes no LLM calls of its own
         // and the goal schema is executed by the agent framework. Read by samples and documented as such.
         ["Ironbees.Autonomous.Configuration.DebugSettings"] = ["Enabled"],
         ["Ironbees.Autonomous.Configuration.LlmSettings"] = ["FrequencyPenalty", "MaxOutputTokens", "PresencePenalty", "Temperature", "TimeoutSeconds", "TopP"],
         ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
-        ["Ironbees.Autonomous.Executors.AgentLlmSettings"] = ["MaxOutputTokens", "Temperature", "TopP"],
-        ["Ironbees.Autonomous.Executors.ValidationSettings"] = ["ChoicePatterns", "InvalidPatterns", "Messages"],
-        // The settings objects ValidationSettings holds (found once the scan followed nested settings, kit 0.6.0): the same
-        // contract - loaded and handed to the consumer's input validation.
-        ["Ironbees.Autonomous.Executors.InvalidPatterns"] = ["All", "English", "Korean"],
-        ["Ironbees.Autonomous.Executors.ValidationMessages"] = ["Choice", "Empty", "Examples", "OpenEnded"],
     };
 
     [Fact]

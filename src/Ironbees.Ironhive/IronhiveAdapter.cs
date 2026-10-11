@@ -243,6 +243,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
             LogStreamingIronHiveAgent(_logger, agent.Name, input.Length);
         }
 
+        string? finishReason = null;
         await foreach (var (chunk, failure) in UntilProviderFailure(
             ironhiveAgent.InvokeStreamingAsync(messages, MapInvokeOptions(options), cancellationToken), cancellationToken))
         {
@@ -306,10 +307,23 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
                 {
                     yield return new SuggestionsChunk(suggestions);
                 }
+
+                // Which model answered and the provider's response id: the only place a stream consumer can read them.
+                if (!string.IsNullOrEmpty(done.Model))
+                {
+                    yield return new MetadataChunk(MetadataChunk.ModelKey, done.Model);
+                }
+
+                if (!string.IsNullOrEmpty(done.ResponseId))
+                {
+                    yield return new MetadataChunk(MetadataChunk.ResponseIdKey, done.ResponseId);
+                }
+
+                finishReason = done.DoneReason?.ToString() ?? finishReason;
             }
         }
 
-        yield return new CompletionChunk();
+        yield return new CompletionChunk(FinishReason: finishReason);
     }
 
     /// <summary>

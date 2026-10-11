@@ -128,36 +128,6 @@ public class StreamChunkTests
     }
 
     [Fact]
-    public void ProgressChunk_CreatesWithPercentage()
-    {
-        // Act
-        var chunk = new ProgressChunk(Percentage: 50);
-
-        // Assert
-        Assert.Equal(50, chunk.Percentage);
-        Assert.Null(chunk.Message);
-        Assert.Null(chunk.CurrentStep);
-        Assert.Null(chunk.TotalSteps);
-    }
-
-    [Fact]
-    public void ProgressChunk_CreatesWithAllProperties()
-    {
-        // Act
-        var chunk = new ProgressChunk(
-            Percentage: 75,
-            Message: "Processing...",
-            CurrentStep: "Step 3",
-            TotalSteps: 4);
-
-        // Assert
-        Assert.Equal(75, chunk.Percentage);
-        Assert.Equal("Processing...", chunk.Message);
-        Assert.Equal("Step 3", chunk.CurrentStep);
-        Assert.Equal(4, chunk.TotalSteps);
-    }
-
-    [Fact]
     public void ThinkingChunk_CreatesWithContent()
     {
         // Act
@@ -250,7 +220,6 @@ public class StreamChunkTests
             new ToolCallCompleteChunk("tool"),
             new UsageChunk(10, 20),
             new ErrorChunk("error"),
-            new ProgressChunk(50),
             new ThinkingChunk("thought"),
             new MetadataChunk("key", "value"),
             new CompletionChunk()

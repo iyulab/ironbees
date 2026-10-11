@@ -1,8 +1,8 @@
-using Ironbees.Core.Yaml;
+using Ironbees.Autonomous.Executors;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Ironbees.Autonomous.Executors;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Loads autonomous-SDK agent definitions (<see cref="AgentDefinition"/>: role, output format, LLM settings, fallback,
@@ -18,7 +18,6 @@ public sealed class AgentDefinitionLoader
     {
         _deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
-            .IgnoreUnmatchedProperties()
             .Build();
     }
 
@@ -40,13 +39,6 @@ public sealed class AgentDefinitionLoader
         // Load agent.yaml
         var yamlContent = await File.ReadAllTextAsync(agentYamlPath, cancellationToken);
         var yamlModel = _deserializer.Deserialize<YamlAgentDefinition>(yamlContent);
-        var unknown = YamlUnknownKeys.Find(yamlContent, typeof(YamlAgentDefinition), UnderscoredNamingConvention.Instance);
-        if (unknown.Count > 0)
-        {
-            // A key no field reads would otherwise become the default without a word (keys are snake_case).
-            throw new InvalidDataException(
-                $"{agentYamlPath} has keys that are not read (keys are snake_case): {string.Join("; ", unknown)}");
-        }
 
         // Load system-prompt.md if exists
         var systemPrompt = File.Exists(systemPromptPath)

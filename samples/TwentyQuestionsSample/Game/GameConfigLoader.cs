@@ -1,8 +1,7 @@
-using Ironbees.Core.Yaml;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Ironbees.Autonomous.Executors;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Loads game/application configuration from YAML files.
@@ -15,7 +14,6 @@ public sealed class GameConfigLoader
     {
         _deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
-            .IgnoreUnmatchedProperties()
             .Build();
     }
 
@@ -41,13 +39,6 @@ public sealed class GameConfigLoader
     public GameDefinition LoadFromString(string yamlContent)
     {
         var yamlModel = _deserializer.Deserialize<YamlGameDefinition>(yamlContent);
-        var unknown = YamlUnknownKeys.Find(yamlContent, typeof(YamlGameDefinition), UnderscoredNamingConvention.Instance);
-        if (unknown.Count > 0)
-        {
-            // A key no field reads would otherwise become the default without a word (game keys are snake_case).
-            throw new InvalidDataException(
-                $"Game configuration has keys that are not read (keys are snake_case): {string.Join("; ", unknown)}");
-        }
 
         return MapToDefinition(yamlModel);
     }

@@ -1,4 +1,6 @@
-namespace Ironbees.Autonomous.Executors;
+using Ironbees.Autonomous.Executors;
+
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Agent definition loaded from YAML configuration.

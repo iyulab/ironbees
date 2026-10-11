@@ -88,19 +88,6 @@ public sealed record ErrorChunk(
     string? ErrorCode = null) : StreamChunk;
 
 /// <summary>
-/// Progress update chunk for long-running operations.
-/// </summary>
-/// <param name="Percentage">Progress percentage (0-100).</param>
-/// <param name="Message">Optional progress message.</param>
-/// <param name="CurrentStep">Current step name.</param>
-/// <param name="TotalSteps">Total number of steps.</param>
-public sealed record ProgressChunk(
-    int Percentage,
-    string? Message = null,
-    string? CurrentStep = null,
-    int? TotalSteps = null) : StreamChunk;
-
-/// <summary>
 /// Thinking/reasoning chunk (for models that support extended thinking).
 /// </summary>
 /// <param name="Content">The thinking/reasoning content.</param>
@@ -108,11 +95,19 @@ public sealed record ProgressChunk(
 public sealed record ThinkingChunk(string Content, bool IsComplete = false) : StreamChunk;
 
 /// <summary>
-/// Metadata chunk for additional information.
+/// Metadata chunk for additional information. Adapters that know the answering model or the provider's response id send
+/// them at the end of a stream under <see cref="ModelKey"/> and <see cref="ResponseIdKey"/>.
 /// </summary>
 /// <param name="Key">Metadata key.</param>
 /// <param name="Value">Metadata value.</param>
-public sealed record MetadataChunk(string Key, object Value) : StreamChunk;
+public sealed record MetadataChunk(string Key, object Value) : StreamChunk
+{
+    /// <summary>Key of the chunk carrying the model that produced the response (a <see cref="string"/>).</summary>
+    public const string ModelKey = "model";
+
+    /// <summary>Key of the chunk carrying the provider's response id (a <see cref="string"/>).</summary>
+    public const string ResponseIdKey = "response_id";
+}
 
 /// <summary>
 /// Model-generated follow-up suggestions delivered at the end of a stream.

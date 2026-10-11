@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Ironbees.Autonomous.Utilities;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Utility for parsing LLM responses, extracting JSON from mixed content.

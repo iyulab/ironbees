@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Breaking: the 20-Questions sample's game schema leaves `Ironbees.Autonomous`** — `GameDefinition` and its parts
+  (`GameModeDefinition`, `AgentAssignments`, `GameRules`, `GameMessages`, `ValidationSettings`, `InvalidPatterns`,
+  `ValidationMessages`, `PlayerPrompts`), `GameConfigLoader`, `AgentDefinition` (with `OutputFormat`, `AgentLlmSettings`,
+  `FallbackConfig`, `FallbackPool`, `GuessRule`), `AgentDefinitionLoader`, `ContextAwareFallbackStrategy`,
+  `ConversationHistoryBuilder`, `LlmResponseParser` and `PromptTemplateBuilder` now live in `samples/TwentyQuestionsSample`.
+  They described one game, not the SDK. Migration: copy them from the sample if you used them.
+- **Breaking: contracts nothing implemented or threw are gone** — `IMcpServer`, `IToolRegistry`, `ToolDefinition`,
+  `JsonSchema`, `ToolResult`, `ToolExecutionException`, `ToolNotFoundException` (Ironbees.AgentMode), `MafDrivenOrchestrator`
+  (most of its members threw `NotSupportedException`; use `MafWorkflowConverter` + `MafWorkflowExecutor`),
+  `ListBasedFallbackStrategy`/`StringListFallbackStrategy` and `NoOpFallbackStrategy` (pass `null` for no fallback), and
+  `ProgressChunk` (never emitted). Migration: delete the use.
+
+### Added
+- **The IronHive adapter's structured stream says which model answered and why it stopped.** At the end of the stream it
+  sends `MetadataChunk(MetadataChunk.ModelKey, …)` and `MetadataChunk(MetadataChunk.ResponseIdKey, …)` when the provider
+  reported them, and `CompletionChunk.FinishReason` carries the done reason (`EndTurn`, `MaxTokens`, …).
+
 ### Changed
 - **The packages from this repository depend on each other at exactly the same version** (`[x.y.z]`), not a floor.
   A consumer that moves one of them while a family member it depends on resolves at an older version now gets restore warning NU1608 naming

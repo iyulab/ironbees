@@ -1,4 +1,4 @@
-namespace Ironbees.Autonomous.Executors;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Game/application configuration loaded from YAML.

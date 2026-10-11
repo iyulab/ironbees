@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Ironbees.Autonomous.Executors;
 
-namespace Ironbees.Autonomous.Utilities;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Builds prompts by substituting {{variables}} with actual values.

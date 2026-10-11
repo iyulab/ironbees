@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Ironbees.Autonomous.Utilities;
+namespace TwentyQuestionsSample;
 
 /// <summary>
 /// Builds formatted conversation history for LLM context.
