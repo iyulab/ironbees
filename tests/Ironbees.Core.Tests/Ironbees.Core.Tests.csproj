@@ -15,7 +15,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Testing.Extensions.HangDump" />
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Iyu.Conventions.Testing.Snippets" />
     <!-- The README tells readers to install these; its blocks are compiled against them -->
     <PackageReference Include="IronHive.Providers.OpenAI" />
     <PackageReference Include="IronHive.Providers.OpenAI.Compatible" />
