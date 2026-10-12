@@ -16,9 +16,11 @@ public class OptionsReachabilityRosterTests
     private static readonly Dictionary<string, string[]> KnownUnread = new()
     {
         // Input contracts: the library hands these to code it does not own, which reads them.
-        // OracleConfig goes to the IOracleVerifier implementation; AgentConfig.Metadata is the consumer's own bag.
+        // OracleConfig goes to the IOracleVerifier implementation; AgentConfig.Metadata is the consumer's own bag, and
+        // AgentConfig.Version is the definition's declared version - AgentConfigValidator checks it is semver (a check,
+        // not a use, since kit 0.7.0 names the validators below) and the consumer reads it; the library acts on neither.
         ["Ironbees.Autonomous.Models.OracleConfig"] = ["MaxTokens", "ReflectionSystemPrompt", "SystemPrompt", "Temperature", "Timeout"],
-        ["Ironbees.Core.AgentConfig"] = ["Metadata"],
+        ["Ironbees.Core.AgentConfig"] = ["Metadata", "Version"],
 
         // *Settings types are in the scan too. Classified; each group states why it is unread.
         //
@@ -32,6 +34,6 @@ public class OptionsReachabilityRosterTests
 
     [Fact]
     public void EveryPublicOption_IsRead() =>
-        OptionsReachability.Scan(Libraries, OptionsTypes.WithNestedSettings(Libraries, OptionsTypes.NamedWith("Options", "Config", "Settings")))
+        OptionsReachability.Scan(Libraries, OptionsTypes.WithNestedSettings(Libraries, OptionsTypes.NamedWith("Options", "Config", "Settings")), OptionsValidation.DeclaredIn(typeof(Ironbees.Core.AgentConfigValidator), typeof(Ironbees.Core.Goals.GoalValidator)))
             .ShouldMatchRoster(KnownUnread);
 }
