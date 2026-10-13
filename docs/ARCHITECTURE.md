@@ -264,11 +264,12 @@ services.AddGuardrails()
 ### GuardrailResult
 
 ```csharp
+GuardrailResult result = await guardrail.ValidateInputAsync(userInput);
 if (!result.IsAllowed)
 {
     foreach (var violation in result.Violations)
     {
-        Console.WriteLine($"[{violation.Severity}] {violation.GuardrailName}: {violation.Message}");
+        Console.WriteLine($"[{violation.Severity}] {result.GuardrailName}: {violation.ViolationType} - {violation.Description}");
     }
 }
 ```
@@ -330,15 +331,15 @@ Ironbees provides three layers for different workflow complexity levels:
 // Code-based configuration
 var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
     .WithExecutor(executor)
+    .WithRequestFactory((id, prompt) => new Request(id, prompt))
     .WithOracle(oracle)
     .WithMaxIterations(10)
     .Build();
 
 // YAML-based configuration
-var settings = await OrchestratorSettings.LoadFromFileAsync("settings.yaml");
-var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
-    .WithSettings(settings)
+var fromYaml = (await AutonomousOrchestrator.FromSettingsFileAsync<Request, Result>("settings.yaml"))
     .WithExecutor(executor)
+    .WithRequestFactory((id, prompt) => new Request(id, prompt))
     .Build();
 ```
 
@@ -430,13 +431,13 @@ states:
 
 **Integration**:
 ```csharp
-// Ironbees converts YAML → MAF workflow
-var converter = new MafWorkflowConverter();
-var mafWorkflow = converter.Convert(yamlWorkflow);
-
-// Execute via MAF
-var executor = new MafWorkflowExecutor();
-await executor.ExecuteAsync(mafWorkflow);
+// Ironbees loads the YAML workflow, converts it to a MAF workflow and runs it
+var definition = await new YamlWorkflowLoader().LoadFromFileAsync("workflow.yaml");
+var executor = new MafWorkflowExecutor(new MafWorkflowConverter());
+await foreach (var evt in executor.ExecuteAsync(definition, "input", agentResolver))
+{
+    Console.WriteLine($"{evt.Type}: {evt.Content}");
+}
 ```
 
 **Examples**:

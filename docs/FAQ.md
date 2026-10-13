@@ -6,7 +6,7 @@
 
 **Yes!** Ironbees supports YAML configuration in two ways:
 
-**1. Autonomous SDK** - Use `OrchestratorSettings` for simple iterative workflows:
+**1. Autonomous SDK** - Load the orchestrator's settings from YAML for simple iterative workflows:
 
 ```yaml
 # settings.yaml
@@ -19,10 +19,9 @@ orchestration:
 ```
 
 ```csharp
-var settings = await OrchestratorSettings.LoadFromFileAsync("settings.yaml");
-var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
-    .WithSettings(settings)
+var orchestrator = (await AutonomousOrchestrator.FromSettingsFileAsync<Request, Result>("settings.yaml"))
     .WithExecutor(executor)
+    .WithRequestFactory((id, prompt) => new Request(id, prompt))
     .Build();
 ```
 
@@ -45,21 +44,36 @@ See [ARCHITECTURE.md - Workflow Decision Guide](./ARCHITECTURE.md#workflow-decis
 
 ### Q: How do I persist execution state?
 
-Use checkpoint stores (available in AgentMode):
+Give the AgentMode orchestrator a checkpoint store (`Ironbees.Core.Orchestration.ICheckpointStore`); Ironbees.Ironhive
+ships a file-system one:
 
 ```csharp
-var checkpointStore = new FileSystemCheckpointStore("./checkpoints");
 var orchestrator = new YamlDrivenOrchestrator(
-    workflow,
-    checkpointStore: checkpointStore);
+    new YamlWorkflowLoader(),
+    new TriggerEvaluatorFactory(),
+    agentExecutorFactory,
+    checkpointStore: new FileSystemIronhiveCheckpointStore(
+        "./checkpoints", NullLogger<FileSystemIronhiveCheckpointStore>.Instance));
 ```
 
 **Custom Storage**:
 ```csharp
-public class MyStateStore : ICheckpointStore
+public class MyStateStore : Ironbees.Core.Orchestration.ICheckpointStore
 {
-    public async Task SaveAsync(Checkpoint checkpoint) { /* Your logic */ }
-    public async Task<Checkpoint?> LoadAsync(string workflowId) { /* Your logic */ }
+    public Task SaveCheckpointAsync(string orchestrationId, OrchestrationCheckpoint checkpoint, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException(); // your storage
+
+    public Task<OrchestrationCheckpoint?> LoadCheckpointAsync(string orchestrationId, string? checkpointId = null, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException(); // the given checkpoint, or the latest when checkpointId is null
+
+    public Task<IReadOnlyList<OrchestrationCheckpoint>> ListCheckpointsAsync(string orchestrationId, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
+
+    public Task DeleteCheckpointAsync(string orchestrationId, string checkpointId, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
+
+    public Task DeleteAllCheckpointsAsync(string orchestrationId, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException();
 }
 ```
 
@@ -70,22 +84,24 @@ public class MyStateStore : ICheckpointStore
 **Yes,** but this belongs in the **application layer**.
 
 ```csharp
-public class ExecutionCoordinator
+public class ExecutionCoordinator(ITaskExecutor<Request, Result> executor)
 {
     private readonly ConcurrentDictionary<string, AutonomousOrchestrator<Request, Result>>
         _activeExecutions = new();
 
-    public async Task<string> StartExecutionAsync(Request initialRequest)
+    public string StartExecution(string prompt)
     {
         var executionId = Guid.NewGuid().ToString();
         var orchestrator = AutonomousOrchestrator.Create<Request, Result>()
-            .WithExecutor(_executor)
+            .WithExecutor(executor)
+            .WithRequestFactory((id, p) => new Request(id, p))
             .Build();
 
         _activeExecutions[executionId] = orchestrator;
+        orchestrator.EnqueuePrompt(prompt);
         _ = Task.Run(async () =>
         {
-            await orchestrator.StartAsync(initialRequest);
+            await orchestrator.StartAsync();
             _activeExecutions.TryRemove(executionId, out _);
         });
 
@@ -137,17 +153,22 @@ Need workflow?
 ```csharp
 public class MyOracleVerifier : IOracleVerifier
 {
-    public async Task<OracleVerdict> VerifyAsync(
+    public bool IsConfigured => true;
+
+    public Task<OracleVerdict> VerifyAsync(
         string originalPrompt,
         string executionOutput,
         OracleConfig? config = null,
         CancellationToken cancellationToken = default)
     {
-        var isComplete = /* check if goal achieved */;
-        return isComplete
+        var isComplete = executionOutput.Contains("DONE"); // check whether the goal is achieved
+        return Task.FromResult(isComplete
             ? OracleVerdict.GoalAchieved("Task completed")
-            : OracleVerdict.ContinueToNextIteration("Keep working");
+            : OracleVerdict.ContinueToNextIteration("Keep working"));
     }
+
+    public string BuildVerificationPrompt(string originalPrompt, string executionOutput, OracleConfig? config = null)
+        => $"Goal: {originalPrompt}\nOutput: {executionOutput}\nIs the goal achieved?";
 }
 ```
 
@@ -167,8 +188,10 @@ orchestration:
 
 ```csharp
 // Loads settings.yaml, then overrides with LLM_* environment variables
-var orchestrator = await AutonomousOrchestrator
-    .FromEnvironmentAsync<Request, Result>("settings.yaml");
+var orchestrator = (await AutonomousOrchestrator.FromEnvironmentAsync<Request, Result>("settings.yaml"))
+    .WithExecutor(executor)
+    .WithRequestFactory((id, prompt) => new Request(id, prompt))
+    .Build();
 ```
 
 **Environment Variable Mapping**:
@@ -182,20 +205,20 @@ LLM_CONFIDENCE_MIN_THRESHOLD=0.9
 
 ### Q: Can I use Anthropic Claude?
 
-Yes, via **OpenAI-compatible proxy** (GPUStack, LiteLLM):
+Yes — on the IronHive backend, with `IronHive.Providers.Anthropic`:
 
 ```csharp
-var customClient = new OpenAIClient(
-    new ApiKeyCredential(apiKey),
-    new OpenAIClientOptions { Endpoint = new Uri("https://proxy.example.com/v1") });
-
-var chatClient = new ChatClientBuilder(
-    customClient.GetChatClient(model).AsIChatClient())
-    .UseFunctionInvocation()
-    .Build();
+services.AddIronbeesIronhive(options =>
+{
+    options.AgentsDirectory = "./agents";
+    options.ConfigureHive = hive => hive.AddAnthropicProviders("anthropic", new AnthropicConfig
+    {
+        ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
+    });
+});
 ```
 
-See [PROVIDERS.md](./PROVIDERS.md) for more provider configurations.
+An agent then names `provider: anthropic` in its `agent.yaml`. See [PROVIDERS.md](./PROVIDERS.md) for the other providers.
 
 ---
 

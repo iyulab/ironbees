@@ -25,7 +25,9 @@
     <PackageVersion Include="IronHive.Abstractions" Version="0.65.1" />
     <PackageVersion Include="IronHive.Core" Version="0.65.1" />
     <PackageVersion Include="IronHive.Extensions.AI" Version="0.65.1" />
-    <!-- Test-only: the README's provider examples compile against these -->
+    <!-- Test-only: the README's and docs' provider examples compile against these -->
+    <PackageVersion Include="IronHive.Providers.Anthropic" Version="0.65.1" />
+    <PackageVersion Include="IronHive.Providers.GoogleAI" Version="0.65.1" />
     <PackageVersion Include="IronHive.Providers.OpenAI" Version="0.65.1" />
     <PackageVersion Include="IronHive.Providers.OpenAI.Compatible" Version="0.65.1" />
   </ItemGroup>

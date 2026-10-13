@@ -69,10 +69,9 @@ debug:
 Load and use:
 
 ```csharp
-var orchestrator = await AutonomousOrchestrator
-    .FromSettingsFileAsync<MyRequest, MyResult>("settings.yaml")
-    .WithExecutor(myExecutor)
-    .WithRequestFactory(myFactory)
+var orchestrator = (await AutonomousOrchestrator.FromSettingsFileAsync<MyRequest, MyResult>("settings.yaml"))
+    .WithExecutor(new MyTaskExecutor())
+    .WithRequestFactory((id, prompt) => new MyRequest { RequestId = id, Prompt = prompt })
     .Build();
 
 // Configuration is automatically applied to StartAsync()
@@ -94,19 +93,19 @@ The SDK uses two distinct loops:
 
 ```csharp
 // Continue to next main iteration (triggers AutoContinue)
-return OracleVerdict.ContinueToNextIteration("Making progress", confidence: 0.5);
+var next = OracleVerdict.ContinueToNextIteration("Making progress", confidence: 0.5);
 
 // Retry within Oracle loop with refined prompt
-return OracleVerdict.RetryWithRefinedPrompt(
+var retry = OracleVerdict.RetryWithRefinedPrompt(
     refinedPrompt: "Try a different approach",
     analysis: "Previous attempt was too vague",
     confidence: 0.3);
 
 // Goal achieved - stop all execution
-return OracleVerdict.GoalAchieved("Goal completed successfully", confidence: 0.95);
+var done = OracleVerdict.GoalAchieved("Goal completed successfully", confidence: 0.95);
 
 // Stop without achieving goal
-return OracleVerdict.Stop("Cannot continue - resource exhausted");
+var stop = OracleVerdict.Stop("Cannot continue - resource exhausted");
 ```
 
 ### Final Iteration Strategy
@@ -117,23 +116,27 @@ entry and an `AutonomousEventType.ForcedCompletion` event carrying it (`e.Histor
 
 ```csharp
 // Option 1: Use built-in strategy
-var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
+var withStrategy = AutonomousOrchestrator.Create<MyRequest, MyResult>()
     .WithFinalIterationStrategy(new PromptEnforcementFinalIterationStrategy<MyRequest, MyResult>(
-        requestModifier: ctx => {
-            // Modify the request for final iteration
-            return ctx.OriginalRequest with { MustComplete = true };
-        },
-        completionEnforcer: ctx => {
-            // Force a result if goal not achieved
-            return CreateFallbackResult(ctx);
+        // Modify the request for final iteration
+        requestModifier: ctx => ctx.OriginalRequest with { MustComplete = true },
+        // Force a result if goal not achieved
+        completionEnforcer: ctx => new MyResult
+        {
+            RequestId = ctx.OriginalRequest.RequestId,
+            Output = ctx.PreviousOutputs.LastOrDefault() ?? "No answer",
         }))
     .Build();
 
 // Option 2: Use lambda helper — the last iteration runs the original prompt with the warning in front of it
 // (default: AutonomousOrchestratorBuilder<,>.DefaultFinalIterationWarning), built with your request factory
-var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
+var withEnforcement = AutonomousOrchestrator.Create<MyRequest, MyResult>()
     .WithFinalIterationEnforcement(
-        completionEnforcer: ctx => CreateFallbackResult(ctx),
+        completionEnforcer: ctx => new MyResult
+        {
+            RequestId = ctx.OriginalRequest.RequestId,
+            Output = ctx.PreviousOutputs.LastOrDefault() ?? "No answer",
+        },
         warningMessage: "Final iteration - must complete now!")
     .Build();
 ```
@@ -143,38 +146,39 @@ var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
 ```csharp
 public class MyFinalIterationStrategy : IFinalIterationStrategy<MyRequest, MyResult>
 {
-    public async Task<MyRequest?> BeforeFinalIterationAsync(
-        FinalIterationContext<MyRequest, MyResult> context)
+    public Task<MyRequest?> BeforeFinalIterationAsync(
+        FinalIterationContext<MyRequest, MyResult> context, CancellationToken cancellationToken = default)
     {
         if (context.IsLastIteration)
         {
             // Modify request to force completion
-            return context.OriginalRequest with {
+            return Task.FromResult<MyRequest?>(context.OriginalRequest with {
                 Prompt = context.OriginalRequest.Prompt + "\n\n⚠️ FINAL ITERATION: You MUST provide a complete answer."
-            };
+            });
         }
 
         if (context.IsInFinalPhase) // Last 3 iterations
         {
             // Warn about approaching limit
-            return context.OriginalRequest with {
+            return Task.FromResult<MyRequest?>(context.OriginalRequest with {
                 Prompt = context.OriginalRequest.Prompt + $"\n\nNote: {context.RemainingIterations} iterations remaining."
-            };
+            });
         }
 
-        return null; // Use original request
+        return Task.FromResult<MyRequest?>(null); // Use original request
     }
 
-    public async Task<MyResult?> ForceCompletionAsync(
-        FinalIterationContext<MyRequest, MyResult> context)
+    public Task<MyResult?> ForceCompletionAsync(
+        FinalIterationContext<MyRequest, MyResult> context, CancellationToken cancellationToken = default)
     {
         // Called if last iteration didn't achieve goal
         // Return a forced completion result
-        return new MyResult {
+        return Task.FromResult<MyResult?>(new MyResult {
+            RequestId = context.OriginalRequest.RequestId,
             Output = "Forced completion based on best available data",
             IsComplete = true,
             Confidence = 0.5
-        };
+        });
     }
 }
 ```
@@ -211,22 +215,24 @@ public class MyTaskExecutor : ITaskExecutor<MyRequest, MyResult>
 {
     public async Task<MyResult> ExecuteAsync(
         MyRequest request,
-        Action<StreamOutput> onOutput,
-        CancellationToken cancellationToken)
+        Action<TaskOutput>? onOutput = null,
+        CancellationToken cancellationToken = default)
     {
-        // Execute the task
-        var result = await ProcessAsync(request, cancellationToken);
+        // Execute the task (your model call, tool run, ...)
+        var output = await Task.Run(() => request.Prompt.ToUpperInvariant(), cancellationToken);
 
         // Stream output
-        onOutput(new StreamOutput { Content = result.Output });
+        onOutput?.Invoke(new TaskOutput { RequestId = request.RequestId, Type = TaskOutputType.Output, Content = output });
 
         return new MyResult
         {
-            Output = result.Output,
-            Success = result.Success,
-            ErrorOutput = result.Error
+            RequestId = request.RequestId,
+            Output = output,
+            Success = true
         };
     }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 ```
 
@@ -237,31 +243,28 @@ public class MyOracle : IOracleVerifier
 {
     public bool IsConfigured => true;
 
-    public async Task<OracleVerdict> VerifyAsync(
-        string originalGoal,
+    public Task<OracleVerdict> VerifyAsync(
+        string originalPrompt,
         string executionOutput,
-        OracleConfig config,
-        CancellationToken cancellationToken)
+        OracleConfig? config = null,
+        CancellationToken cancellationToken = default)
     {
-        // Analyze the output
-        var analysis = await AnalyzeOutput(originalGoal, executionOutput);
-
-        if (analysis.IsComplete)
+        // Analyze the output (your model call or rule)
+        if (executionOutput.Contains("DONE", StringComparison.Ordinal))
         {
-            return OracleVerdict.GoalAchieved(
-                analysis.Summary,
-                confidence: analysis.Confidence);
+            return Task.FromResult(OracleVerdict.GoalAchieved("The goal is met", confidence: 0.9));
         }
 
-        if (analysis.CanContinue)
+        if (executionOutput.Length > 0)
         {
-            return OracleVerdict.ContinueToNextIteration(
-                analysis.Summary,
-                confidence: analysis.Confidence);
+            return Task.FromResult(OracleVerdict.ContinueToNextIteration("Partial progress", confidence: 0.5));
         }
 
-        return OracleVerdict.Stop(analysis.Reason);
+        return Task.FromResult(OracleVerdict.Stop("No output to judge"));
     }
+
+    public string BuildVerificationPrompt(string originalPrompt, string executionOutput, OracleConfig? config = null)
+        => $"Goal: {originalPrompt}\nOutput: {executionOutput}\nIs the goal achieved?";
 }
 ```
 
@@ -276,10 +279,12 @@ public record MyRequest : ITaskRequest
     // Custom properties
     public int IterationNumber { get; init; }
     public List<string> History { get; init; } = [];
+    public bool MustComplete { get; init; }
 }
 
 public record MyResult : ITaskResult
 {
+    public required string RequestId { get; init; }
     public required string Output { get; init; }
     public bool Success { get; init; }
     public string? ErrorOutput { get; init; }
@@ -296,14 +301,15 @@ public record MyResult : ITaskResult
 
 ```csharp
 // ✅ Good - Clear intent
-return OracleVerdict.GoalAchieved(analysis, confidence);
-return OracleVerdict.ContinueToNextIteration(analysis, confidence);
+var achieved = OracleVerdict.GoalAchieved("All tests pass", confidence: 0.9);
+var progress = OracleVerdict.ContinueToNextIteration("Two of five tests pass", confidence: 0.4);
 
 // ❌ Avoid - Confusing
-return new OracleVerdict {
+var unclear = new OracleVerdict {
     IsComplete = false,
     CanContinue = true,
-    NextPromptSuggestion = null  // Easy to forget
+    NextPromptSuggestion = null,  // Easy to forget
+    Analysis = "Two of five tests pass"
 };
 ```
 
@@ -311,21 +317,24 @@ return new OracleVerdict {
 
 ```csharp
 // ✅ Good - Configuration-driven
-var orchestrator = await AutonomousOrchestrator
-    .FromSettingsFileAsync<MyRequest, MyResult>("settings.yaml");
+var fromYaml = await AutonomousOrchestrator.FromSettingsFileAsync<MyRequest, MyResult>("settings.yaml");
 
 // ❌ Avoid - Hard-coded values scattered
-var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
+var hardCoded = AutonomousOrchestrator.Create<MyRequest, MyResult>()
     .WithMaxIterations(20)
-    .WithMaxOracleIterations(5)
-    // ... many more settings
+    .WithMaxOracleIterations(5); // ... many more settings
 ```
 
 ### 3. Implement Final Iteration Strategy for Bounded Tasks
 
 ```csharp
 // ✅ Good - Ensures completion
-.WithFinalIterationEnforcement(ctx => GenerateBestGuess(ctx.PreviousOutputs))
+var bounded = AutonomousOrchestrator.Create<MyRequest, MyResult>()
+    .WithFinalIterationEnforcement(ctx => new MyResult
+    {
+        RequestId = ctx.OriginalRequest.RequestId,
+        Output = ctx.PreviousOutputs.LastOrDefault() ?? "No answer",
+    });
 
 // ❌ Risk - May run out of iterations without result
 // No final iteration strategy
@@ -341,52 +350,13 @@ if (settings.Debug.Enabled)
 }
 ```
 
-## Migration Guide (v0.3.0 → v0.3.1)
-
-### Builder/StartAsync Config
-
-**Before (v0.3.0)**:
-```csharp
-var settings = await loader.LoadWithEnvironmentAsync("settings.yaml");
-var orchestrator = AutonomousOrchestrator.Create<TReq, TRes>()
-    .WithSettings(settings)
-    .Build();
-await orchestrator.StartAsync(settings.ToAutonomousConfig()); // Manual!
-```
-
-**After (v0.3.1)**:
-```csharp
-var settings = await loader.LoadWithEnvironmentAsync("settings.yaml");
-var orchestrator = AutonomousOrchestrator.Create<TReq, TRes>()
-    .WithSettings(settings)
-    .Build();
-await orchestrator.StartAsync(); // Automatic!
-```
-
-### Oracle Loop Control
-
-**Before (v0.3.0)**:
-```csharp
-return new OracleVerdict {
-    IsComplete = false,
-    CanContinue = true,
-    NextPromptSuggestion = null, // Confusing
-    Analysis = "Continue"
-};
-```
-
-**After (v0.3.1)**:
-```csharp
-return OracleVerdict.ContinueToNextIteration("Continue"); // Clear!
-```
-
 ## Troubleshooting
 
 ### Config Not Applied
 
 **Symptom**: Settings from YAML not reflected at runtime
 
-**Solution**: Ensure you're using v0.3.1 and calling `Build()` after `WithSettings()`:
+**Solution**: Call `Build()` after `WithSettings()` — `StartAsync()` with no argument uses the built configuration:
 ```csharp
 orchestrator.DumpConfiguration(Console.Out); // Verify settings
 ```
@@ -400,10 +370,10 @@ orchestrator.DumpConfiguration(Console.Out); // Verify settings
 **Solution**: Use `ContinueToNextIteration()` instead:
 ```csharp
 // ❌ Wrong - triggers Oracle retry
-return new OracleVerdict { NextPromptSuggestion = "continue" };
+var retries = new OracleVerdict { Analysis = "continue", NextPromptSuggestion = "continue" };
 
 // ✅ Correct - triggers Main loop
-return OracleVerdict.ContinueToNextIteration("continue");
+var moves = OracleVerdict.ContinueToNextIteration("continue");
 ```
 
 ### No Result on Max Iterations
@@ -412,7 +382,13 @@ return OracleVerdict.ContinueToNextIteration("continue");
 
 **Solution**: Implement Final Iteration Strategy:
 ```csharp
-.WithFinalIterationEnforcement(ctx => CreateFallbackResult(ctx))
+var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
+    .WithFinalIterationEnforcement(ctx => new MyResult
+    {
+        RequestId = ctx.OriginalRequest.RequestId,
+        Output = ctx.PreviousOutputs.LastOrDefault() ?? "No answer",
+    })
+    .Build();
 ```
 
 ## API Reference

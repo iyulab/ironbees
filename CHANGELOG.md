@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- **The guides under `docs/` now compile against the current API, and are checked on every build.** Several showed calls
+  that do not exist: `OrchestratorSettings.LoadFromFileAsync` (use `AutonomousOrchestrator.FromSettingsFileAsync` or
+  `new SettingsLoader().LoadFromFileAsync`), `MafWorkflowConverter.Convert` and a parameterless `MafWorkflowExecutor`,
+  a `YamlDrivenOrchestrator(workflow, checkpointStore:)` constructor, and `IOracleVerifier` / `ITaskExecutor` /
+  `IFinalIterationStrategy` implementations missing members or with old signatures. The Autonomous SDK guide's result type
+  now carries `RequestId`, its verdicts set `Analysis`, and the FAQ's Anthropic answer uses `IronHive.Providers.Anthropic`
+  instead of an OpenAI-compatible proxy. The v0.3.0 → v0.3.1 migration notes are removed.
+
 ### Dependencies
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.65.0 -> 0.65.1, `IronHive.Core` 0.65.0 -> 0.65.1, `IronHive.Extensions.AI` 0.65.0 -> 0.65.1, `IronHive.Providers.OpenAI` 0.65.0 -> 0.65.1, `IronHive.Providers.OpenAI.Compatible` 0.65.0 -> 0.65.1.
 - Re-pinned sibling package(s) `TokenMeter` 0.13.0 -> 0.13.1.

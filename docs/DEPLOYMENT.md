@@ -132,17 +132,16 @@ services.AddHttpClient("AzureOpenAI")
 
 ```csharp
 builder.Services.AddHealthChecks()
-    .AddCheck<AgentHealthCheck>("agents")
-    .AddCheck<LLMHealthCheck>("llm");
+    .AddCheck<AgentHealthCheck>("agents");
 
 app.MapHealthChecks("/health");
 
-public class AgentHealthCheck : IHealthCheck
+public class AgentHealthCheck(IAgentOrchestrator orchestrator) : IHealthCheck
 {
     public Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, CancellationToken ct = default)
     {
-        var agents = _registry.ListAgents();
+        var agents = orchestrator.ListAgents();
         return Task.FromResult(agents.Count > 0
             ? HealthCheckResult.Healthy($"{agents.Count} agents loaded")
             : HealthCheckResult.Unhealthy("No agents"));

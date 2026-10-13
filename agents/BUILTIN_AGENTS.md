@@ -153,8 +153,9 @@ curl http://localhost:5001/api/agents
 
 ```csharp
 // C# 예제
+// AgentsDirectory = "agents/builtin" 로 등록한 경우
 var orchestrator = serviceProvider.GetRequiredService<IAgentOrchestrator>();
-await orchestrator.LoadAgentsAsync("agents/builtin");
+await orchestrator.LoadAgentsAsync();
 
 var response = await orchestrator.ProcessAsync(
     "Summarize the key points of this meeting",

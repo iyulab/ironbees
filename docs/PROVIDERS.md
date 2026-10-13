@@ -124,18 +124,21 @@ public class CustomAdapter : ILLMFrameworkAdapter
         AgentConfig config, CancellationToken ct = default)
     {
         // Create your framework's agent and wrap it as an Ironbees IAgent
+        throw new NotImplementedException();
     }
 
     public Task<string> RunAsync(
         IAgent agent, string input, CancellationToken ct = default)
     {
         // Your implementation
+        throw new NotImplementedException();
     }
 
     public IAsyncEnumerable<string> StreamAsync(
         IAgent agent, string input, CancellationToken ct = default)
     {
         // Your streaming implementation
+        throw new NotImplementedException();
     }
 
     // Optional: conversation-history overloads (default to the base methods) and

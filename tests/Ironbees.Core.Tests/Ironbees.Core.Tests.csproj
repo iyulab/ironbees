@@ -17,6 +17,8 @@
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
     <PackageReference Include="Iyu.Conventions.Testing.Snippets" />
     <!-- The README tells readers to install these; its blocks are compiled against them -->
+    <PackageReference Include="IronHive.Providers.Anthropic" />
+    <PackageReference Include="IronHive.Providers.GoogleAI" />
     <PackageReference Include="IronHive.Providers.OpenAI" />
     <PackageReference Include="IronHive.Providers.OpenAI.Compatible" />
     <!-- The README's ASP.NET Core block; the shared framework also supplies Microsoft.Extensions.DependencyInjection -->

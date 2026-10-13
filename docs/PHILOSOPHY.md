@@ -59,23 +59,32 @@ Ironbees **IS**:
 // ✅ GOOD: Ironbees provides the interface
 public interface IOracleVerifier
 {
-    Task<OracleVerdict> VerifyAsync(string prompt, string output);
+    bool IsConfigured { get; }
+
+    Task<OracleVerdict> VerifyAsync(
+        string originalPrompt,
+        string executionOutput,
+        OracleConfig? config = null,
+        CancellationToken cancellationToken = default);
+
+    string BuildVerificationPrompt(string originalPrompt, string executionOutput, OracleConfig? config = null);
 }
 
 // ✅ GOOD: User implements the logic
 public class OpenAIOracleVerifier : IOracleVerifier
 {
-    public async Task<OracleVerdict> VerifyAsync(string prompt, string output)
-    {
-        // User's business logic here
-    }
+    public bool IsConfigured => true;
+
+    public Task<OracleVerdict> VerifyAsync(
+        string originalPrompt, string executionOutput, OracleConfig? config = null, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException(); // user's business logic here
+
+    public string BuildVerificationPrompt(string originalPrompt, string executionOutput, OracleConfig? config = null)
+        => $"Goal: {originalPrompt}\nOutput: {executionOutput}";
 }
 
-// ❌ BAD: Ironbees implementing provider-specific logic
-public class IronbeesBuiltInOpenAIOracleVerifier : IOracleVerifier
-{
-    // This couples Ironbees to OpenAI - violates thin wrapper
-}
+// ❌ BAD: Ironbees shipping a provider-specific verifier (an «IronbeesBuiltInOpenAIOracleVerifier»)
+// couples Ironbees to OpenAI - violates thin wrapper
 ```
 
 ### 2. Convention over Configuration
@@ -171,9 +180,11 @@ orchestration:
 
 ```csharp
 // ✅ Code: Implementation logic
-public async Task<OracleVerdict> VerifyAsync(string prompt, string output)
+public Task<OracleVerdict> VerifyAsync(
+    string originalPrompt, string executionOutput, OracleConfig? config = null, CancellationToken cancellationToken = default)
 {
     // Complex verification logic that can't be declared
+    throw new NotImplementedException();
 }
 ```
 
@@ -261,29 +272,29 @@ workflow:
 
 **Interface Abstractions**:
 ```csharp
-public interface IContextAwareOracleVerifier
+public interface IContextAwareOracleVerifier : IOracleVerifier
 {
-    Task<EnhancedOracleVerdict> VerifyAsync(OracleContext context, string output);
+    Task<EnhancedOracleVerdict> VerifyWithContextAsync(
+        OracleContext context,
+        string executionOutput,
+        OracleConfig? config = null,
+        CancellationToken cancellationToken = default);
 }
 ```
 
 **YAML Configuration Loading**:
 ```csharp
-var settings = await OrchestratorSettings.LoadFromFileAsync("settings.yaml");
+var settings = await new SettingsLoader().LoadFromFileAsync("settings.yaml");
 ```
 
 **Event Type System**:
 ```csharp
-public record TaskCompletedEvent : AutonomousEvent
-{
-    public bool Success { get; init; }
-    public TimeSpan Duration { get; init; }
-}
+orchestrator.OnEvent += e => Console.WriteLine($"{e.Timestamp:O} {e.Type}: {e.Message}");
 ```
 
 ### ❌ OUT-OF-SCOPE: Execution and Business Logic
 
-**DAG Task Scheduling**:
+#### DAG Task Scheduling
 ```csharp
 // This belongs in MAF, not Ironbees
 public class TaskScheduler
@@ -292,7 +303,7 @@ public class TaskScheduler
 }
 ```
 
-**Multi-Execution Coordination**:
+#### Multi-Execution Coordination
 ```csharp
 // This belongs in application layer
 public class ExecutionCoordinator
@@ -302,27 +313,32 @@ public class ExecutionCoordinator
 }
 ```
 
-**Oracle Verification Logic**:
+#### Oracle Verification Logic
 ```csharp
 // Interface in Ironbees, implementation in user code
 public class CustomOracleVerifier : IOracleVerifier
 {
-    public async Task<OracleVerdict> VerifyAsync(string prompt, string output)
-    {
-        // User's complex verification logic
-    }
+    public bool IsConfigured => true;
+
+    public Task<OracleVerdict> VerifyAsync(
+        string originalPrompt, string executionOutput, OracleConfig? config = null, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException(); // user's complex verification logic
+
+    public string BuildVerificationPrompt(string originalPrompt, string executionOutput, OracleConfig? config = null)
+        => originalPrompt;
 }
 ```
 
-**Sampling Algorithms**:
+#### Sampling Algorithms
 ```csharp
 // Configuration in YAML, logic in user code
 public class ProgressiveSamplingExecutor : ITaskExecutor<Request, Result>
 {
-    public async Task<Result> ExecuteAsync(Request request)
-    {
-        // User's sampling strategy implementation
-    }
+    public Task<Result> ExecuteAsync(
+        Request request, Action<TaskOutput>? onOutput = null, CancellationToken cancellationToken = default)
+        => throw new NotImplementedException(); // user's sampling strategy implementation
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 ```
 
