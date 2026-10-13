@@ -43,7 +43,7 @@ public interface IMafWorkflowExecutor
 
     /// <summary>
     /// Executes a workflow definition with checkpointing enabled.
-    /// Checkpoints are automatically saved via the configured ICheckpointStore.
+    /// Checkpoints are automatically saved via the configured IWorkflowCheckpointStore.
     /// </summary>
     /// <param name="definition">The workflow definition to execute.</param>
     /// <param name="input">The initial input for the workflow.</param>
@@ -57,7 +57,7 @@ public interface IMafWorkflowExecutor
         string input,
         string executionId,
         Func<string, CancellationToken, Task<AIAgent>> agentResolver,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -71,7 +71,7 @@ public interface IMafWorkflowExecutor
     IAsyncEnumerable<WorkflowExecutionEvent> ResumeFromCheckpointAsync(
         Microsoft.Agents.AI.Workflows.Workflow workflow,
         CheckpointData checkpoint,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         CancellationToken cancellationToken = default);
 }
 

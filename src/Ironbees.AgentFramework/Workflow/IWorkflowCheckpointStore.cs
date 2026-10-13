@@ -63,7 +63,7 @@ public sealed record CheckpointData
 /// Implementations should provide durable storage for checkpoint data to enable
 /// resume from checkpoint functionality.
 /// </summary>
-public interface ICheckpointStore
+public interface IWorkflowCheckpointStore
 {
     /// <summary>
     /// Saves a checkpoint.

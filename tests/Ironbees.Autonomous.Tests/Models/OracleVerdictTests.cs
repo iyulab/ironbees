@@ -110,12 +110,12 @@ public class OracleVerdictTests
         Assert.False(verdict.CanContinue);
     }
 
-    // --- TokenUsage ---
+    // --- OracleTokenUsage ---
 
     [Fact]
     public void TokenUsage_TotalTokens_ShouldSumInputAndOutput()
     {
-        var usage = new TokenUsage { InputTokens = 100, OutputTokens = 50 };
+        var usage = new OracleTokenUsage { InputTokens = 100, OutputTokens = 50 };
 
         Assert.Equal(150, usage.TotalTokens);
     }
@@ -123,7 +123,7 @@ public class OracleVerdictTests
     [Fact]
     public void TokenUsage_Defaults_ShouldBeZero()
     {
-        var usage = new TokenUsage();
+        var usage = new OracleTokenUsage();
 
         Assert.Equal(0, usage.InputTokens);
         Assert.Equal(0, usage.OutputTokens);

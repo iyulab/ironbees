@@ -22,7 +22,7 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
     private readonly IGoalLoader _goalLoader;
     private readonly IWorkflowTemplateResolver _templateResolver;
     private readonly IMafWorkflowExecutor _workflowExecutor;
-    private readonly ICheckpointStore _checkpointStore;
+    private readonly IWorkflowCheckpointStore _checkpointStore;
     private readonly Func<string, CancellationToken, Task<AIAgent>> _agentResolver;
     private readonly ILogger<GoalExecutionBridge>? _logger;
 
@@ -42,7 +42,7 @@ public sealed partial class GoalExecutionBridge : IGoalExecutionBridge
         IGoalLoader goalLoader,
         IWorkflowTemplateResolver templateResolver,
         IMafWorkflowExecutor workflowExecutor,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         Func<string, CancellationToken, Task<AIAgent>> agentResolver,
         ILogger<GoalExecutionBridge>? logger = null)
     {

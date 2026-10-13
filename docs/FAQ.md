@@ -44,7 +44,7 @@ See [ARCHITECTURE.md - Workflow Decision Guide](./ARCHITECTURE.md#workflow-decis
 
 ### Q: How do I persist execution state?
 
-Give the AgentMode orchestrator a checkpoint store (`Ironbees.Core.Orchestration.ICheckpointStore`); Ironbees.Ironhive
+Give the AgentMode orchestrator a checkpoint store (`ICheckpointStore`); Ironbees.Ironhive
 ships a file-system one:
 
 ```csharp
@@ -58,7 +58,7 @@ var orchestrator = new YamlDrivenOrchestrator(
 
 **Custom Storage**:
 ```csharp
-public class MyStateStore : Ironbees.Core.Orchestration.ICheckpointStore
+public class MyStateStore : ICheckpointStore
 {
     public Task SaveCheckpointAsync(string orchestrationId, OrchestrationCheckpoint checkpoint, CancellationToken cancellationToken = default)
         => throw new NotImplementedException(); // your storage

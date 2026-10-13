@@ -268,7 +268,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
         string input,
         string executionId,
         Func<string, CancellationToken, Task<AIAgent>> agentResolver,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -350,7 +350,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
         string input,
         string executionId,
         string workflowName,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         ChannelWriter<WorkflowExecutionEvent> writer,
         CancellationToken cancellationToken)
     {
@@ -451,7 +451,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
     public async IAsyncEnumerable<WorkflowExecutionEvent> ResumeFromCheckpointAsync(
         Microsoft.Agents.AI.Workflows.Workflow workflow,
         CheckpointData checkpoint,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(workflow);
@@ -501,7 +501,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
     private async Task ResumeFromCheckpointCoreAsync(
         Microsoft.Agents.AI.Workflows.Workflow workflow,
         CheckpointData checkpoint,
-        ICheckpointStore checkpointStore,
+        IWorkflowCheckpointStore checkpointStore,
         ChannelWriter<WorkflowExecutionEvent> writer,
         CancellationToken cancellationToken)
     {

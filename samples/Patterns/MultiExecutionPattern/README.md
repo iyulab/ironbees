@@ -50,7 +50,7 @@ public class ExecutionCoordinator<TRequest, TResult>
 
     public async Task<string> StartExecutionAsync(
         TRequest initialRequest,
-        OrchestratorSettings? settings = null,
+        AutonomousSettings? settings = null,
         CancellationToken cancellationToken = default)
     {
         // Check capacity
@@ -338,8 +338,8 @@ await coordinator.CleanupCompletedAsync(olderThan: TimeSpan.FromMinutes(30));
 ### With Different Settings Per Execution
 
 ```csharp
-var settingsA = await OrchestratorSettings.LoadFromFileAsync("high-priority.yaml");
-var settingsB = await OrchestratorSettings.LoadFromFileAsync("low-priority.yaml");
+var settingsA = await AutonomousSettings.LoadFromFileAsync("high-priority.yaml");
+var settingsB = await AutonomousSettings.LoadFromFileAsync("low-priority.yaml");
 
 var executionA = await coordinator.StartExecutionAsync(requestA, settingsA);
 var executionB = await coordinator.StartExecutionAsync(requestB, settingsB);

@@ -17,7 +17,7 @@ public class GoalExecutionBridgeTests
     private readonly IGoalLoader _mockGoalLoader;
     private readonly IWorkflowTemplateResolver _mockTemplateResolver;
     private readonly IMafWorkflowExecutor _mockWorkflowExecutor;
-    private readonly ICheckpointStore _mockCheckpointStore;
+    private readonly IWorkflowCheckpointStore _mockCheckpointStore;
     private readonly Func<string, CancellationToken, Task<AIAgent>> _mockAgentResolver;
 
     public GoalExecutionBridgeTests()
@@ -25,7 +25,7 @@ public class GoalExecutionBridgeTests
         _mockGoalLoader = Substitute.For<IGoalLoader>();
         _mockTemplateResolver = Substitute.For<IWorkflowTemplateResolver>();
         _mockWorkflowExecutor = Substitute.For<IMafWorkflowExecutor>();
-        _mockCheckpointStore = Substitute.For<ICheckpointStore>();
+        _mockCheckpointStore = Substitute.For<IWorkflowCheckpointStore>();
         _mockAgentResolver = (name, ct) => Task.FromResult<AIAgent>(null!);
     }
 
@@ -478,7 +478,7 @@ public class GoalExecutionBridgeTests
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
-            Arg.Any<ICheckpointStore>(),
+            Arg.Any<IWorkflowCheckpointStore>(),
             Arg.Any<CancellationToken>())
             .Returns(AsyncEnumerable.Empty<WorkflowExecutionEvent>());
 
@@ -493,7 +493,7 @@ public class GoalExecutionBridgeTests
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<Func<string, CancellationToken, Task<AIAgent>>>(),
-            Arg.Any<ICheckpointStore>(),
+            Arg.Any<IWorkflowCheckpointStore>(),
             Arg.Any<CancellationToken>());
     }
 

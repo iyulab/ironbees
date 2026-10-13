@@ -61,7 +61,7 @@ Console.WriteLine("\n👋 Thanks for playing!");
 // ============================================================================
 
 async Task RunGame(
-    OrchestratorSettings settings,
+    AutonomousSettings settings,
     IReadOnlyDictionary<string, AgentDefinition> agents,
     GameDefinition gameConfig,
     GameModeDefinition mode,
@@ -163,7 +163,7 @@ GameModeDefinition SelectGameMode(GameDefinition gameConfig)
         : modes[0].Value;
 }
 
-void HandleEvent(AutonomousEvent evt, OrchestratorSettings settings, GameState state, AutonomousOrchestrator<GameRequest, GameResult> orchestrator)
+void HandleEvent(AutonomousEvent evt, AutonomousSettings settings, GameState state, AutonomousOrchestrator<GameRequest, GameResult> orchestrator)
 {
     switch (evt.Type)
     {

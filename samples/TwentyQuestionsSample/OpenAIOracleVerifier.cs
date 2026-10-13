@@ -133,7 +133,7 @@ public partial class OpenAIOracleVerifier : IOracleVerifier
             {
                 verdict = verdict with
                 {
-                    TokenUsage = new TokenUsage
+                    TokenUsage = new OracleTokenUsage
                     {
                         InputTokens = response.Value.Usage.InputTokenCount,
                         OutputTokens = response.Value.Usage.OutputTokenCount

@@ -409,7 +409,7 @@ var orchestrator = AutonomousOrchestrator.Create<MyRequest, MyResult>()
 | `WithAutoContinue()` | Enable auto-continue |
 | `WithContextTracking()` | Enable context tracking |
 | `WithReflection()` | Enable reflection mode |
-| `WithSettings()` | Load from OrchestratorSettings |
+| `WithSettings()` | Load from AutonomousSettings |
 | `WithSettingsFileAsync()` | Load from YAML file |
 | `Build()` | Create orchestrator |
 | `BuildAndStartAsync()` | Create and start |

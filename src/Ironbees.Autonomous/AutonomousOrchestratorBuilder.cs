@@ -28,7 +28,7 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     public const string DefaultFinalIterationWarning = "This is your final iteration. You MUST provide a complete answer now.";
     private ILogger? _logger;
     private AutonomousConfig _config = new();
-    private OrchestratorSettings? _settings;
+    private AutonomousSettings? _settings;
 
     // Context management interfaces (enabled by default)
     private IAutonomousContextProvider? _contextProvider;
@@ -480,12 +480,12 @@ public class AutonomousOrchestratorBuilder<TRequest, TResult>
     /// <summary>
     /// Get the loaded settings (if loaded from YAML)
     /// </summary>
-    public OrchestratorSettings? GetSettings() => _settings;
+    public AutonomousSettings? GetSettings() => _settings;
 
     /// <summary>
-    /// Load configuration from OrchestratorSettings (typically loaded from YAML)
+    /// Load configuration from AutonomousSettings (typically loaded from YAML)
     /// </summary>
-    public AutonomousOrchestratorBuilder<TRequest, TResult> WithSettings(OrchestratorSettings settings)
+    public AutonomousOrchestratorBuilder<TRequest, TResult> WithSettings(AutonomousSettings settings)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _config = settings.ToAutonomousConfig();

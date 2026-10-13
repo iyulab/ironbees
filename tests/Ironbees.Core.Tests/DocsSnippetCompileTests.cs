@@ -113,7 +113,7 @@ public class DocsSnippetCompileTests
         ["executor"] = "ITaskExecutor<Request, Result> executor = null!;",
         ["oracle"] = "IOracleVerifier oracle = null!;",
         ["agentExecutorFactory"] = "Ironbees.AgentMode.Workflow.IAgentExecutorFactory agentExecutorFactory = null!;",
-        ["settings"] = "Ironbees.Autonomous.Configuration.OrchestratorSettings settings = new();",
+        ["settings"] = "AutonomousSettings settings = new();",
         ["orchestrator"] = "AutonomousOrchestrator<Request, Result> orchestrator = null!;",
         ["guardrail"] = "IContentGuardrail guardrail = null!;",
         ["agentResolver"] = "Func<string, CancellationToken, Task<Microsoft.Agents.AI.AIAgent>> agentResolver = null!;",
@@ -176,7 +176,7 @@ public class DocsSnippetCompileTests
     public void Compile_RejectsTheSettingsCallTheGuidesShowedBeforeTheyWereCompiled()
     {
         Assert.Empty(Compiler.Compile("""var settings = await new SettingsLoader().LoadFromFileAsync("settings.yaml");"""));
-        Assert.NotEmpty(Compiler.Compile("""var settings = await Ironbees.Autonomous.Configuration.OrchestratorSettings.LoadFromFileAsync("settings.yaml");"""));
+        Assert.NotEmpty(Compiler.Compile("""var settings = await AutonomousSettings.LoadFromFileAsync("settings.yaml");"""));
     }
 
     /// <summary>

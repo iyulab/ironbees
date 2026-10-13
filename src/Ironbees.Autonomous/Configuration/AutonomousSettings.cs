@@ -7,7 +7,7 @@ namespace Ironbees.Autonomous.Configuration;
 /// Complete orchestrator settings that can be loaded from YAML.
 /// Combines LLM settings with orchestration configuration.
 /// </summary>
-public record OrchestratorSettings
+public record AutonomousSettings
 {
     /// <summary>
     /// LLM connection and generation settings
@@ -109,7 +109,7 @@ public record OrchestrationSettings
     /// <summary>
     /// Retry and resilience settings
     /// </summary>
-    public RetrySettings Retry { get; init; } = new();
+    public AutonomousRetrySettings Retry { get; init; } = new();
 }
 
 /// <summary>
@@ -216,7 +216,7 @@ public record AutoContinueSettings
 /// <summary>
 /// Retry and resilience settings
 /// </summary>
-public record RetrySettings
+public record AutonomousRetrySettings
 {
     /// <summary>
     /// Number of retry attempts on failure

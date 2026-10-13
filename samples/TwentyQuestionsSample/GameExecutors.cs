@@ -20,12 +20,12 @@ public class AiQuestionExecutor : ITaskExecutor<GameRequest, GameResult>
     private readonly ChatClient _chatClient;
     private readonly AgentDefinition _agent;
     private readonly GameDefinition _gameConfig;
-    private readonly OrchestratorSettings _settings;
+    private readonly AutonomousSettings _settings;
     private readonly string _systemPrompt;
     private readonly ContextAwareFallbackStrategy<GameRequest, GameResult> _fallbackStrategy;
     private readonly HashSet<string> _askedQuestions = new(StringComparer.OrdinalIgnoreCase);
 
-    public AiQuestionExecutor(OrchestratorSettings settings, AgentDefinition agent, GameDefinition gameConfig)
+    public AiQuestionExecutor(AutonomousSettings settings, AgentDefinition agent, GameDefinition gameConfig)
     {
         _settings = settings;
         _agent = agent;
@@ -260,13 +260,13 @@ public class AiAnswerOracle : IOracleVerifier
 {
     private readonly ChatClient _chatClient;
     private readonly AgentDefinition _agent;
-    private readonly OrchestratorSettings _settings;
+    private readonly AutonomousSettings _settings;
     private readonly GameState _state;
     private readonly string _systemPrompt;
 
     public bool IsConfigured => !string.IsNullOrEmpty(_state.Secret);
 
-    public AiAnswerOracle(OrchestratorSettings settings, AgentDefinition agent, GameState state)
+    public AiAnswerOracle(AutonomousSettings settings, AgentDefinition agent, GameState state)
     {
         _settings = settings;
         _agent = agent;

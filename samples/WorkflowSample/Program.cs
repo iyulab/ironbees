@@ -381,7 +381,7 @@ states:
 
         var tempDir = Path.Combine(Path.GetTempPath(), "ironbees-workflow-test");
 
-        using var store = new FileSystemCheckpointStore(tempDir);
+        using var store = new FileSystemWorkflowCheckpointStore(tempDir);
 
         // Create checkpoint
         var checkpoint = new CheckpointData

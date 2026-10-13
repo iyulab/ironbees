@@ -11,9 +11,9 @@ namespace TwentyQuestionsSample;
 public static class LlmClientFactory
 {
     /// <summary>
-    /// Create a ChatClient from OrchestratorSettings
+    /// Create a ChatClient from AutonomousSettings
     /// </summary>
-    public static ChatClient CreateChatClient(OrchestratorSettings settings)
+    public static ChatClient CreateChatClient(AutonomousSettings settings)
     {
         var llm = settings.Llm;
 

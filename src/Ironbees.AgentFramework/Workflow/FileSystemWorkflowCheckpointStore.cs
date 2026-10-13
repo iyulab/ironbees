@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Ironbees.AgentFramework.Workflow;
 
 /// <summary>
-/// File system-based implementation of <see cref="ICheckpointStore"/> that persists
+/// File system-based implementation of <see cref="IWorkflowCheckpointStore"/> that persists
 /// workflow checkpoints as JSON files organized by execution ID.
 /// </summary>
 /// <remarks>
@@ -12,24 +12,24 @@ namespace Ironbees.AgentFramework.Workflow;
 /// This follows Ironbees' "File System = Single Source of Truth" philosophy,
 /// enabling checkpoint data to be inspected with standard file tools.
 /// </remarks>
-public sealed partial class FileSystemCheckpointStore : ICheckpointStore, IDisposable
+public sealed partial class FileSystemWorkflowCheckpointStore : IWorkflowCheckpointStore, IDisposable
 {
     private readonly string _rootPath;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
-    private readonly ILogger<FileSystemCheckpointStore>? _logger;
+    private readonly ILogger<FileSystemWorkflowCheckpointStore>? _logger;
     private bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="FileSystemCheckpointStore"/>.
+    /// Initializes a new instance of <see cref="FileSystemWorkflowCheckpointStore"/>.
     /// </summary>
     /// <param name="rootPath">The root directory for storing checkpoint files.</param>
     /// <param name="jsonOptions">Optional JSON serializer options.</param>
     /// <param name="logger">Optional logger for diagnostics.</param>
-    public FileSystemCheckpointStore(
+    public FileSystemWorkflowCheckpointStore(
         string rootPath,
         JsonSerializerOptions? jsonOptions = null,
-        ILogger<FileSystemCheckpointStore>? logger = null)
+        ILogger<FileSystemWorkflowCheckpointStore>? logger = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
 

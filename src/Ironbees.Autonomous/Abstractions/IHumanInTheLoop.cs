@@ -82,7 +82,7 @@ public record HumanApproval
     public required string RequestId { get; init; }
 
     /// <summary>Approval decision</summary>
-    public required ApprovalDecision Decision { get; init; }
+    public required ApprovalOutcome Decision { get; init; }
 
     /// <summary>Optional feedback or modifications</summary>
     public string? Feedback { get; init; }
@@ -97,7 +97,7 @@ public record HumanApproval
     public static HumanApproval AutoApprove(string requestId) => new()
     {
         RequestId = requestId,
-        Decision = ApprovalDecision.Approved,
+        Decision = ApprovalOutcome.Approved,
         Feedback = "Auto-approved (human unavailable)"
     };
 
@@ -105,7 +105,7 @@ public record HumanApproval
     public static HumanApproval Timeout(string requestId) => new()
     {
         RequestId = requestId,
-        Decision = ApprovalDecision.Timeout,
+        Decision = ApprovalOutcome.Timeout,
         Feedback = "Request timed out waiting for human response"
     };
 }
@@ -224,7 +224,7 @@ public enum HumanInterventionPoint
 /// <summary>
 /// Approval decision from human
 /// </summary>
-public enum ApprovalDecision
+public enum ApprovalOutcome
 {
     /// <summary>Approved to proceed</summary>
     Approved = 1,

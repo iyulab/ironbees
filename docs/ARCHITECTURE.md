@@ -91,7 +91,7 @@ src/
     ├── Context/                    # Context management
     │   └── DefaultContextManager   # Built-in context tracking
     ├── Configuration/              # YAML configuration
-    │   └── OrchestratorSettings    # Settings loader
+    │   └── AutonomousSettings      # Settings and their loader
     └── Models/                     # Domain models
         ├── AutonomousEvent         # Event system
         └── OracleVerdict           # Oracle responses
@@ -108,7 +108,8 @@ src/
 | `IIronhiveOrchestratorFactory` | Create orchestrators from settings | `IronhiveOrchestratorFactory` |
 | `IWorkflowOrchestrator<T>` | Execute YAML workflows | `YamlDrivenOrchestrator` |
 | `IWorkflowConverter` | YAML → MAF conversion | `MafWorkflowConverter` |
-| `ICheckpointStore` | Workflow persistence | `FileSystemCheckpointStore`, `IronhiveCheckpointStoreAdapter` |
+| `ICheckpointStore` (Core) | Orchestration persistence | `FileSystemIronhiveCheckpointStore`, `IronhiveCheckpointStoreAdapter` |
+| `IWorkflowCheckpointStore` (AgentFramework) | MAF workflow persistence | `FileSystemWorkflowCheckpointStore` |
 | `IContentGuardrail` | Content validation | `RegexGuardrail`, `KeywordGuardrail`, `LengthGuardrail`, `AzureContentSafetyGuardrail`, `OpenAIModerationGuardrail` |
 | `IAuditLogger` | Compliance logging | `NullAuditLogger`, custom implementations |
 
@@ -455,7 +456,7 @@ await foreach (var evt in executor.ExecuteAsync(definition, "input", agentResolv
 │        ├─ NO → Simple iterations?
 │        │        │
 │        │        ├─ YES → AutonomousOrchestrator ✅
-│        │        │        (+ OrchestratorSettings YAML)
+│        │        │        (+ AutonomousSettings YAML)
 │        │        │
 │        │        └─ NO → State machine required?
 │        │                 │
@@ -478,7 +479,7 @@ await foreach (var evt in executor.ExecuteAsync(definition, "input", agentResolv
 - Intelligent agent routing (keyword/embedding/hybrid)
 - Multi-LLM framework integration (Adapter pattern)
 - YAML workflow definition and parsing
-- **YAML configuration for Autonomous SDK** (OrchestratorSettings)
+- **YAML configuration for Autonomous SDK** (AutonomousSettings)
 - **Interface abstractions** (IOracleVerifier, ITaskExecutor, IContextAwareOracleVerifier)
 - Token tracking / cost monitoring
 - Conversation state management

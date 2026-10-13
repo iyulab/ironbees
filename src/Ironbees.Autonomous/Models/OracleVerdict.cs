@@ -33,7 +33,7 @@ public record OracleVerdict
     /// <summary>
     /// Token usage for this verification
     /// </summary>
-    public TokenUsage? TokenUsage { get; init; }
+    public OracleTokenUsage? TokenUsage { get; init; }
 
     /// <summary>
     /// Reflection insights (if reflection mode enabled)
@@ -173,7 +173,7 @@ public record OracleReflection
 /// <summary>
 /// Token usage information
 /// </summary>
-public record TokenUsage
+public record OracleTokenUsage
 {
     /// <summary>Input tokens</summary>
     public int InputTokens { get; init; }

@@ -5,7 +5,22 @@ All notable changes to the Ironbees project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.29.0] - Unreleased
+
+### Changed
+- **Breaking** — **every public type of the Ironbees packages has a name of its own.** Four pairs shared a name across
+  two packages, so a project importing both namespaces got CS0104 on each use. Renamed, behaviour unchanged:
+  - Ironbees.Autonomous `OrchestratorSettings` → `AutonomousSettings`, and its `RetrySettings` → `AutonomousRetrySettings`
+    (Ironbees.Core keeps `OrchestratorSettings` / `RetrySettings` for IronHive orchestration).
+  - Ironbees.Autonomous `TokenUsage` (the oracle verdict's token counts) → `OracleTokenUsage`; the `OracleVerdict.TokenUsage`
+    property keeps its name.
+  - Ironbees.Autonomous `ApprovalDecision` (the HITL outcome enum) → `ApprovalOutcome`; AgentMode's `ApprovalDecision`
+    record (`YamlDrivenOrchestrator.ApproveAsync`) is unchanged.
+  - Ironbees.AgentFramework `ICheckpointStore` → `IWorkflowCheckpointStore` and `FileSystemCheckpointStore` →
+    `FileSystemWorkflowCheckpointStore` (Ironbees.Core keeps `ICheckpointStore` for orchestration checkpoints, which is
+    what `YamlDrivenOrchestrator` takes).
+
+  Migration: rename the four types where you use them; YAML settings files are unchanged.
 
 ### Documentation
 - **The guides under `docs/` now compile against the current API, and are checked on every build.** Several showed calls

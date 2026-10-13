@@ -5,20 +5,20 @@ using NSubstitute;
 namespace Ironbees.AgentFramework.Tests.Workflow;
 
 /// <summary>
-/// Unit tests for FileSystemCheckpointStore.
+/// Unit tests for FileSystemWorkflowCheckpointStore.
 /// Tests verify checkpoint storage, retrieval, and cleanup operations.
 /// </summary>
-public class FileSystemCheckpointStoreTests : IDisposable
+public class FileSystemWorkflowCheckpointStoreTests : IDisposable
 {
     private readonly string _testRootPath;
-    private readonly ILogger<FileSystemCheckpointStore> _mockLogger;
-    private readonly FileSystemCheckpointStore _store;
+    private readonly ILogger<FileSystemWorkflowCheckpointStore> _mockLogger;
+    private readonly FileSystemWorkflowCheckpointStore _store;
 
-    public FileSystemCheckpointStoreTests()
+    public FileSystemWorkflowCheckpointStoreTests()
     {
         _testRootPath = Path.Combine(Path.GetTempPath(), $"ironbees-checkpoint-tests-{Guid.NewGuid()}");
-        _mockLogger = Substitute.For<ILogger<FileSystemCheckpointStore>>();
-        _store = new FileSystemCheckpointStore(_testRootPath, logger: _mockLogger);
+        _mockLogger = Substitute.For<ILogger<FileSystemWorkflowCheckpointStore>>();
+        _store = new FileSystemWorkflowCheckpointStore(_testRootPath, logger: _mockLogger);
     }
 
     public void Dispose()
@@ -47,7 +47,7 @@ public class FileSystemCheckpointStoreTests : IDisposable
     {
         // Arrange & Act
         var rootPath = Path.Combine(Path.GetTempPath(), $"test-{Guid.NewGuid()}");
-        using var store = new FileSystemCheckpointStore(rootPath);
+        using var store = new FileSystemWorkflowCheckpointStore(rootPath);
 
         // Assert
         Assert.True(Directory.Exists(Path.Combine(rootPath, "checkpoints")));
@@ -60,21 +60,21 @@ public class FileSystemCheckpointStoreTests : IDisposable
     public void Constructor_WithNullPath_ThrowsArgumentNullException()
     {
         // Act & Assert - ThrowIfNullOrWhiteSpace throws ArgumentNullException for null
-        Assert.Throws<ArgumentNullException>(() => new FileSystemCheckpointStore(null!));
+        Assert.Throws<ArgumentNullException>(() => new FileSystemWorkflowCheckpointStore(null!));
     }
 
     [Fact]
     public void Constructor_WithEmptyPath_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => new FileSystemCheckpointStore(""));
+        Assert.Throws<ArgumentException>(() => new FileSystemWorkflowCheckpointStore(""));
     }
 
     [Fact]
     public void Constructor_WithWhitespacePath_ThrowsArgumentException()
     {
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => new FileSystemCheckpointStore("   "));
+        Assert.Throws<ArgumentException>(() => new FileSystemWorkflowCheckpointStore("   "));
     }
 
     #endregion

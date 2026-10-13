@@ -293,7 +293,7 @@ public class SettingsLoaderTests : IDisposable
     [Fact]
     public void ToAutonomousConfig_ShouldMapAllFields()
     {
-        var settings = new OrchestratorSettings
+        var settings = new AutonomousSettings
         {
             Orchestration = new OrchestrationSettings
             {
@@ -305,7 +305,7 @@ public class SettingsLoaderTests : IDisposable
                 Confidence = new ConfidenceThresholdSettings { MinThreshold = 0.8, HumanReviewThreshold = 0.4 },
                 Context = new ContextSettings { EnableTracking = false, MaxLearnings = 20, MaxOutputs = 8 },
                 AutoContinue = new AutoContinueSettings { Enabled = true },
-                Retry = new RetrySettings { Count = 2, DelayMs = 500, EnableFallback = true }
+                Retry = new AutonomousRetrySettings { Count = 2, DelayMs = 500, EnableFallback = true }
             }
         };
 

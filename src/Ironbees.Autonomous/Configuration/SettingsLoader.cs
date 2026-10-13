@@ -24,7 +24,7 @@ public sealed class SettingsLoader
     /// <summary>
     /// Load settings from a YAML file
     /// </summary>
-    public async Task<OrchestratorSettings> LoadFromFileAsync(
+    public async Task<AutonomousSettings> LoadFromFileAsync(
         string filePath,
         CancellationToken cancellationToken = default)
     {
@@ -40,7 +40,7 @@ public sealed class SettingsLoader
     /// <summary>
     /// Load settings from a YAML string
     /// </summary>
-    public OrchestratorSettings LoadFromString(string yamlContent)
+    public AutonomousSettings LoadFromString(string yamlContent)
     {
         try
         {
@@ -67,11 +67,11 @@ public sealed class SettingsLoader
     /// <summary>
     /// Load settings from environment and optional YAML file
     /// </summary>
-    public async Task<OrchestratorSettings> LoadWithEnvironmentAsync(
+    public async Task<AutonomousSettings> LoadWithEnvironmentAsync(
         string? yamlFilePath = null,
         CancellationToken cancellationToken = default)
     {
-        OrchestratorSettings settings;
+        AutonomousSettings settings;
 
         if (!string.IsNullOrEmpty(yamlFilePath) && File.Exists(yamlFilePath))
         {
@@ -79,14 +79,14 @@ public sealed class SettingsLoader
         }
         else
         {
-            settings = new OrchestratorSettings();
+            settings = new AutonomousSettings();
         }
 
         // Apply environment variable overrides
         return ApplyEnvironmentOverrides(settings);
     }
 
-    private static OrchestratorSettings ApplyEnvironmentOverrides(OrchestratorSettings settings)
+    private static AutonomousSettings ApplyEnvironmentOverrides(AutonomousSettings settings)
     {
         var llm = settings.Llm;
 
@@ -127,14 +127,14 @@ public sealed class SettingsLoader
         return settings with { Llm = llm };
     }
 
-    private static OrchestratorSettings MapToSettings(YamlOrchestratorSettings? yaml)
+    private static AutonomousSettings MapToSettings(YamlOrchestratorSettings? yaml)
     {
         if (yaml == null)
         {
-            return new OrchestratorSettings();
+            return new AutonomousSettings();
         }
 
-        return new OrchestratorSettings
+        return new AutonomousSettings
         {
             Llm = MapLlmSettings(yaml.Llm),
             Orchestration = MapOrchestrationSettings(yaml.Orchestration),
@@ -261,14 +261,14 @@ public sealed class SettingsLoader
         };
     }
 
-    private static RetrySettings MapRetrySettings(YamlRetrySettings? yaml)
+    private static AutonomousRetrySettings MapRetrySettings(YamlRetrySettings? yaml)
     {
         if (yaml == null)
         {
-            return new RetrySettings();
+            return new AutonomousRetrySettings();
         }
 
-        return new RetrySettings
+        return new AutonomousRetrySettings
         {
             Count = yaml.Count ?? 0,
             DelayMs = yaml.DelayMs ?? 1000,

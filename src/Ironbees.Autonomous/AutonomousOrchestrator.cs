@@ -259,7 +259,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                 $"Restore from checkpoint at iteration {checkpoint.IterationNumber}?",
                 cancellationToken);
 
-            if (approval.Decision == ApprovalDecision.Rejected)
+            if (approval.Decision == ApprovalOutcome.Rejected)
             {
                 RaiseEvent(AutonomousEventType.Stopped, "Checkpoint restore rejected by human");
                 return;
@@ -444,14 +444,14 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                     $"Start task: {request.Prompt[..Math.Min(100, request.Prompt.Length)]}...",
                     cancellationToken);
 
-                if (approval.Decision == ApprovalDecision.Rejected)
+                if (approval.Decision == ApprovalOutcome.Rejected)
                 {
                     RaiseEvent(AutonomousEventType.Stopped, "Task start rejected by human");
                     _state = AutonomousState.StoppedByUser;
                     break;
                 }
 
-                if (approval.Decision == ApprovalDecision.ModifyAndApprove && approval.ModifiedAction != null)
+                if (approval.Decision == ApprovalOutcome.ModifyAndApprove && approval.ModifiedAction != null)
                 {
                     request = _requestFactory(request.RequestId, approval.ModifiedAction);
                 }
@@ -555,7 +555,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                         $"Task failed: {ex.Message}. Continue?",
                         cancellationToken);
 
-                    if (approval.Decision == ApprovalDecision.Rejected)
+                    if (approval.Decision == ApprovalOutcome.Rejected)
                     {
                         _state = AutonomousState.StoppedByUser;
                         break;
@@ -772,7 +772,7 @@ public partial class AutonomousOrchestrator<TRequest, TResult>
                                 _executionContext = _executionContext.WithHumanFeedback(approval.Feedback);
                             }
 
-                            if (approval.Decision == ApprovalDecision.Rejected)
+                            if (approval.Decision == ApprovalOutcome.Rejected)
                             {
                                 break;
                             }

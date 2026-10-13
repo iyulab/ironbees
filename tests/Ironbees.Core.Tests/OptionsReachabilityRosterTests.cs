@@ -29,7 +29,7 @@ public class OptionsReachabilityRosterTests
         // and the goal schema is executed by the agent framework. Read by samples and documented as such.
         ["Ironbees.Autonomous.Configuration.DebugSettings"] = ["Enabled"],
         ["Ironbees.Autonomous.Configuration.LlmSettings"] = ["FrequencyPenalty", "MaxOutputTokens", "PresencePenalty", "Temperature", "TimeoutSeconds", "TopP"],
-        ["Ironbees.Autonomous.Configuration.OrchestratorSettings"] = ["Debug"],
+        ["Ironbees.Autonomous.Configuration.AutonomousSettings"] = ["Debug"],
     };
 
     [Fact]

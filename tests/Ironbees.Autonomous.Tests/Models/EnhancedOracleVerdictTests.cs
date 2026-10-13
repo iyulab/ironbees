@@ -54,7 +54,7 @@ public class EnhancedOracleVerdictTests
             Analysis = "Goal achieved",
             NextPromptSuggestion = "next",
             Confidence = 0.95,
-            TokenUsage = new TokenUsage { InputTokens = 100, OutputTokens = 50 },
+            TokenUsage = new OracleTokenUsage { InputTokens = 100, OutputTokens = 50 },
             Reflection = new OracleReflection { WhatWorkedWell = "everything" }
         };
 
