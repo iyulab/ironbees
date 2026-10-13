@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.62.0 -> 0.63.0, `IronHive.Core` 0.62.0 -> 0.63.0, `IronHive.Extensions.AI` 0.62.0 -> 0.63.0, `IronHive.Providers.OpenAI` 0.62.0 -> 0.63.0, `IronHive.Providers.OpenAI.Compatible` 0.62.0 -> 0.63.0.
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.63.0 -> 0.64.0, `IronHive.Core` 0.63.0 -> 0.64.0, `IronHive.Extensions.AI` 0.63.0 -> 0.64.0, `IronHive.Providers.OpenAI` 0.63.0 -> 0.64.0, `IronHive.Providers.OpenAI.Compatible` 0.63.0 -> 0.64.0.
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.64.0 -> 0.65.0, `IronHive.Core` 0.64.0 -> 0.65.0, `IronHive.Extensions.AI` 0.64.0 -> 0.65.0, `IronHive.Providers.OpenAI` 0.64.0 -> 0.65.0, `IronHive.Providers.OpenAI.Compatible` 0.64.0 -> 0.65.0, `Iyu.Conventions.Testing` 0.9.0 -> 0.10.0, `Iyu.Conventions.Testing.Snippets` 0.9.0 -> 0.10.0.
+- Re-pinned sibling package(s) `Iyu.Conventions.Testing` 0.10.1 -> 0.11.0, `Iyu.Conventions.Testing.Snippets` 0.10.1 -> 0.11.0, `TokenMeter` 0.12.0 -> 0.13.0.
 
 ## [0.28.0] - 2026-10-11
 
