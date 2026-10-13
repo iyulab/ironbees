@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **A streaming workflow run stops at the caller's cancellation.** The Agent Framework workflow executor's three
+  streaming methods read their events through a channel, and the channel's reader looks at the token only while it waits.
+  When the workflow had run ahead, every event it had buffered still came after the caller cancelled. Now no event
+  follows the cancellation.
+
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.11.0 -> 0.12.0.
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.62.0 -> 0.63.0, `IronHive.Core` 0.62.0 -> 0.63.0, `IronHive.Extensions.AI` 0.62.0 -> 0.63.0, `IronHive.Providers.OpenAI` 0.62.0 -> 0.63.0, `IronHive.Providers.OpenAI.Compatible` 0.62.0 -> 0.63.0.

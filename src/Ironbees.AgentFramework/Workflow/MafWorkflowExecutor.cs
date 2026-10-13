@@ -126,7 +126,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
         var executionTask = ExecuteWorkflowCoreAsync(workflow, input, channel.Writer, cancellationToken);
 
         // Yield events as they arrive
-        await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (var evt in channel.Reader.ReadUntilCancelledAsync(cancellationToken))
         {
             yield return evt;
         }
@@ -334,7 +334,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
             mafWorkflow!, input, executionId, definition.Name,
             checkpointStore, channel.Writer, cancellationToken);
 
-        await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (var evt in channel.Reader.ReadUntilCancelledAsync(cancellationToken))
         {
             yield return evt;
         }
@@ -487,7 +487,7 @@ public sealed partial class MafWorkflowExecutor : IMafWorkflowExecutor
         var executionTask = ResumeFromCheckpointCoreAsync(
             workflow, checkpoint, checkpointStore, channel.Writer, cancellationToken);
 
-        await foreach (var evt in channel.Reader.ReadAllAsync(cancellationToken))
+        await foreach (var evt in channel.Reader.ReadUntilCancelledAsync(cancellationToken))
         {
             yield return evt;
         }
