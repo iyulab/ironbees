@@ -251,49 +251,40 @@ samples/WebApiSample/Ironbees.WebApi/
 
 ### Program.cs 주요 설정
 
+CORS 를 열고, Ironbees 의 다섯 서비스를 등록한다 — `agents` 디렉터리에서 에이전트를 읽는 로더, 레지스트리, 키워드로
+에이전트를 고르는 선택기, 모델을 부르는 어댑터, 그리고 이들을 묶는 오케스트레이터. 샘플의 어댑터는
+`Ironbees.Samples.Shared` 의 `OpenAIAdapter(apiKey, model)` 이다. Swagger 는 Swashbuckle(`AddSwaggerGen`)로 켠다(`Program.cs`).
+
 ```csharp
-// CORS 설정
 builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+    options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
-// Ironbees 서비스 등록
-services.AddSingleton<IAgentOrchestrator>(...)
-
-// Swagger 설정
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Ironbees Web API",
-        Version = "v1.0"
-    });
-});
+builder.Services.AddSingleton<IAgentLoader>(_ => new FileSystemAgentLoader());
+builder.Services.AddSingleton<IAgentRegistry, AgentRegistry>();
+builder.Services.AddSingleton<IAgentSelector>(_ => new KeywordAgentSelector(minimumConfidenceThreshold: 0.3));
+builder.Services.AddSingleton<ILLMFrameworkAdapter>(adapter);
+builder.Services.AddSingleton<IAgentOrchestrator>(sp => new AgentOrchestrator(
+    sp.GetRequiredService<IAgentLoader>(),
+    sp.GetRequiredService<IAgentRegistry>(),
+    sp.GetRequiredService<ILLMFrameworkAdapter>(),
+    sp.GetRequiredService<IAgentSelector>(),
+    agentsPath));
 ```
 
 ## 배포 고려사항
 
 ### Production 설정
 
-1. **HTTPS 활성화**
+1. **HTTPS 활성화와 CORS 정책 제한** — 개발용 «모든 출처 허용» 대신 서비스할 도메인만 연다.
+
 ```csharp
 app.UseHttpsRedirection();
+
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy => policy.WithOrigins("https://yourdomain.com").AllowAnyMethod().AllowAnyHeader()));
 ```
 
-2. **CORS 정책 제한**
-```csharp
-policy.WithOrigins("https://yourdomain.com")
-      .AllowAnyMethod()
-      .AllowAnyHeader();
-```
-
-3. **환경 변수 보안**
+2. **환경 변수 보안** — API 키는 저장소가 아니라 호스트의 설정에 둔다.
 ```bash
 # Azure App Service
 az webapp config appsettings set --settings OPENAI_API_KEY=xxx
@@ -302,19 +293,17 @@ az webapp config appsettings set --settings OPENAI_API_KEY=xxx
 docker run -e OPENAI_API_KEY=xxx
 ```
 
-4. **Rate Limiting 추가**
-```csharp
-builder.Services.AddRateLimiter(options => ...);
-```
+3. **Rate Limiting** — ASP.NET Core 의 `AddRateLimiter`(`Microsoft.AspNetCore.RateLimiting`)로 채팅 엔드포인트에
+   고정 창 제한을 건다. 모델 호출이 요청마다 비용을 만들기 때문이다.
 
 ### Docker 배포
 
 ```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 80
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["Ironbees.WebApi.csproj", "./"]
 RUN dotnet restore
@@ -334,43 +323,25 @@ ENTRYPOINT ["dotnet", "Ironbees.WebApi.dll"]
 
 ### 1. 인증/인가 추가
 
-```csharp
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options => ...);
-
-[Authorize]
-public class AgentsController : ControllerBase { }
-```
+JWT Bearer 인증(`Microsoft.AspNetCore.Authentication.JwtBearer`)을 등록하고 `AgentsController` 에 `[Authorize]` 를 단다.
+샘플은 이 패키지를 참조하지 않는다.
 
 ### 2. 스트리밍 응답 지원
 
+`IAgentOrchestrator.StreamAsync` 는 응답을 조각 단위로 돌려준다. 최소 API 엔드포인트 하나로 그대로 흘려보낼 수 있다 —
+ASP.NET Core 는 `IAsyncEnumerable<string>` 을 JSON 배열로 스트리밍한다.
+
 ```csharp
-[HttpPost("stream")]
-public async IAsyncEnumerable<string> StreamChat([FromBody] ChatRequest request)
-{
-    await foreach (var chunk in _orchestrator.StreamAsync(request.Message, request.AgentName))
-    {
-        yield return chunk;
-    }
-}
+app.MapPost("/api/agents/chat/stream", (ChatRequest request, IAgentOrchestrator orchestrator, CancellationToken cancellationToken) =>
+    request.AgentName is { } agentName
+        ? orchestrator.StreamAsync(request.Message, agentName, cancellationToken)
+        : orchestrator.StreamAsync(request.Message, cancellationToken));
 ```
 
 ### 3. 웹소켓 지원
 
-```csharp
-app.MapHub<ChatHub>("/chat");
-
-public class ChatHub : Hub
-{
-    public async IAsyncEnumerable<string> StreamMessage(string message)
-    {
-        await foreach (var chunk in _orchestrator.StreamAsync(message))
-        {
-            yield return chunk;
-        }
-    }
-}
-```
+SignalR 허브의 스트리밍 메서드(`IAsyncEnumerable<string>` 반환)에서 같은 `StreamAsync` 를 돌려주면 된다
+(`app.MapHub<ChatHub>("/chat")`).
 
 ## 문제 해결
 
@@ -381,10 +352,7 @@ dotnet run --urls "http://localhost:5002"
 ```
 
 ### CORS 오류
-```csharp
-// 특정 도메인 허용
-policy.WithOrigins("http://localhost:3000")
-```
+위 «CORS 정책 제한» 의 `WithOrigins(...)` 에 프런트엔드의 출처(예: `http://localhost:3000`)를 넣는다.
 
 ### Swagger 404
 ```
@@ -401,40 +369,24 @@ policy.WithOrigins("http://localhost:3000")
 
 ## 성능 최적화
 
-1. **응답 캐싱**
-```csharp
-[ResponseCache(Duration = 60)]
-public ActionResult<List<AgentInfo>> GetAgents()
-```
-
-2. **압축 활성화**
-```csharp
-builder.Services.AddResponseCompression();
-```
-
-3. **비동기 처리**
-모든 API 메서드는 async/await 패턴 사용
-
-4. **Connection Pooling**
-OpenAI API 클라이언트 재사용
+1. **응답 캐싱** — 에이전트 목록(`GetAgents`)은 자주 바뀌지 않으므로 `[ResponseCache(Duration = 60)]` 를 달 수 있다.
+2. **압축 활성화** — `builder.Services.AddResponseCompression()` 과 `app.UseResponseCompression()`.
+3. **비동기 처리** — 모든 API 메서드는 async/await 패턴을 쓴다.
+4. **Connection Pooling** — 어댑터(모델 클라이언트)는 싱글턴으로 등록해 재사용한다.
 
 ## 모니터링
 
-### Application Insights
-```csharp
-builder.Services.AddApplicationInsightsTelemetry();
-```
-
 ### Health Checks
+
 ```csharp
 builder.Services.AddHealthChecks()
-    .AddCheck<AgentHealthCheck>("agents");
+    .AddCheck("agents", () => HealthCheckResult.Healthy("agents loaded"));
 ```
 
-### Logging
-```csharp
-_logger.LogInformation("Processing chat request for agent: {AgentName}", agentName);
-```
+### Application Insights 와 로깅
+
+Application Insights(`Microsoft.ApplicationInsights.AspNetCore`)는 샘플이 참조하지 않는다. 컨트롤러는
+`ILogger<AgentsController>` 로 요청마다 에이전트 이름을 구조화된 로그로 남긴다.
 
 ## 참고 자료
 

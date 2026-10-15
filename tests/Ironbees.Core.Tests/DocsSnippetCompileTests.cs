@@ -32,6 +32,7 @@ public class DocsSnippetCompileTests
         "docs/autonomous-sdk-guide.md",
         "agents/BUILTIN_AGENTS.md",
         "samples/OpenAISample/README.md",
+        "samples/WebApiSample/README.md",
     ];
 
     // Documents that show an API as it was, on purpose — a migration guide's «before», a decision record. They are not
@@ -49,8 +50,6 @@ public class DocsSnippetCompileTests
     {
         ["samples/Patterns/MultiExecutionPattern/README.md"] =
             "a pattern walkthrough: Azure Functions and Table/Queue storage excerpts (packages the library does not reference) and members shown outside their class",
-        ["samples/WebApiSample/README.md"] =
-            "a sample walkthrough: controller members shown outside their class, «...» elisions, and extension ideas (JWT, SignalR, Swagger) on packages the sample does not reference",
     };
 
     // A block that is deliberately not a program (a signature sketch, pseudocode), by the heading it sits under, with the
@@ -79,6 +78,7 @@ public class DocsSnippetCompileTests
         "Microsoft.Extensions.Logging.Abstractions",
         "Microsoft.Extensions.Diagnostics.HealthChecks", "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions",
         "Microsoft.AspNetCore.Diagnostics.HealthChecks", "Microsoft.AspNetCore.Http.Abstractions", "Microsoft.AspNetCore.Routing",
+        "Microsoft.AspNetCore.Cors", "Microsoft.AspNetCore.HttpsPolicy",
     ];
 
     private static readonly string[] Usings =
@@ -107,6 +107,10 @@ public class DocsSnippetCompileTests
         ["app"] = "Microsoft.AspNetCore.Builder.WebApplication app = null!;",
         ["hive"] = "IronHive.Abstractions.IHiveServiceBuilder hive = null!;",
         ["userInput"] = "string userInput = \"\";",
+        // The Web API sample's adapter, agents directory and request body.
+        ["adapter"] = "ILLMFrameworkAdapter adapter = null!;",
+        ["agentsPath"] = "string agentsPath = \"agents\";",
+        ["ChatRequest"] = "public record ChatRequest(string Message, string? AgentName);",
         // The Autonomous SDK guides' request and result: the README's shape, under the names the guides use.
         ["Request"] = "public record Request(string RequestId, string Prompt) : ITaskRequest;",
         ["Result"] = "public record Result(string RequestId, bool Success, string Output, string? ErrorOutput = null) : ITaskResult;",
