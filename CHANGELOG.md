@@ -5,10 +5,11 @@ All notable changes to the Ironbees project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.29.1] - 2026-10-16
 
 ### Dependencies
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.65.1 -> 0.66.0, `IronHive.Core` 0.65.1 -> 0.66.0, `IronHive.Extensions.AI` 0.65.1 -> 0.66.0, `IronHive.Providers.Anthropic` 0.65.1 -> 0.66.0, `IronHive.Providers.GoogleAI` 0.65.1 -> 0.66.0, `IronHive.Providers.OpenAI` 0.65.1 -> 0.66.0, `IronHive.Providers.OpenAI.Compatible` 0.65.1 -> 0.66.0.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.66.0 -> 0.66.1, `IronHive.Core` 0.66.0 -> 0.66.1, `IronHive.Extensions.AI` 0.66.0 -> 0.66.1, `IronHive.Providers.Anthropic` 0.66.0 -> 0.66.1, `IronHive.Providers.GoogleAI` 0.66.0 -> 0.66.1, `IronHive.Providers.OpenAI` 0.66.0 -> 0.66.1, `IronHive.Providers.OpenAI.Compatible` 0.66.0 -> 0.66.1.
 
 ## [0.29.0] - 2026-10-14
 
