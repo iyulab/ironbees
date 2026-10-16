@@ -33,6 +33,7 @@ public class DocsSnippetCompileTests
         "agents/BUILTIN_AGENTS.md",
         "samples/OpenAISample/README.md",
         "samples/WebApiSample/README.md",
+        "samples/Patterns/MultiExecutionPattern/README.md",
     ];
 
     // Documents that show an API as it was, on purpose — a migration guide's «before», a decision record. They are not
@@ -48,8 +49,6 @@ public class DocsSnippetCompileTests
     // Guides with C# blocks that are not compiled yet, with the reason. Shrink this.
     private static readonly Dictionary<string, string> NotYetChecked = new(StringComparer.Ordinal)
     {
-        ["samples/Patterns/MultiExecutionPattern/README.md"] =
-            "a pattern walkthrough: Azure Functions and Table/Queue storage excerpts (packages the library does not reference) and members shown outside their class",
     };
 
     // A block that is deliberately not a program (a signature sketch, pseudocode), by the heading it sits under, with the

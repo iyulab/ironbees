@@ -1,19 +1,18 @@
 # Multi-Execution Pattern
 
 **Pattern Category**: Application-Layer Coordination
-**Version**: 0.4.0
 **Status**: Reference Pattern (Not SDK Feature)
 
 ## Overview
 
-This pattern demonstrates how to coordinate multiple concurrent workflow executions in your application. Multi-execution coordination belongs in the **application layer**, not in Ironbees SDK, because different applications have vastly different requirements.
+This pattern shows how to run several autonomous executions at once in your application. Multi-execution coordination belongs in the **application layer**, not in the Ironbees SDK, because applications need very different things from it.
 
 ## Why Application Layer?
 
 **Ironbees provides**:
-- ✅ Autonomous execution abstraction
-- ✅ YAML configuration
-- ✅ Interface definitions
+- ✅ Autonomous execution abstraction (`AutonomousOrchestrator`)
+- ✅ YAML configuration (`AutonomousSettings`)
+- ✅ Interface definitions (`ITaskExecutor`, `IOracleVerifier`)
 
 **Your application decides**:
 - 🎯 Single-server vs distributed
@@ -24,285 +23,127 @@ This pattern demonstrates how to coordinate multiple concurrent workflow executi
 
 ## Basic Pattern: In-Memory Coordinator
 
-```csharp
-using System.Collections.Concurrent;
-using Ironbees.Autonomous;
+One orchestrator per execution, each given its prompt with `EnqueuePrompt` and run in the background. `StartAsync` returns when
+the queue is done or the run stops, and records how it ended in `Status.State`; it rethrows a failure, so a faulted run task is
+a failed execution. A slot is taken before the orchestrator is built: checking a count and then adding lets two callers pass
+the limit at once.
 
-public class ExecutionCoordinator<TRequest, TResult>
+```csharp
+public sealed class ExecutionCoordinator<TRequest, TResult>(
+    ITaskExecutor<TRequest, TResult> executor,
+    Func<string, string, TRequest> requestFactory,
+    IOracleVerifier? oracle = null,
+    int maxConcurrent = 10) : IDisposable
     where TRequest : ITaskRequest
     where TResult : ITaskResult
 {
-    private readonly ConcurrentDictionary<string, OrchestratorInstance<TRequest, TResult>>
-        _activeExecutions = new();
-    private readonly ITaskExecutor<TRequest, TResult> _executor;
-    private readonly IOracleVerifier? _oracle;
-    private readonly int _maxConcurrent;
+    private readonly ConcurrentDictionary<string, Execution> _executions = new();
+    private readonly SemaphoreSlim _slots = new(maxConcurrent, maxConcurrent);
 
-    public ExecutionCoordinator(
-        ITaskExecutor<TRequest, TResult> executor,
-        IOracleVerifier? oracle = null,
-        int maxConcurrent = 10)
+    public string Start(string prompt, AutonomousSettings? settings = null, CancellationToken cancellationToken = default)
     {
-        _executor = executor;
-        _oracle = oracle;
-        _maxConcurrent = maxConcurrent;
-    }
+        if (!_slots.Wait(0, cancellationToken))
+            throw new InvalidOperationException($"{maxConcurrent} executions are already running.");
 
-    public async Task<string> StartExecutionAsync(
-        TRequest initialRequest,
-        AutonomousSettings? settings = null,
-        CancellationToken cancellationToken = default)
-    {
-        // Check capacity
-        if (_activeExecutions.Count >= _maxConcurrent)
-        {
-            throw new InvalidOperationException(
-                $"Maximum concurrent executions ({_maxConcurrent}) reached");
-        }
-
-        var executionId = Guid.NewGuid().ToString();
-
-        // Build orchestrator
         var builder = AutonomousOrchestrator.Create<TRequest, TResult>()
-            .WithExecutor(_executor);
-
-        if (_oracle != null)
-            builder = builder.WithOracle(_oracle);
-
-        if (settings != null)
+            .WithExecutor(executor)
+            .WithRequestFactory(requestFactory);
+        if (oracle is not null)
+            builder = builder.WithOracle(oracle);
+        if (settings is not null)
             builder = builder.WithSettings(settings);
 
         var orchestrator = builder.Build();
+        orchestrator.EnqueuePrompt(prompt);
 
-        // Track execution
-        var instance = new OrchestratorInstance<TRequest, TResult>
-        {
-            Id = executionId,
-            Orchestrator = orchestrator,
-            StartedAt = DateTime.UtcNow,
-            Status = ExecutionStatus.Running,
-            CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
-        };
+        var execution = new Execution(
+            Guid.NewGuid().ToString("N"),
+            orchestrator,
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken),
+            DateTimeOffset.UtcNow);
+        _executions[execution.Id] = execution;
 
-        _activeExecutions[executionId] = instance;
-
-        // Run in background
-        _ = Task.Run(async () =>
+        execution.Run = Task.Run(async () =>
         {
             try
             {
-                await orchestrator.StartAsync(
-                    initialRequest,
-                    instance.CancellationTokenSource.Token);
-
-                instance.Status = ExecutionStatus.Completed;
-                instance.CompletedAt = DateTime.UtcNow;
+                await orchestrator.StartAsync(cancellationToken: execution.Cancellation.Token);
             }
-            catch (OperationCanceledException)
+            finally
             {
-                instance.Status = ExecutionStatus.Cancelled;
-                instance.CompletedAt = DateTime.UtcNow;
+                execution.MarkCompleted();
+                _slots.Release();
             }
-            catch (Exception ex)
-            {
-                instance.Status = ExecutionStatus.Failed;
-                instance.Error = ex;
-                instance.CompletedAt = DateTime.UtcNow;
-            }
-        }, cancellationToken);
+        }, CancellationToken.None);
 
-        return executionId;
+        return execution.Id;
     }
 
-    public ExecutionInfo? GetStatus(string executionId)
-    {
-        if (!_activeExecutions.TryGetValue(executionId, out var instance))
-            return null;
+    public ExecutionInfo? GetStatus(string executionId) =>
+        _executions.TryGetValue(executionId, out var execution) ? execution.Describe() : null;
 
-        return new ExecutionInfo
-        {
-            Id = instance.Id,
-            Status = instance.Status,
-            StartedAt = instance.StartedAt,
-            CompletedAt = instance.CompletedAt,
-            Duration = instance.CompletedAt.HasValue
-                ? instance.CompletedAt.Value - instance.StartedAt
-                : DateTime.UtcNow - instance.StartedAt,
-            ErrorMessage = instance.Error?.Message
-        };
-    }
+    public IReadOnlyList<ExecutionInfo> List(AutonomousState? state = null) =>
+        [.. _executions.Values.Select(e => e.Describe()).Where(info => state is null || info.State == state)];
 
-    public async Task<bool> CancelAsync(string executionId)
+    public bool Cancel(string executionId)
     {
-        if (!_activeExecutions.TryGetValue(executionId, out var instance))
+        if (!_executions.TryGetValue(executionId, out var execution))
             return false;
 
-        instance.CancellationTokenSource.Cancel();
+        execution.Cancellation.Cancel();
         return true;
     }
 
-    public IReadOnlyList<ExecutionInfo> ListExecutions(ExecutionStatus? filterByStatus = null)
+    public void RemoveFinished(TimeSpan olderThan)
     {
-        var executions = _activeExecutions.Values
-            .Select(i => new ExecutionInfo
-            {
-                Id = i.Id,
-                Status = i.Status,
-                StartedAt = i.StartedAt,
-                CompletedAt = i.CompletedAt,
-                Duration = i.CompletedAt.HasValue
-                    ? i.CompletedAt.Value - i.StartedAt
-                    : DateTime.UtcNow - i.StartedAt
-            });
-
-        if (filterByStatus.HasValue)
-            executions = executions.Where(e => e.Status == filterByStatus.Value);
-
-        return executions.ToList();
+        var cutoff = DateTimeOffset.UtcNow - olderThan;
+        foreach (var (id, execution) in _executions)
+        {
+            if (execution.CompletedAt is { } completed && completed < cutoff && _executions.TryRemove(id, out _))
+                execution.Cancellation.Dispose();
+        }
     }
 
-    public async Task CleanupCompletedAsync(TimeSpan? olderThan = null)
+    public void Dispose()
     {
-        var cutoff = DateTime.UtcNow - (olderThan ?? TimeSpan.FromHours(1));
+        foreach (var execution in _executions.Values)
+            execution.Cancellation.Cancel();
+    }
 
-        var toRemove = _activeExecutions
-            .Where(kvp => kvp.Value.Status != ExecutionStatus.Running &&
-                          kvp.Value.CompletedAt < cutoff)
-            .Select(kvp => kvp.Key)
-            .ToList();
+    private sealed class Execution(
+        string id,
+        AutonomousOrchestrator<TRequest, TResult> orchestrator,
+        CancellationTokenSource cancellation,
+        DateTimeOffset startedAt)
+    {
+        private long _completedTicks;
 
-        foreach (var id in toRemove)
+        public string Id { get; } = id;
+
+        public CancellationTokenSource Cancellation { get; } = cancellation;
+
+        public Task Run { get; set; } = Task.CompletedTask;
+
+        public DateTimeOffset? CompletedAt =>
+            Volatile.Read(ref _completedTicks) is var ticks and not 0 ? new DateTimeOffset(ticks, TimeSpan.Zero) : null;
+
+        public void MarkCompleted() => Volatile.Write(ref _completedTicks, DateTimeOffset.UtcNow.UtcTicks);
+
+        public ExecutionInfo Describe()
         {
-            _activeExecutions.TryRemove(id, out _);
+            var status = orchestrator.Status;
+            var error = Run.IsFaulted ? Run.Exception?.InnerException?.Message : status.LastError;
+            return new ExecutionInfo(Id, status.State, startedAt, CompletedAt, error);
         }
     }
 }
 
-// Supporting types
-public class OrchestratorInstance<TRequest, TResult>
-    where TRequest : ITaskRequest
-    where TResult : ITaskResult
-{
-    public required string Id { get; init; }
-    public required AutonomousOrchestrator<TRequest, TResult> Orchestrator { get; init; }
-    public required DateTime StartedAt { get; init; }
-    public DateTime? CompletedAt { get; set; }
-    public ExecutionStatus Status { get; set; }
-    public Exception? Error { get; set; }
-    public required CancellationTokenSource CancellationTokenSource { get; init; }
-}
-
-public record ExecutionInfo
-{
-    public required string Id { get; init; }
-    public required ExecutionStatus Status { get; init; }
-    public required DateTime StartedAt { get; init; }
-    public DateTime? CompletedAt { get; init; }
-    public TimeSpan Duration { get; init; }
-    public string? ErrorMessage { get; init; }
-}
-
-public enum ExecutionStatus
-{
-    Running,
-    Completed,
-    Failed,
-    Cancelled
-}
-```
-
-## Advanced Pattern: Persistent Queue
-
-For production scenarios with process restarts:
-
-```csharp
-public class PersistentExecutionCoordinator<TRequest, TResult>
-    where TRequest : ITaskRequest
-    where TResult : ITaskResult
-{
-    private readonly IExecutionQueue _queue; // Your queue implementation
-    private readonly IExecutionStateStore _stateStore; // Your state store
-
-    public async Task<string> StartExecutionAsync(TRequest request)
-    {
-        var executionId = Guid.NewGuid().ToString();
-
-        // Persist initial state
-        await _stateStore.SaveAsync(new ExecutionState
-        {
-            Id = executionId,
-            Request = request,
-            Status = ExecutionStatus.Queued,
-            QueuedAt = DateTime.UtcNow
-        });
-
-        // Enqueue for processing
-        await _queue.EnqueueAsync(executionId);
-
-        return executionId;
-    }
-
-    // Background worker processes queue
-    public async Task ProcessQueueAsync(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            var executionId = await _queue.DequeueAsync(cancellationToken);
-            if (executionId == null)
-                continue;
-
-            var state = await _stateStore.LoadAsync(executionId);
-            if (state == null)
-                continue;
-
-            // Build and execute orchestrator
-            // Update state store on completion
-        }
-    }
-}
-```
-
-## Cloud-Native Pattern: Serverless
-
-For Azure Functions / AWS Lambda:
-
-```csharp
-[Function("ExecuteWorkflow")]
-public async Task<HttpResponseData> ExecuteWorkflow(
-    [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
-    [QueueOutput("workflow-executions")] IAsyncCollector<string> queue)
-{
-    var request = await req.ReadFromJsonAsync<TaskRequest>();
-
-    var executionId = Guid.NewGuid().ToString();
-
-    // Enqueue for async processing
-    await queue.AddAsync(JsonSerializer.Serialize(new
-    {
-        ExecutionId = executionId,
-        Request = request
-    }));
-
-    var response = req.CreateResponse(HttpStatusCode.Accepted);
-    await response.WriteAsJsonAsync(new { ExecutionId = executionId });
-    return response;
-}
-
-[Function("ProcessWorkflow")]
-public async Task ProcessWorkflow(
-    [QueueTrigger("workflow-executions")] string message,
-    [Table("WorkflowState")] TableClient tableClient)
-{
-    var data = JsonSerializer.Deserialize<WorkflowMessage>(message);
-
-    var orchestrator = AutonomousOrchestrator.Create<TaskRequest, TaskResult>()
-        .WithExecutor(_executor)
-        .Build();
-
-    await orchestrator.StartAsync(data.Request);
-
-    // Save state to Table Storage
-}
+public sealed record ExecutionInfo(
+    string Id,
+    AutonomousState State,
+    DateTimeOffset StartedAt,
+    DateTimeOffset? CompletedAt,
+    string? Error);
 ```
 
 ## Usage Examples
@@ -310,40 +151,56 @@ public async Task ProcessWorkflow(
 ### Basic Multi-Execution
 
 ```csharp
-var coordinator = new ExecutionCoordinator<TaskRequest, TaskResult>(
-    executor: myExecutor,
-    oracle: myOracle,
+using var coordinator = new ExecutionCoordinator<Request, Result>(
+    executor,
+    requestFactory: (id, prompt) => new Request(id, prompt),
+    oracle: oracle,
     maxConcurrent: 5);
 
-// Start multiple executions
-var execution1 = await coordinator.StartExecutionAsync(new TaskRequest("Task 1"));
-var execution2 = await coordinator.StartExecutionAsync(new TaskRequest("Task 2"));
-var execution3 = await coordinator.StartExecutionAsync(new TaskRequest("Task 3"));
+// Start several executions
+var first = coordinator.Start("Summarise the release notes");
+var second = coordinator.Start("Draft the migration checklist");
+var third = coordinator.Start("List the open questions");
 
 // Monitor status
-var status1 = coordinator.GetStatus(execution1);
-Console.WriteLine($"Execution 1: {status1.Status}");
+var status = coordinator.GetStatus(first);
+Console.WriteLine($"First: {status?.State}");
 
-// List all running executions
-var running = coordinator.ListExecutions(ExecutionStatus.Running);
+// List the running executions
+var running = coordinator.List(AutonomousState.Running);
 Console.WriteLine($"Running: {running.Count}");
 
-// Cancel specific execution
-await coordinator.CancelAsync(execution2);
+// Cancel one execution
+coordinator.Cancel(second);
 
-// Cleanup old executions
-await coordinator.CleanupCompletedAsync(olderThan: TimeSpan.FromMinutes(30));
+// Forget executions that finished more than 30 minutes ago
+coordinator.RemoveFinished(TimeSpan.FromMinutes(30));
 ```
 
 ### With Different Settings Per Execution
 
 ```csharp
-var settingsA = await AutonomousSettings.LoadFromFileAsync("high-priority.yaml");
-var settingsB = await AutonomousSettings.LoadFromFileAsync("low-priority.yaml");
+var loader = new SettingsLoader();
+var highPriority = await loader.LoadFromFileAsync("high-priority.yaml");
+var lowPriority = await loader.LoadFromFileAsync("low-priority.yaml");
 
-var executionA = await coordinator.StartExecutionAsync(requestA, settingsA);
-var executionB = await coordinator.StartExecutionAsync(requestB, settingsB);
+using var coordinator = new ExecutionCoordinator<Request, Result>(executor, (id, prompt) => new Request(id, prompt));
+var urgent = coordinator.Start("Investigate the failing build", highPriority);
+var routine = coordinator.Start("Tidy the changelog", lowPriority);
 ```
+
+## Beyond One Process
+
+The in-memory coordinator loses its executions when the process restarts. The same shape carries over to infrastructure
+Ironbees does not reference:
+
+- **Persistent queue** — store each request with its state (queued, running, finished) in a database or Redis, and run a
+  background worker that dequeues an id, builds the orchestrator as above, and writes the outcome back. Checkpoints
+  (`GetCheckpoints`, `StartFromCheckpointAsync`) let a restarted worker resume a long run.
+- **Serverless** — an HTTP-triggered function enqueues the request and answers 202 with an execution id; a queue-triggered
+  function builds the orchestrator, runs it, and saves the outcome to table or document storage.
+- **Distributed** — a message broker (Service Bus, Kafka, RabbitMQ) routes requests to a worker pool; each worker is a
+  coordinator like the one above with its own `maxConcurrent`.
 
 ## Scaling Strategies
 
@@ -364,9 +221,9 @@ var executionB = await coordinator.StartExecutionAsync(requestB, settingsB);
 
 1. **Application-Specific**: Multi-execution patterns vary widely by application needs
 2. **Not SDK Concern**: Ironbees provides building blocks, not orchestration logic
-3. **Flexibility**: Choose pattern that fits your scaling/reliability requirements
-4. **Resource Management**: Application controls limits, queuing, and priority
-5. **State Storage**: Choose appropriate persistence based on fault tolerance needs
+3. **Flexibility**: Choose the pattern that fits your scaling and reliability requirements
+4. **Resource Management**: The application controls limits, queuing, and priority
+5. **State Storage**: Choose persistence based on the fault tolerance you need
 
 ---
 
