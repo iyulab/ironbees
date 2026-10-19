@@ -299,19 +299,10 @@ if (!result.IsAllowed)
 
 ## Dependencies
 
-```xml
-<!-- Core -->
-<PackageReference Include="Microsoft.Extensions.AI" Version="10.5.0" />
-<PackageReference Include="YamlDotNet" Version="17.1.0" />
-<PackageReference Include="Polly" Version="8.6.6" />
-
-<!-- IronHive (Multi-agent orchestration) -->
-<PackageReference Include="IronHive.Abstractions" Version="0.5.4" />
-<PackageReference Include="IronHive.Core" Version="0.5.4" />
-
-<!-- MAF (Workflow system) -->
-<PackageReference Include="Microsoft.Agents.AI" Version="1.3.0" />
-```
+The packages build on Microsoft.Extensions.AI, YamlDotNet and Polly; the orchestration layer builds on IronHive
+(`IronHive.Abstractions`, `IronHive.Core`) and the workflow system on the Microsoft Agent Framework
+(`Microsoft.Agents.AI`). The versions in use are the ones pinned in
+[`Directory.Packages.props`](../Directory.Packages.props) — this page does not repeat them.
 
 ## Workflow Decision Guide
 

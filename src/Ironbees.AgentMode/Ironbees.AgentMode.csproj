@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <Description>Ironbees workflows: YAML workflow definitions, templates and goals, run by a YAML-driven orchestrator with human-gate states.</Description>
+    <PackageTags>$(PackageTagsBase);workflow;yaml;goals;human-in-the-loop</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Ironbees.AgentMode.Tests" />
   </ItemGroup>
