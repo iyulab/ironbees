@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **`ResilientExecutor` implements `IDisposable` as well** — a container disposed with `Dispose()` (a `using` provider or scope) no longer throws «only implements IAsyncDisposable» when it created one.
 - **`Ironbees.AgentMode` has a package description and tags** — its nuget.org page showed the SDK default «Package Description» and it matched no search tag.
 
 ### Dependencies

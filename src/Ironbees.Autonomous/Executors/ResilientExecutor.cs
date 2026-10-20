@@ -8,7 +8,7 @@ namespace Ironbees.Autonomous.Executors;
 /// </summary>
 /// <typeparam name="TRequest">Request type</typeparam>
 /// <typeparam name="TResult">Result type</typeparam>
-public class ResilientExecutor<TRequest, TResult> : ITaskExecutor<TRequest, TResult>
+public class ResilientExecutor<TRequest, TResult> : ITaskExecutor<TRequest, TResult>, IDisposable
     where TRequest : ITaskRequest
     where TResult : class, ITaskResult
 {
@@ -112,6 +112,13 @@ public class ResilientExecutor<TRequest, TResult> : ITaskExecutor<TRequest, TRes
             delay = _settings.MaxDelay;
 
         await Task.Delay(delay, cancellationToken);
+    }
+
+    /// <summary>Disposes synchronously, for a container disposed with <c>Dispose()</c> (it throws on a service that is only <see cref="IAsyncDisposable"/>).</summary>
+    public void Dispose()
+    {
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
+        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
