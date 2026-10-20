@@ -8,7 +8,7 @@ namespace Ironbees.Samples.Shared;
 
 /// <summary>
 /// LLM Framework Adapter for GPU-Stack API (OpenAI-compatible)
-/// GPU-Stack provides OpenAI-compatible endpoints at /v1-openai
+/// GPU-Stack provides OpenAI-compatible endpoints at the standard /v1 (older servers: /v1-openai)
 /// Documentation: https://docs.gpustack.ai/latest/integrations/openai-compatible-apis/
 /// </summary>
 public class GpuStackAdapter : ILLMFrameworkAdapter
@@ -103,13 +103,13 @@ internal sealed class GpuStackAgentWrapper : IAgent
         var modelName = config.Model?.Deployment ?? defaultModel;
 
         // Create OpenAI client with custom endpoint
-        // GPU-Stack serves OpenAI-compatible APIs at /v1-openai
-        // We need to provide the complete base URL including /v1-openai
+        // GPU-Stack serves OpenAI-compatible APIs at the standard /v1
+        // We need to provide the complete base URL including /v1
         var openAiClient = new OpenAIClient(
             new System.ClientModel.ApiKeyCredential(apiKey),
             new OpenAIClientOptions
             {
-                Endpoint = new Uri($"{endpoint}/v1-openai")
+                Endpoint = new Uri($"{endpoint}/v1")
             });
 
         _client = openAiClient.GetChatClient(modelName);

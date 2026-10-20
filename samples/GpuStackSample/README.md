@@ -64,7 +64,7 @@ dotnet run --project samples/GpuStackSample/GpuStackSample.csproj
 │   • AgentOrchestrator                               │
 ├─────────────────────────────────────────────────────┤
 │   GpuStackAdapter (OpenAI-Compatible)               │
-│   • Endpoint: /v1-openai                            │
+│   • Endpoint: /v1                                   │
 │   • Authentication: Bearer token                    │
 │   • Streaming: Server-Sent Events                   │
 ├─────────────────────────────────────────────────────┤
