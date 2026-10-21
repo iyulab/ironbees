@@ -19,7 +19,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="10.0.13" />
     <!-- Security lift: 3.5.3 carries a high-severity advisory (GHSA-v5pm-xwqc-g5wc).
          3.5.5 is the lowest release on the same minor that clears it. -->
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.5.5" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
   </ItemGroup>
   <ItemGroup Label="IronHive">
     <PackageVersion Include="IronHive.Abstractions" Version="0.68.0" />
@@ -68,7 +68,7 @@
   <ItemGroup Label="Web and API">
     <!-- ASP.NET Core -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.1" />
   </ItemGroup>
   <ItemGroup Label="Testing">
     <!-- xUnit v3/MTP native mode: no Microsoft.NET.Test.Sdk needed, coverlet.collector was a dead
