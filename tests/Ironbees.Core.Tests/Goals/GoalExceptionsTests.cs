@@ -86,37 +86,4 @@ public class GoalExceptionsTests
         Assert.Equal("/path/to/goal", exception.GoalPath);
         Assert.Single(exception.Errors);
     }
-
-    [Fact]
-    public void GoalNotFoundException_WithMessage_SetsMessage()
-    {
-        // Arrange & Act
-        var exception = new GoalNotFoundException("Goal not found");
-
-        // Assert
-        Assert.Equal("Goal not found", exception.Message);
-        Assert.Null(exception.GoalId);
-        Assert.Null(exception.SearchPath);
-    }
-
-    [Fact]
-    public void GoalNotFoundException_WithGoalId_SetsGoalId()
-    {
-        // Arrange & Act
-        var exception = new GoalNotFoundException("Goal not found", "goal-123");
-
-        // Assert
-        Assert.Equal("goal-123", exception.GoalId);
-    }
-
-    [Fact]
-    public void GoalNotFoundException_WithSearchPath_SetsSearchPath()
-    {
-        // Arrange & Act
-        var exception = new GoalNotFoundException("Goal not found", "goal-123", "/search/path");
-
-        // Assert
-        Assert.Equal("goal-123", exception.GoalId);
-        Assert.Equal("/search/path", exception.SearchPath);
-    }
 }

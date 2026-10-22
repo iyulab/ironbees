@@ -13,7 +13,7 @@ public static class CoreServiceCollectionExtensions
     /// <summary>
     /// Add Ironbees Core services (agent loading, registry, selector, orchestrator).
     /// This does NOT register an ILLMFrameworkAdapter — use an adapter package
-    /// (e.g. Ironbees.AgentFramework or Ironbees.Ironhive) for that.
+    /// (e.g. Ironbees.Ironhive) for that.
     /// </summary>
     public static IServiceCollection AddIronbeesCore(
         this IServiceCollection services,

@@ -114,9 +114,10 @@ public class ExecutionCoordinator(ITaskExecutor<Request, Result> executor)
 
 ## Scope and Architecture
 
-### Q: Should I use Ironbees or Microsoft Agent Framework directly?
+### Q: Should I use Ironbees or an LLM framework directly?
 
-**Both!** Ironbees **complements** MAF, not replaces it.
+**Both!** Ironbees **complements** the LLM framework (IronHive through `Ironbees.Ironhive`, or the framework behind your own
+`ILLMFrameworkAdapter`), not replaces it.
 
 **Use Ironbees for**:
 - Filesystem convention-based agent loading
@@ -124,8 +125,8 @@ public class ExecutionCoordinator(ITaskExecutor<Request, Result> executor)
 - Multi-framework integration
 - Reducing boilerplate
 
-**Use MAF directly for**:
-- Complex workflow orchestration (DAG, parallel tasks)
+**Use the LLM framework for**:
+- Complex workflow orchestration (DAG, parallel tasks) — IronHive's orchestrators through `IIronhiveOrchestratorFactory`
 - Tool execution and MCP integration
 - Advanced conversation memory
 
@@ -133,7 +134,7 @@ See [PHILOSOPHY.md](./PHILOSOPHY.md) for scope boundaries.
 
 ---
 
-### Q: What's the difference between Autonomous SDK, AgentMode, and MAF?
+### Q: What's the difference between Autonomous SDK, AgentMode, and IronHive orchestration?
 
 **Decision Tree**:
 
@@ -141,7 +142,7 @@ See [PHILOSOPHY.md](./PHILOSOPHY.md) for scope boundaries.
 Need workflow?
 ├─ Simple iterations? → AutonomousOrchestrator (Autonomous SDK)
 ├─ State machine? → YamlDrivenOrchestrator (AgentMode)
-└─ Complex DAG/parallel? → MAF directly (via MafWorkflowConverter)
+└─ Complex DAG/parallel? → IronHive orchestration (Ironbees.Ironhive)
 ```
 
 ---

@@ -71,37 +71,3 @@ public class GoalValidationException : Exception
         Errors = errors.ToList();
     }
 }
-
-/// <summary>
-/// Exception thrown when a goal is not found.
-/// </summary>
-public class GoalNotFoundException : Exception
-{
-    /// <summary>
-    /// The goal ID that was not found.
-    /// </summary>
-    public string? GoalId { get; }
-
-    /// <summary>
-    /// The path that was searched.
-    /// </summary>
-    public string? SearchPath { get; }
-
-    public GoalNotFoundException(string message)
-        : base(message)
-    {
-    }
-
-    public GoalNotFoundException(string message, string goalId)
-        : base(message)
-    {
-        GoalId = goalId;
-    }
-
-    public GoalNotFoundException(string message, string goalId, string searchPath)
-        : base(message)
-    {
-        GoalId = goalId;
-        SearchPath = searchPath;
-    }
-}

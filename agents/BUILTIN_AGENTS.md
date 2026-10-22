@@ -98,7 +98,7 @@ curl -X POST http://localhost:5001/api/agents/chat \
 - 사용자 프로파일링
 - 컨텍스트 유지
 
-**참고**: 대화 관리 기능은 Microsoft Agent Framework, Semantic Kernel의 네이티브 기능을 사용하는 것을 권장합니다.
+**참고**: 대화 관리 기능은 IronHive, Semantic Kernel 등 LLM 프레임워크의 네이티브 기능을 사용하는 것을 권장합니다.
 
 ```bash
 # 사용 예시 (단순 메시지 처리)
@@ -303,7 +303,7 @@ dotnet test
 - 복잡한 작업 → 여러 에이전트 조합
 
 ### 2. 컨텍스트 관리
-- 대화형 앱 → Microsoft Agent Framework 또는 Semantic Kernel의 대화 관리 기능 사용
+- 대화형 앱 → IronHive 또는 Semantic Kernel 등 LLM 프레임워크의 대화 관리 기능 사용
 - 단발성 질의 → 개별 Chat API
 - 장기 세션 → 기본 프레임워크의 세션 관리 기능 활용
 

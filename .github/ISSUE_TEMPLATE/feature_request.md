@@ -54,8 +54,7 @@ assignees: ''
 - [ ] No - Fully backward compatible
 
 **Framework support:**
-- [ ] Azure OpenAI
-- [ ] Microsoft Agent Framework
+- [ ] IronHive (Ironbees.Ironhive)
 - [ ] Semantic Kernel
 - [ ] LangChain
 - [ ] All frameworks

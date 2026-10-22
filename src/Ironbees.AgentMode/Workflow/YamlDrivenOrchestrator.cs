@@ -10,15 +10,15 @@ namespace Ironbees.AgentMode.Workflow;
 
 /// <summary>
 /// Orchestrates workflow execution driven by YAML definitions.
-/// This is Ironbees' value-add: translating YAML configuration to
-/// MS Agent Framework execution while maintaining filesystem conventions.
+/// This is Ironbees' value-add: running YAML configuration through the agents the
+/// application supplies while maintaining filesystem conventions.
 /// </summary>
 /// <remarks>
 /// Design Decision: This orchestrator focuses on:
 /// - Loading and validating YAML workflow definitions
 /// - Resolving agent references from filesystem conventions
 /// - Evaluating custom triggers (file_exists, dir_not_empty)
-/// - Delegating actual agent execution to MS Agent Framework
+/// - Delegating actual agent execution to the IAgentExecutorFactory
 /// - Checkpoint persistence and resumption via ICheckpointStore
 /// </remarks>
 public sealed class YamlDrivenOrchestrator : IWorkflowOrchestrator<WorkflowRuntimeState>

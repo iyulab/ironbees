@@ -17,14 +17,12 @@
     <Project Path="samples/WebApiSample/Ironbees.WebApi/Ironbees.WebApi.csproj" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src/Ironbees.AgentFramework/Ironbees.AgentFramework.csproj" />
     <Project Path="src/Ironbees.AgentMode/Ironbees.AgentMode.csproj" />
     <Project Path="src/Ironbees.Autonomous/Ironbees.Autonomous.csproj" />
     <Project Path="src/Ironbees.Core/Ironbees.Core.csproj" />
     <Project Path="src/Ironbees.Ironhive/Ironbees.Ironhive.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj" />
     <Project Path="tests/Ironbees.AgentMode.Tests/Ironbees.AgentMode.Tests.csproj" />
     <Project Path="tests/Ironbees.Autonomous.Tests/Ironbees.Autonomous.Tests.csproj" />
     <Project Path="tests/Ironbees.Core.Tests/Ironbees.Core.Tests.csproj" />

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Breaking: `Ironbees.AgentFramework` is no longer published** — there is no new version of the Microsoft Agent
+  Framework / Azure OpenAI adapter, and `AddIronbees` no longer exists. Removed with it: `AgentFrameworkAdapter`,
+  `AgentWrapper`, `IronbeesOptions`, `GoalExecutionBridge`, and the workflow types `MafWorkflowConverter`,
+  `MafWorkflowExecutor`, `IWorkflowConverter`, `IMafWorkflowExecutor`, `IWorkflowCheckpointStore`,
+  `FileSystemWorkflowCheckpointStore` and `WorkflowConversionException`. The last published version stays on nuget.org,
+  marked deprecated. Ironbees no longer depends on `Microsoft.Agents.AI`, `Azure.AI.OpenAI` or `Azure.Identity`.
+  - `Ironbees.AgentMode` loses the goal execution bridge contract that only that package implemented:
+    `IGoalExecutionBridge`, `GoalExecutionOptions`, `GoalCheckpointInfo`, `GoalExecutionResult` and `GoalExecutionStatus`.
+    `GoalExecutionEvent` stays (the IronHive orchestration stream uses it).
+    `Ironbees.Core` loses `GoalNotFoundException`, which only that package caught and nothing threw.
+  - Migration: run agents with `Ironbees.Ironhive` (`AddIronbeesIronhive`) and an IronHive provider package
+    (`IronHive.Providers.OpenAI`, `.Anthropic`, `.GoogleAI`, or `.OpenAI.Compatible` for OpenAI-compatible servers). To run
+    YAML workflows, use `YamlDrivenOrchestrator` with your `IAgentExecutorFactory`; for Microsoft Agent Framework workflows,
+    reference `Microsoft.Agents.AI` directly.
+
 ### Fixed
 - **`ResilientExecutor` implements `IDisposable` as well** — a container disposed with `Dispose()` (a `using` provider or scope) no longer throws «only implements IAsyncDisposable» when it created one.
 - **`Ironbees.AgentMode` has a package description and tags** — its nuget.org page showed the SDK default «Package Description» and it matched no search tag.

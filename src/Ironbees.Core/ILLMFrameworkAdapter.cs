@@ -4,7 +4,7 @@ using Microsoft.Extensions.AI;
 namespace Ironbees.Core;
 
 /// <summary>
-/// Adapter interface for different LLM frameworks (MS Agent Framework, Semantic Kernel, etc.)
+/// Adapter interface for different LLM frameworks (IronHive, Semantic Kernel, etc.)
 /// </summary>
 public interface ILLMFrameworkAdapter
 {

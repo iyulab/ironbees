@@ -63,7 +63,6 @@ jobs:
         # List of packages to check
         PACKAGES=(
           "Ironbees.Core"
-          "Ironbees.AgentFramework"
           "Ironbees.AgentMode"
           "Ironbees.Autonomous"
           "Ironbees.Ironhive"
@@ -100,12 +99,6 @@ jobs:
 
         echo "🔨 Packing Ironbees.Core..."
         dotnet pack src/Ironbees.Core/Ironbees.Core.csproj \
-          --configuration Release \
-          --no-build \
-          --output ./packages
-
-        echo "🔨 Packing Ironbees.AgentFramework..."
-        dotnet pack src/Ironbees.AgentFramework/Ironbees.AgentFramework.csproj \
           --configuration Release \
           --no-build \
           --output ./packages

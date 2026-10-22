@@ -17,12 +17,10 @@ public class PublicApiConventionTests
 {
     private static readonly string[] KnownUncancellable = [];
 
-    // Kept (2026-10-05), each a report rather than a failure channel: GetExecutionResultAsync reads how a finished goal run ended; an agent
-    // executor's and a multi-agent run's result is the run's outcome, which callers inspect and record. The calls throw
-    // for their own failures (cancellation).
+    // Kept (2026-10-05), each a report rather than a failure channel: an agent executor's and a multi-agent run's result
+    // is the run's outcome, which callers inspect and record. The calls throw for their own failures (cancellation).
     private static readonly string[] KnownResultReturns =
     [
-        "Ironbees.AgentMode.Goals.IGoalExecutionBridge.GetExecutionResultAsync(String, CancellationToken)",
         "Ironbees.AgentMode.Workflow.IAgentExecutor.ExecuteAsync(String, IReadOnlyDictionary<String, Object>, CancellationToken)",
         "Ironbees.Core.Orchestration.IMultiAgentOrchestrator.RunAsync(String, CancellationToken)",
     ];

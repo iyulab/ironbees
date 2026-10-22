@@ -12,7 +12,7 @@ namespace Ironbees.AgentMode.Workflow;
 /// <remarks>
 /// Thin Wrapper Philosophy:
 /// - Declaration in Ironbees (workflow templates with parameters)
-/// - Execution delegated to MAF (resolved WorkflowDefinition)
+/// - Execution delegated to an orchestrator such as YamlDrivenOrchestrator (resolved WorkflowDefinition)
 ///
 /// Template Format:
 /// <code>

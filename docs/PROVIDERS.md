@@ -6,7 +6,6 @@ of being told which provider to use:
 | Backend | Package | Providers | Where the provider is chosen |
 |---------|---------|-----------|------------------------------|
 | IronHive | `Ironbees.Ironhive` | OpenAI, Anthropic, Google AI, any OpenAI-compatible server (Ollama, LM Studio, vLLM, GPUStack, llama.cpp) | Register providers by name in `ConfigureHive`; an agent picks one with `model.provider` |
-| Microsoft Agent Framework | `Ironbees.AgentFramework` | OpenAI, Azure OpenAI | `IronbeesOptions` in `AddIronbees` — one client for every agent |
 
 The provider packages belong to IronHive; add the ones you register.
 
@@ -93,25 +92,6 @@ model:
 ```
 
 The server must already be running with that model available; Ironbees does not start or download it.
-
-## Microsoft Agent Framework backend
-
-```csharp
-// OpenAI
-services.AddIronbees(options =>
-{
-    options.OpenAIApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-    options.AgentsDirectory = "./agents";
-});
-
-// Azure OpenAI — deployment names go in model.deployment
-services.AddIronbees(options =>
-{
-    options.AzureOpenAIEndpoint = "https://your-resource.openai.azure.com";
-    options.AzureOpenAIKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY");
-    options.AgentsDirectory = "./agents";
-});
-```
 
 ## Custom adapter
 

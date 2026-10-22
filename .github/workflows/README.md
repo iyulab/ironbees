@@ -34,8 +34,6 @@ GitHub Actions 페이지에서 "Run workflow" 버튼 클릭
 
 **수동 트리거 옵션**:
 - `force_publish`: 버전 체크 우회하고 강제 배포 (기본: false)
-- `publish_core`: Ironbees.Core 배포 여부 (기본: true)
-- `publish_agent_framework`: Ironbees.AgentFramework 배포 여부 (기본: true)
 
 **작업 흐름**:
 1. 전체 빌드 및 테스트 실행
@@ -86,8 +84,6 @@ GitHub Actions 페이지에서:
 3. "Run workflow" 버튼 클릭
 4. 옵션 선택:
    - ✅ `force_publish`: 버전 중복 무시하고 배포
-   - ✅ `publish_core`: Core 패키지만 배포
-   - ✅ `publish_agent_framework`: AgentFramework 패키지만 배포
 5. "Run workflow" 실행
 
 ### 배포 문제 해결

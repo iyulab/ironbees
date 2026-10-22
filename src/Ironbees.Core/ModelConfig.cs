@@ -12,13 +12,13 @@ namespace Ironbees.Core;
 /// <list type="table">
 ///   <listheader>
 ///     <term>Parameter</term>
-///     <description>Agent Framework backend / IronHive backend</description>
+///     <description>IronHive backend</description>
 ///   </listheader>
-///   <item><term>Temperature</term><description>applied / applied</description></item>
-///   <item><term>MaxTokens</term><description>applied / applied</description></item>
-///   <item><term>TopP</term><description>applied / applied</description></item>
-///   <item><term>FrequencyPenalty</term><description>applied / <b>ignored</b> (logged as a warning)</description></item>
-///   <item><term>PresencePenalty</term><description>applied / <b>ignored</b> (logged as a warning)</description></item>
+///   <item><term>Temperature</term><description>applied</description></item>
+///   <item><term>MaxTokens</term><description>applied</description></item>
+///   <item><term>TopP</term><description>applied</description></item>
+///   <item><term>FrequencyPenalty</term><description><b>ignored</b> (logged as a warning)</description></item>
+///   <item><term>PresencePenalty</term><description><b>ignored</b> (logged as a warning)</description></item>
 /// </list>
 /// <para>
 /// The two ignored parameters have no field on the IronHive agent parameter contract, so the

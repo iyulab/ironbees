@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/iyulab/ironbees/actions/workflows/ci.yml/badge.svg)](https://github.com/iyulab/ironbees/actions/workflows/ci.yml)
 [![NuGet - Core](https://img.shields.io/nuget/v/Ironbees.Core?label=Ironbees.Core)](https://www.nuget.org/packages/Ironbees.Core)
-[![NuGet - AgentFramework](https://img.shields.io/nuget/v/Ironbees.AgentFramework?label=Ironbees.AgentFramework)](https://www.nuget.org/packages/Ironbees.AgentFramework)
 [![NuGet - Ironhive](https://img.shields.io/nuget/v/Ironbees.Ironhive?label=Ironbees.Ironhive)](https://www.nuget.org/packages/Ironbees.Ironhive)
 [![License](https://img.shields.io/github/license/iyulab/ironbees)](LICENSE)
 
@@ -17,7 +16,7 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 | **GitOps-Ready** | Agent definitions are YAML files under version control - review, diff, rollback |
 | **Zero-Code Agent Setup** | `agent.yaml` + `system-prompt.md` = fully configured agent |
 | **Observable** | All state lives in the filesystem - debug with `ls`, `grep`, `cat` |
-| **Portable** | Swap between IronHive and Microsoft Agent Framework without changing agent definitions |
+| **Portable** | Agent definitions name a provider and a model, not a backend - swap the `ILLMFrameworkAdapter` without changing them |
 | **Intelligent Routing** | Keyword, embedding, and hybrid agent selection out of the box |
 | **Cost Tracking** | Records the token usage each provider reports and prices it with [TokenMeter](https://github.com/iyulab/TokenMeter) |
 
@@ -26,9 +25,8 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 | Package | Purpose |
 |---|---|
 | `Ironbees.Core` | Agent loading from `agents/<name>/agent.yaml`, routing, guardrails, token and cost tracking (`AddIronbeesCore`) |
-| `Ironbees.AgentMode` | YAML workflow definitions, templates and goals (`GoalDefinition`, `IGoalExecutionBridge`) |
+| `Ironbees.AgentMode` | YAML workflow definitions and goal workflow templates (`YamlWorkflowLoader`, `YamlDrivenOrchestrator`, `YamlWorkflowTemplateResolver`) |
 | `Ironbees.Ironhive` | IronHive backend (multi-provider) and declarative multi-agent orchestration (`AddIronbeesIronhive`) |
-| `Ironbees.AgentFramework` | Azure OpenAI / Microsoft Agent Framework backend and the goal execution bridge (`AddIronbees`) |
 | `Ironbees.Autonomous` | Iterative autonomous execution with oracle verification (`AutonomousOrchestrator.Create<TRequest, TResult>()`) |
 
 ## Features
@@ -44,9 +42,9 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
 - **Workflow human gates** (`Ironbees.AgentMode`) — a `type: human_gate` state in a YAML workflow stops `YamlDrivenOrchestrator.ExecuteAsync` with a
   `WaitingForApproval` state; answer with `ApproveAsync(executionId, new ApprovalDecision { Approved = … })` to move to `on_approve` / `on_reject`.
   `approval_mode: never` makes the gate pass through (e.g. in a test environment); `always_require` is the default.
-- **Goals** (`Ironbees.AgentFramework`) — `IGoalExecutionBridge.ExecuteGoalAsync(goal, input, new GoalExecutionOptions { MaxIterations = …, Timeout = …, Parameters = … })`
-  runs a goal's workflow template. The per-call options override the goal's own constraints and checkpoint settings. A goal that exceeds its `Timeout` (or
-  `Constraints.MaxDuration`) ends with a `GoalFailed` event marked `timedOut`.
+- **Goals** — `goal.yaml` files load through `FileSystemGoalLoader` (`Ironbees.Core`). `YamlWorkflowTemplateResolver.ResolveAsync(templateName, goal)`
+  (`Ironbees.AgentMode`) turns the goal's workflow template into a `WorkflowDefinition`, with the goal's parameters, constraints and checkpoint
+  settings substituted, ready for `YamlDrivenOrchestrator.ExecuteAsync`.
 - **Autonomous execution** (`Ironbees.Autonomous`) — `AutonomousOrchestrator.Create<TRequest, TResult>().WithExecutor(…).WithRequestFactory(…).WithOracle(…).Build()`
   (executor and request factory are required), then `EnqueuePrompt(…)` and `await StartAsync()`; progress arrives on the `OnEvent` event. Context tracking is on by default;
   `WithoutContext()` turns it off. `AutonomousConfig.MaxContextLearnings` (`context.max_learnings` in settings) caps the learnings kept between iterations.
@@ -62,32 +60,23 @@ Ironbees brings **filesystem conventions** and **declarative agent definitions**
                     |
               Ironbees.AgentMode
            (YAML workflows, definitions)
-                  /            \
-Ironbees.AgentFramework    Ironbees.Ironhive
-  (Azure OpenAI + MAF)      (IronHive multi-provider,
-                             Multi-agent orchestration)
+                    |
+              Ironbees.Ironhive
+          (IronHive multi-provider,
+           Multi-agent orchestration)
 
               Ironbees.Autonomous
         (Iterative execution, oracle verification)
 ```
 
-Ironbees Core is **backend-agnostic**. Pick the adapter that fits your stack:
+Ironbees Core is **backend-agnostic**: it runs agents through an `ILLMFrameworkAdapter`. The shipped adapter is:
 
 - **Ironbees.Ironhive** - Multi-provider (OpenAI, Anthropic, Google, Ollama) + **Multi-agent orchestration** via [IronHive](https://github.com/iyulab/ironhive)
-- **Ironbees.AgentFramework** - Azure OpenAI + Microsoft Agent Framework
 
 ## Installation
 
-**Option A: IronHive backend** (multi-provider)
-
 ```bash
 dotnet add package Ironbees.Ironhive
-```
-
-**Option B: Azure OpenAI backend**
-
-```bash
-dotnet add package Ironbees.AgentFramework
 ```
 
 ## Define an Agent
@@ -123,20 +112,19 @@ always comes from `system-prompt.md`; a `systemPrompt` key in `agent.yaml` is ig
 
 #### Sampling parameters
 
-`model:` accepts five sampling parameters. Support differs by backend — a parameter marked
-*ignored* is accepted by configuration binding but never reaches the provider:
+`model:` accepts five sampling parameters. A parameter marked *ignored* is accepted by
+configuration binding but never reaches the provider:
 
-| Parameter | Agent Framework | IronHive |
-|---|---|---|
-| `temperature` | applied | applied |
-| `maxTokens` | applied | applied |
-| `topP` | applied | applied |
-| `frequencyPenalty` | applied | **ignored** (warns at agent creation) |
-| `presencePenalty` | applied | **ignored** (warns at agent creation) |
+| Parameter | IronHive |
+|---|---|
+| `temperature` | applied |
+| `maxTokens` | applied |
+| `topP` | applied |
+| `frequencyPenalty` | **ignored** (warns at agent creation) |
+| `presencePenalty` | **ignored** (warns at agent creation) |
 
 The last two have no field on the IronHive agent parameter contract, so the adapter has nothing
-to forward them to; it logs a warning naming the agent rather than dropping them silently. If
-you need them, run that agent on the Agent Framework backend.
+to forward them to; it logs a warning naming the agent rather than dropping them silently.
 
 `temperature` and `maxTokens` are always sent — including when you set them to the same value as
 the documented default. Provider support applies on top of this: a backend marked *applied* still
@@ -179,9 +167,7 @@ it replaces the agent's tools for that call only. Tool execution surfaces on the
 `ToolCallStartChunk`/`ToolCallCompleteChunk` (see the streaming example below); the text-only
 `StreamAsync` surface only sees the resulting answer text, not the intermediate tool calls.
 
-Currently supported by the `Ironbees.Ironhive` adapter. The Agent Framework/Azure OpenAI backend
-(`AddIronbees`) does not yet resolve `tools:` — an agent declaring tools on that backend runs
-without them (no `ITool`/pool concept exists there today).
+Tools are resolved by the `Ironbees.Ironhive` adapter.
 
 ## Quick Start
 
@@ -204,19 +190,6 @@ services.AddIronbeesIronhive(options =>
     {
         hive.AddOpenAIProviders("openai", new OpenAIConfig { ApiKey = apiKey });
     };
-});
-```
-
-### With Azure OpenAI
-
-```csharp
-using Ironbees.AgentFramework;        // AddIronbees
-
-services.AddIronbees(options =>
-{
-    options.AzureOpenAIEndpoint = "https://your-resource.openai.azure.com";
-    options.AzureOpenAIKey = Environment.GetEnvironmentVariable("AZURE_OPENAI_KEY");
-    options.AgentsDirectory = "./agents";
 });
 ```
 
@@ -336,13 +309,13 @@ await foreach (var chunk in orchestrator.StreamStructuredAsync(query, new Proces
 Which per-request options an adapter applies. An option the adapter cannot apply throws
 `NotSupportedException` at call time rather than being ignored:
 
-| `ProcessOptions` | `Ironbees.Ironhive` | `Ironbees.AgentFramework` |
-|---|---|---|
-| `MaxTokens` | applied | applied |
-| `ThinkingEffort` | applied | throws |
-| `Tools` | applied | throws |
-| `Suggestions` | applied | throws |
-| `MaxToolTurns` | applied | throws |
+| `ProcessOptions` | `Ironbees.Ironhive` |
+|---|---|
+| `MaxTokens` | applied |
+| `ThinkingEffort` | applied |
+| `Tools` | applied |
+| `Suggestions` | applied |
+| `MaxToolTurns` | applied |
 
 ### ASP.NET Core Integration
 

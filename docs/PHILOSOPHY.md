@@ -4,18 +4,18 @@
 
 Ironbees follows a fundamental principle that shapes every design decision:
 
-> **"Declaration in Ironbees, Execution in MAF"**
+> **"Declaration in Ironbees, Execution in the LLM framework"**
 
 This means:
 
 ```
 ┌─────────────────────────────┐      ┌──────────────────────────────┐
-│   Ironbees Responsibility   │      │    MAF Responsibility        │
+│   Ironbees Responsibility   │      │ LLM Framework Responsibility │
 ├─────────────────────────────┤      ├──────────────────────────────┤
 │ YAML Schema Definition      │  →   │ State Machine Execution      │
 │ Event Type Definition       │  →   │ Agent Orchestration          │
 │ Workflow Template Parsing   │  →   │ Tool/MCP Integration         │
-│ MAF Workflow Conversion     │  →   │ Memory/Context Management    │
+│ Framework Adapters          │  →   │ Memory/Context Management    │
 │ Interface Abstractions      │  →   │ Business Logic Implementation│
 └─────────────────────────────┘      └──────────────────────────────┘
 ```
@@ -26,7 +26,7 @@ This means:
 - Declarative patterns (YAML schemas, configuration types)
 - Interface abstractions (IOracleVerifier, ITaskExecutor, ICheckpointStore)
 - Convention-based loading (filesystem-based agent discovery)
-- Integration adapters (bridging to MAF, Semantic Kernel, etc.)
+- Integration adapters (bridging to IronHive, Semantic Kernel, etc.)
 - Developer experience (boilerplate reduction, DI helpers)
 
 **❌ Ironbees SHOULD NOT provide**:
@@ -147,7 +147,7 @@ Before adding any feature to Ironbees, ask these questions:
 **Is this feature about DECLARING a pattern or EXECUTING logic?**
 
 ```
-Declaration → Ironbees        Execution → MAF/User Code
+Declaration → Ironbees        Execution → LLM Framework/User Code
 ├─ YAML schema design         ├─ State machine runtime
 ├─ Event type definition      ├─ Workflow orchestration
 ├─ Interface abstraction      ├─ Business logic
@@ -159,7 +159,7 @@ Declaration → Ironbees        Execution → MAF/User Code
 | Feature | Type | Belongs In |
 |---------|------|------------|
 | YAML workflow schema | Declaration | Ironbees ✅ |
-| DAG task scheduler | Execution | MAF ❌ |
+| DAG task scheduler | Execution | LLM framework (IronHive's Graph orchestrator) ❌ |
 | ICheckpointStore interface | Declaration | Ironbees ✅ |
 | Checkpoint storage logic | Execution | User Code ❌ |
 | Sampling algorithm | Execution | User Code ❌ |
@@ -194,12 +194,12 @@ public Task<OracleVerdict> VerifyAsync(
 - Static configuration → YAML
 - Dynamic behavior → Code
 
-### Question 3: Would this reimplement MAF/SK functionality?
+### Question 3: Would this reimplement LLM framework functionality?
 
 **Duplication Detection**
 
 Before implementing:
-1. Check if MAF/Semantic Kernel already provides this
+1. Check if the LLM framework (IronHive, Semantic Kernel, ...) already provides this
 2. If yes, provide an **adapter/integration**, not a reimplementation
 3. If no, verify it's truly a cross-framework concern
 
@@ -212,10 +212,10 @@ public class IronbeesWorkflowEngine
     public async Task ExecuteDAG(TaskGraph graph) { ... }
 }
 
-✅ GOOD: Integrate with MAF
-public class MafWorkflowConverter
+✅ GOOD: Integrate with the framework (Ironbees.Ironhive)
+public class IronhiveOrchestratorFactory
 {
-    public MafWorkflow Convert(YamlWorkflow yaml) { ... }
+    public IMultiAgentOrchestrator CreateOrchestrator(OrchestratorSettings settings, IReadOnlyList<IAgent> agents) { ... }
 }
 ```
 
@@ -227,10 +227,8 @@ public class MafWorkflowConverter
 // Ironbees provides the interface
 public interface ILLMFrameworkAdapter { }
 
-// Ironbees provides the default adapter
-public class AgentFrameworkAdapter : ILLMFrameworkAdapter { }
-
-// Users can implement custom adapters
+// Ironbees.Ironhive ships the adapter for IronHive (IronhiveAdapter);
+// users can implement custom adapters
 public class SemanticKernelAdapter : ILLMFrameworkAdapter { }
 ```
 
@@ -253,7 +251,7 @@ name: "{{goal.id}}-workflow"
 states:
   - id: START
     next: INITIALIZE
-  # ... MAF executes the pattern
+  # ... YamlDrivenOrchestrator runs the resolved workflow
 ```
 
 ## Scope Boundaries by Example
@@ -296,7 +294,7 @@ orchestrator.OnEvent += e => Console.WriteLine($"{e.Timestamp:O} {e.Type}: {e.Me
 
 #### DAG Task Scheduling
 ```csharp
-// This belongs in MAF, not Ironbees
+// This belongs in the LLM framework (IronHive's Graph orchestrator), not Ironbees
 public class TaskScheduler
 {
     public async Task ExecuteDAG(TaskGraph graph) { ... }
@@ -377,10 +375,10 @@ public class ProgressiveSamplingExecutor : ITaskExecutor<Request, Result>
 ### 3. Ecosystem Compatibility
 
 Ironbees plays well with:
-- Microsoft Agent Framework
+- IronHive (through Ironbees.Ironhive)
 - Semantic Kernel
 - LangChain
-- Custom LLM frameworks
+- Custom LLM frameworks (through your own `ILLMFrameworkAdapter`)
 
 Because it doesn't try to replace them.
 
@@ -388,24 +386,23 @@ Because it doesn't try to replace them.
 
 ### "Why not make Ironbees a full-featured framework?"
 
-**Short Answer**: That's what MAF/SK are for.
+**Short Answer**: That's what LLM frameworks (IronHive, Semantic Kernel, ...) are for.
 
 **Long Answer**:
 - LLM framework space is rapidly evolving
-- Microsoft Agent Framework is the strategic choice for .NET
+- An adapter keeps the agent definitions independent of whichever framework runs them
 - Ironbees adds value by **simplifying**, not **replacing**
 - Thin wrapper = sustainable, full framework = unsustainable
 
 ### "Why can't Ironbees handle DAG task scheduling?"
 
-**Answer**: It can, via MAF integration.
+**Answer**: It can, via IronHive orchestration (Ironbees.Ironhive).
 
 Ironbees provides:
-- YAML schema for declaring task dependencies
-- Conversion to MAF workflow format
-- Integration layer for MAF execution
+- Declarative orchestrator settings (`OrchestratorSettings`, `GraphSettings`) for task dependencies
+- `IIronhiveOrchestratorFactory`, which builds the IronHive orchestrator from them
 
-MAF handles:
+IronHive handles:
 - Actual DAG execution
 - State machine management
 - Parallel task scheduling
@@ -437,8 +434,8 @@ Application implements:
 
 ```
 Simple Iterative        → AutonomousOrchestrator
-Complex YAML Workflows  → YamlDrivenOrchestrator + MAF
-Full Orchestration      → MAF directly
+Complex YAML Workflows  → YamlDrivenOrchestrator
+Full Orchestration      → IronHive orchestration (Ironbees.Ironhive)
 ```
 
 Ironbees provides **integration and abstraction** for all these scenarios.

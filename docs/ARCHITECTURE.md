@@ -32,9 +32,9 @@ Ironbees is a **Thin Wrapper** LLM agent framework that simplifies agent loading
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
-│           Microsoft Agent Framework (MAF)                │
-│  - AIAgent execution    - Tool integration               │
-│  - Workflow engine      - Context management             │
+│        LLM framework adapter (ILLMFrameworkAdapter)      │
+│  - Ironbees.Ironhive: IronHive agents, tools,            │
+│    multi-agent orchestration                             │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
@@ -65,9 +65,6 @@ src/
 │       ├── AzureContentSafetyGuardrail  # Azure AI adapter
 │       ├── OpenAIModerationGuardrail    # OpenAI adapter
 │       └── IAuditLogger            # Compliance logging
-│
-├── Ironbees.AgentFramework/        # MAF integration
-│   └── Workflow/                   # Workflow converter, executor, checkpoint
 │
 ├── Ironbees.AgentMode/             # YAML workflow definitions
 │   └── Workflow/                   # YamlDrivenOrchestrator
@@ -103,13 +100,11 @@ src/
 |-----------|---------|----------------|
 | `IAgentLoader` | Load agents from filesystem | `FileSystemAgentLoader` |
 | `IAgentSelector` | Route requests to agents | `KeywordAgentSelector`, `EmbeddingAgentSelector`, `HybridAgentSelector` |
-| `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `AgentFrameworkAdapter`, `IronhiveAdapter` |
+| `ILLMFrameworkAdapter` | Bridge to LLM frameworks | `IronhiveAdapter` |
 | `IMultiAgentOrchestrator` | Multi-agent orchestration | `IronhiveOrchestratorWrapper` |
 | `IIronhiveOrchestratorFactory` | Create orchestrators from settings | `IronhiveOrchestratorFactory` |
 | `IWorkflowOrchestrator<T>` | Execute YAML workflows | `YamlDrivenOrchestrator` |
-| `IWorkflowConverter` | YAML → MAF conversion | `MafWorkflowConverter` |
 | `ICheckpointStore` (Core) | Orchestration persistence | `FileSystemIronhiveCheckpointStore`, `IronhiveCheckpointStoreAdapter` |
-| `IWorkflowCheckpointStore` (AgentFramework) | MAF workflow persistence | `FileSystemWorkflowCheckpointStore` |
 | `IContentGuardrail` | Content validation | `RegexGuardrail`, `KeywordGuardrail`, `LengthGuardrail`, `AzureContentSafetyGuardrail`, `OpenAIModerationGuardrail` |
 | `IAuditLogger` | Compliance logging | `NullAuditLogger`, custom implementations |
 
@@ -213,16 +208,19 @@ Uses `DelegatingChatClient` pattern from `Microsoft.Extensions.AI`.
 
 ## Workflow System
 
-YAML workflows are converted to MAF workflows for execution:
+YAML workflows are state machines that `YamlDrivenOrchestrator` executes; each agent state runs through the
+`IAgentExecutorFactory` the application supplies:
 
 ```
-YAML Definition → YamlWorkflowLoader → MafWorkflowConverter → MAF Workflow → Executor
+YAML Definition → YamlWorkflowLoader (parse + validate) → YamlDrivenOrchestrator → IAgentExecutorFactory → agents
 ```
 
-**Workflow Types**:
-- **Sequential**: Agents execute one after another
-- **Parallel**: Multiple agents execute concurrently
-- **Mixed**: Combines sequential and parallel execution
+**State Types**:
+- **start** / **terminal**: Entry and end of the workflow
+- **agent**: One agent runs, then the workflow moves to `next`
+- **parallel**: Several agents run concurrently
+- **human_gate**: The workflow waits for `ApproveAsync`
+- **escalation**: Error handling and escalation
 
 ## Guardrails System
 
@@ -291,8 +289,7 @@ if (!result.IsAllowed)
 **Delegated to External Services**:
 - AI-based content moderation → Azure AI Content Safety, OpenAI Moderation
 
-**Delegated to MAF**:
-- Complex workflow execution
+**Delegated to the LLM backend** (IronHive through `Ironbees.Ironhive`, or the framework behind your own adapter):
 - Tool execution engine
 - Conversation memory
 - MCP integration
@@ -300,8 +297,7 @@ if (!result.IsAllowed)
 ## Dependencies
 
 The packages build on Microsoft.Extensions.AI, YamlDotNet and Polly; the orchestration layer builds on IronHive
-(`IronHive.Abstractions`, `IronHive.Core`) and the workflow system on the Microsoft Agent Framework
-(`Microsoft.Agents.AI`). The versions in use are the ones pinned in
+(`IronHive.Abstractions`, `IronHive.Core`). The versions in use are the ones pinned in
 [`Directory.Packages.props`](../Directory.Packages.props) — this page does not repeat them.
 
 ## Workflow Decision Guide
@@ -411,26 +407,17 @@ states:
 - Multi-step validation workflows
 - Complex decision trees
 
-### When to Use MAF Directly
+### When to Use IronHive Orchestration (Ironbees.Ironhive)
 
-**Use for**: Full workflow orchestration with advanced features
+**Use for**: Multi-agent orchestration patterns
 
 ✅ **Good fit when**:
-- DAG task dependencies and parallel execution
-- Advanced state management
-- Tool execution and MCP integration
-- Complex memory and context management
+- DAG task dependencies (`OrchestratorType.Graph`) and parallel execution (`OrchestratorType.Parallel`)
+- Hub-and-spoke delegation, handoff between agents, group discussion
+- Resilience middleware around the agents (retry, circuit breaker, bulkhead, rate limit, timeout)
 
-**Integration**:
-```csharp
-// Ironbees loads the YAML workflow, converts it to a MAF workflow and runs it
-var definition = await new YamlWorkflowLoader().LoadFromFileAsync("workflow.yaml");
-var executor = new MafWorkflowExecutor(new MafWorkflowConverter());
-await foreach (var evt in executor.ExecuteAsync(definition, "input", agentResolver))
-{
-    Console.WriteLine($"{evt.Type}: {evt.Content}");
-}
-```
+**Integration**: `IIronhiveOrchestratorFactory.CreateOrchestrator(settings, agents)` with an `OrchestratorSettings` - see
+[Multi-Agent Orchestration](../README.md#multi-agent-orchestration) in the README.
 
 **Examples**:
 - Multi-step parallel data pipelines
@@ -452,12 +439,12 @@ await foreach (var evt in executor.ExecuteAsync(definition, "input", agentResolv
 │        │        └─ NO → State machine required?
 │        │                 │
 │        │                 └─ YES → YamlDrivenOrchestrator ✅
-│        │                          (+ MAF integration)
+│        │                          (Ironbees.AgentMode)
 │        │
 │        └─ YES → Parallel tasks / DAG?
 │                 │
-│                 └─ YES → MAF directly ✅
-│                          (via MafWorkflowConverter)
+│                 └─ YES → IronHive orchestration ✅
+│                          (IIronhiveOrchestratorFactory, Ironbees.Ironhive)
 │
 └─ NO → Single agent interaction
          → Use IAgentOrchestrator (Ironbees.Core)
@@ -479,15 +466,14 @@ await foreach (var evt in executor.ExecuteAsync(definition, "input", agentResolv
 - Audit logging for compliance
 - **Context management abstractions** (DefaultContextManager)
 
-**Delegated to MAF**:
-- Complex workflow execution (state machines)
-- DAG task scheduling and parallel execution
+**Delegated to the LLM backend** (IronHive through `Ironbees.Ironhive`, or the framework behind your own adapter):
+- DAG task scheduling and parallel execution (IronHive orchestrators)
 - Tool execution engine
 - Conversation memory
 - MCP integration
-- **Business logic implementation** (sampling algorithms, confidence calculations)
 
 **Delegated to Application Layer**:
+- **Business logic implementation** (sampling algorithms, confidence calculations)
 - Multi-execution coordination
 - Multi-tenancy management
 - Scaling and load balancing

@@ -443,7 +443,7 @@ public partial class IronhiveAdapter : ILLMFrameworkAdapter
     [LoggerMessage(Level = LogLevel.Debug, Message = "Agent {AgentName}: resolved {ToolCount} tool(s) from the registered pool")]
     private static partial void LogResolvedAgentTools(ILogger logger, string agentName, int toolCount);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent {AgentName}: frequencyPenalty/presencePenalty are configured but the IronHive backend cannot apply them - the agent parameter contract has no field for either. The values are ignored. Use the Agent Framework backend if these parameters are required.")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Agent {AgentName}: frequencyPenalty/presencePenalty are configured but the IronHive backend cannot apply them - the agent parameter contract has no field for either. The values are ignored.")]
     private static partial void LogUnsupportedPenaltyParameters(ILogger logger, string agentName);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Running IronHive agent {AgentName} with input length {InputLength}")]

@@ -1,6 +1,6 @@
 # OpenAI Sample
 
-OpenAI API를 사용하는 Ironbees 샘플 프로젝트입니다. Azure OpenAI 대신 일반 OpenAI API를 사용합니다.
+OpenAI API를 사용하는 Ironbees 샘플 프로젝트입니다.
 
 ## 특징
 
@@ -160,15 +160,6 @@ ironbees/
 - API 키가 유효한지 확인
 - 모델 이름이 정확한지 확인 (gpt-5-nano)
 - 네트워크 연결 확인
-
-## 비교: Azure OpenAI vs OpenAI API
-
-| 항목 | Azure OpenAI | OpenAI API |
-|------|--------------|------------|
-| 설정 | Endpoint + Key + Deployment | API Key + Model |
-| 어댑터 | AgentFrameworkAdapter | OpenAIAdapter |
-| 패키지 | Azure.AI.OpenAI | OpenAI |
-| 위치 | examples/BasicUsage | samples/OpenAISample |
 
 ## 다음 단계
 

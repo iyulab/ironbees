@@ -12,7 +12,7 @@ namespace Ironbees.Core.Tests;
 public class PublicTypeNameUniquenessTests
 {
     private static readonly string[] Packages =
-        ["Ironbees.Core", "Ironbees.AgentFramework", "Ironbees.AgentMode", "Ironbees.Autonomous", "Ironbees.Ironhive"];
+        ["Ironbees.Core", "Ironbees.AgentMode", "Ironbees.Autonomous", "Ironbees.Ironhive"];
 
     [Fact]
     public void EveryPublicTypeName_IsUsedOnceAcrossThePackages()

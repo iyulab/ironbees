@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <!-- Package-specific Metadata -->
-    <Description>Lightweight filesystem convention-based wrapper for LLM agent frameworks. Simplifies agent loading, routing, and multi-framework integration (Microsoft Agent Framework, Semantic Kernel, LangChain). Focus on reducing boilerplate, not replacing framework features.</Description>
-    <PackageTags>$(PackageTagsBase);llm;azure-openai;agent-framework;convention-based</PackageTags>
+    <Description>Lightweight filesystem convention-based wrapper for LLM agent frameworks. Simplifies agent loading, routing, and multi-framework integration (IronHive, Semantic Kernel, LangChain). Focus on reducing boilerplate, not replacing framework features.</Description>
+    <PackageTags>$(PackageTagsBase);llm;convention-based</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

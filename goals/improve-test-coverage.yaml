@@ -4,7 +4,9 @@
 # that iteratively improves test coverage for a target module.
 #
 # Usage:
-#   IGoalExecutionBridge.ExecuteGoalAsync("improve-test-coverage", "Ironbees.Core")
+#   Place it as goals/improve-test-coverage/goal.yaml, load it with
+#   FileSystemGoalLoader.LoadGoalAsync("goals/improve-test-coverage"), and resolve its
+#   workflow template with IWorkflowTemplateResolver.ResolveAsync(goal.WorkflowTemplate, goal).
 
 id: improve-test-coverage
 name: Improve Test Coverage
@@ -64,7 +66,7 @@ input_schema:
   description: "The target module or namespace to improve coverage for"
   examples:
     - "Ironbees.Core"
-    - "Ironbees.AgentFramework"
+    - "Ironbees.AgentMode"
 
 # Output schema definition
 output_schema:

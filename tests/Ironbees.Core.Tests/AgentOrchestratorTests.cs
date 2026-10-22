@@ -2,7 +2,7 @@ using Ironbees.Core;
 using NSubstitute;
 using System.Runtime.CompilerServices;
 
-namespace Ironbees.AgentFramework.Tests;
+namespace Ironbees.Core.Tests;
 
 public class AgentOrchestratorTests
 {

@@ -48,9 +48,6 @@ jobs:
       # flags AND together (see plan doc's compound-filter translation, empirically verified).
       run: dotnet test --project tests/Ironbees.Core.Tests/Ironbees.Core.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=Performance" --filter-not-trait "Category=Integration" --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename core-test-results.trx --hangdump --hangdump-timeout 5m
 
-    - name: Test Agent Framework (CI - No API keys)
-      run: dotnet test --project tests/Ironbees.AgentFramework.Tests/Ironbees.AgentFramework.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=Performance" --filter-not-trait "Category=Integration" --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename framework-test-results.trx --hangdump --hangdump-timeout 5m
-
     - name: Test Agent Mode (CI - No API keys)
       run: dotnet test --project tests/Ironbees.AgentMode.Tests/Ironbees.AgentMode.Tests.csproj --configuration Release --no-build --verbosity normal --filter-not-trait "Category=RequiresApiKey" --report-trx --report-trx-filename agentmode-test-results.trx --hangdump --hangdump-timeout 5m
 

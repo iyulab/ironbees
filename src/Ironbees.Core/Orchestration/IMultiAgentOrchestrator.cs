@@ -5,7 +5,7 @@ namespace Ironbees.Core.Orchestration;
 
 /// <summary>
 /// Abstraction for multi-agent orchestration.
-/// Implementations bridge to specific LLM frameworks (IronHive, MAF, etc.).
+/// Implementations bridge to specific LLM frameworks (IronHive, etc.).
 /// </summary>
 public interface IMultiAgentOrchestrator
 {

@@ -48,7 +48,7 @@ public partial class ReadmeSnippetCompileTests
     private static readonly IReadOnlyList<Microsoft.CodeAnalysis.MetadataReference> References = SnippetCompiler.ReferencesFor(
         [.. new[]
         {
-            "Ironbees.Core", "Ironbees.AgentFramework", "Ironbees.AgentMode", "Ironbees.Autonomous", "Ironbees.Ironhive",
+            "Ironbees.Core", "Ironbees.AgentMode", "Ironbees.Autonomous", "Ironbees.Ironhive",
             "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.DependencyInjection.Abstractions",
             "Microsoft.Extensions.AI", "Microsoft.Extensions.AI.Abstractions", "TokenMeter",
             "IronHive.Abstractions", "IronHive.Core", "IronHive.Providers.OpenAI", "IronHive.Providers.OpenAI.Compatible",
@@ -69,7 +69,7 @@ public partial class ReadmeSnippetCompileTests
     }
 
     [Fact]
-    public void EveryReadmeBlock_IsFoundAndFragmentsNameRealHeadings() => Fragments.ShouldMatch([.. Snippets], atLeast: 11);
+    public void EveryReadmeBlock_IsFoundAndFragmentsNameRealHeadings() => Fragments.ShouldMatch([.. Snippets], atLeast: 10);
 
     /// <summary>Positive control: the compiler rejects a call the library does not have.</summary>
     [Fact]

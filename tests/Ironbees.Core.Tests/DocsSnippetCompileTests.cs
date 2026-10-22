@@ -60,7 +60,7 @@ public class DocsSnippetCompileTests
         ["Serilog Configuration"] = "configures Serilog and its sinks, packages the library does not reference",
         ["Application Insights"] = "registers Application Insights (Microsoft.ApplicationInsights.AspNetCore), a package the library does not reference",
         ["Question 2: Does it belong in YAML or Code?"] = "a method shown on its own, outside the class that would declare it",
-        ["DAG Task Scheduling"] = "a class Ironbees deliberately does not ship (DAG scheduling belongs in MAF), shown with an elided body",
+        ["DAG Task Scheduling"] = "a class Ironbees deliberately does not ship (DAG scheduling belongs in the LLM framework), shown with an elided body",
         ["Multi-Execution Coordination"] = "a class Ironbees deliberately does not ship (it belongs in the application), shown with an elided body",
         ["2. Flexibility"] = "builder-call fragments contrasting two designs; the second names a «built-in oracle» API Ironbees deliberately does not have",
         ["OpenAI Adapter 구현"] = "the sample's class outline: its constructor, with the interface members elided («ILLMFrameworkAdapter 구현...»)",
@@ -68,12 +68,12 @@ public class DocsSnippetCompileTests
 
     private static readonly string[] AssembliesToLoad =
     [
-        "Ironbees.Core", "Ironbees.AgentFramework", "Ironbees.AgentMode", "Ironbees.Autonomous", "Ironbees.Ironhive",
+        "Ironbees.Core", "Ironbees.AgentMode", "Ironbees.Autonomous", "Ironbees.Ironhive",
         "Microsoft.Extensions.DependencyInjection", "Microsoft.Extensions.DependencyInjection.Abstractions",
         "Microsoft.Extensions.AI", "Microsoft.Extensions.AI.Abstractions", "TokenMeter",
         "IronHive.Abstractions", "IronHive.Core", "IronHive.Providers.Anthropic", "IronHive.Providers.GoogleAI",
         "IronHive.Providers.OpenAI", "IronHive.Providers.OpenAI.Compatible",
-        "Microsoft.AspNetCore", "Microsoft.Agents.AI", "Microsoft.Agents.AI.Abstractions", "Microsoft.Agents.AI.Workflows",
+        "Microsoft.AspNetCore",
         "Microsoft.Extensions.Logging.Abstractions",
         "Microsoft.Extensions.Diagnostics.HealthChecks", "Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions",
         "Microsoft.AspNetCore.Diagnostics.HealthChecks", "Microsoft.AspNetCore.Http.Abstractions", "Microsoft.AspNetCore.Routing",
@@ -119,7 +119,6 @@ public class DocsSnippetCompileTests
         ["settings"] = "AutonomousSettings settings = new();",
         ["orchestrator"] = "AutonomousOrchestrator<Request, Result> orchestrator = null!;",
         ["guardrail"] = "IContentGuardrail guardrail = null!;",
-        ["agentResolver"] = "Func<string, CancellationToken, Task<Microsoft.Agents.AI.AIAgent>> agentResolver = null!;",
         // The reader's own audit logger, which a guide registers by type.
         ["CustomAuditLogger"] = "public sealed class CustomAuditLogger : IAuditLogger { public Task LogInputValidationAsync(GuardrailAuditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask; public Task LogOutputValidationAsync(GuardrailAuditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask; }",
     };
