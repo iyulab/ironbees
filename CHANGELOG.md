@@ -5,7 +5,7 @@ All notable changes to the Ironbees project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.30.0] - 2026-10-23
 
 ### Removed
 - **Breaking: `Ironbees.AgentFramework` is no longer published** — there is no new version of the Microsoft Agent
@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.67.0 -> 0.68.0, `IronHive.Core` 0.67.0 -> 0.68.0, `IronHive.Extensions.AI` 0.67.0 -> 0.68.0, `IronHive.Providers.Anthropic` 0.67.0 -> 0.68.0, `IronHive.Providers.GoogleAI` 0.67.0 -> 0.68.0, `IronHive.Providers.OpenAI` 0.67.0 -> 0.68.0, `IronHive.Providers.OpenAI.Compatible` 0.67.0 -> 0.68.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.13.1 -> 0.14.0.
 - Re-pinned sibling package(s) `TokenMeter` 0.14.0 -> 0.15.0.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.68.0 -> 0.69.0, `IronHive.Core` 0.68.0 -> 0.69.0, `IronHive.Extensions.AI` 0.68.0 -> 0.69.0, `IronHive.Providers.Anthropic` 0.68.0 -> 0.69.0, `IronHive.Providers.GoogleAI` 0.68.0 -> 0.69.0, `IronHive.Providers.OpenAI` 0.68.0 -> 0.69.0, `IronHive.Providers.OpenAI.Compatible` 0.68.0 -> 0.69.0.
 
 ## [0.29.1] - 2026-10-16
 
