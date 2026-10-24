@@ -53,7 +53,7 @@
     <PackageVersion Include="Polly" Version="8.8.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.13" />
     <!-- Token Counting and Cost Tracking -->
-    <PackageVersion Include="TokenMeter" Version="0.15.0" />
+    <PackageVersion Include="TokenMeter" Version="0.16.0" />
   </ItemGroup>
   <ItemGroup Label="Web and API">
     <!-- ASP.NET Core -->
