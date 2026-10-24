@@ -47,10 +47,10 @@
          (OnnxEmbeddingProvider.cs), so its ORT floor should track what the other ORT packages in a
          consumer's graph need rather than run ahead of them: NuGet's highest-floor-wins resolution
          makes the highest floor the effective one for every consumer. -->
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.31.0" />
     <PackageVersion Include="DotNetEnv" Version="3.2.0" />
     <!-- Resilience and Caching -->
-    <PackageVersion Include="Polly" Version="8.6.6" />
+    <PackageVersion Include="Polly" Version="8.8.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.13" />
     <!-- Token Counting and Cost Tracking -->
     <PackageVersion Include="TokenMeter" Version="0.15.0" />
@@ -63,10 +63,10 @@
   <ItemGroup Label="Testing">
     <!-- xUnit v3/MTP native mode: no Microsoft.NET.Test.Sdk needed, coverlet.collector was a dead
          reference (CI never invoked the coverage collector flag) -->
-    <PackageVersion Include="xunit.v3" Version="4.0.0" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.3.3" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.3.3" />
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.1" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
       <!-- Convention checks (options reachability) — iyulab conventions kit -->
     <PackageVersion Include="Iyu.Conventions.Testing" Version="0.13.0" />

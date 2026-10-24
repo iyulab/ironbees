@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 - `Microsoft.Extensions.AI` / `.Abstractions` -> 10.11.0 (the floor the next IronHive release carries).
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.69.0 -> 0.70.0, `IronHive.Core` 0.69.0 -> 0.70.0, `IronHive.Extensions.AI` 0.69.0 -> 0.70.0, `IronHive.Providers.Anthropic` 0.69.0 -> 0.70.0, `IronHive.Providers.GoogleAI` 0.69.0 -> 0.70.0, `IronHive.Providers.OpenAI` 0.69.0 -> 0.70.0, `IronHive.Providers.OpenAI.Compatible` 0.69.0 -> 0.70.0.
+- `Microsoft.ML.OnnxRuntime` 1.30.0 -> 1.31.0, `Polly` 8.6.6 -> 8.8.0.
 
 ## [0.30.0] - 2026-10-23
 
