@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.15.0 -> 0.16.0.
 - Re-pinned third-party packages: 9 .NET servicing pins (Microsoft.AspNetCore, Microsoft.Extensions) 10.0.13 -> 10.0.14 (the 10.0.14 security servicing release).
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.71.0 -> 0.72.0, `IronHive.Core` 0.71.0 -> 0.72.0, `IronHive.Extensions.AI` 0.71.0 -> 0.72.0, `IronHive.Providers.Anthropic` 0.71.0 -> 0.72.0, `IronHive.Providers.GoogleAI` 0.71.0 -> 0.72.0, `IronHive.Providers.OpenAI` 0.71.0 -> 0.72.0, `IronHive.Providers.OpenAI.Compatible` 0.71.0 -> 0.72.0.
 
 ## [0.30.1] - 2026-10-25
 
