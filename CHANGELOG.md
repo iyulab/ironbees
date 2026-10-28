@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **`Ironbees.Autonomous` no longer depends on `TokenMeter` directly**: no code in the package used it (`Ironbees.Core` still does). Consumers that took `TokenMeter` transitively through `Ironbees.Autonomous` alone and use its types must reference it themselves.
+- **`Ironbees.AgentMode` no longer depends on `Microsoft.Extensions.AI.Abstractions` directly**: nothing in the package used it. A consumer that took it transitively through `Ironbees.AgentMode` alone must reference it themselves.
 
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.15.0 -> 0.16.0.
