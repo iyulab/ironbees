@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **`Ironbees.Autonomous` no longer depends on `TokenMeter` directly**: no code in the package used it (`Ironbees.Core` still does). Consumers that took `TokenMeter` transitively through `Ironbees.Autonomous` alone and use its types must reference it themselves.
+
 ### Dependencies
 - Re-pinned sibling package(s) `TokenMeter` 0.15.0 -> 0.16.0.
 - Re-pinned third-party packages: 9 .NET servicing pins (Microsoft.AspNetCore, Microsoft.Extensions) 10.0.13 -> 10.0.14 (the 10.0.14 security servicing release).
