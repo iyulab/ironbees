@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-pinned third-party packages: `Polly` 8.8.1 -> 8.9.0.
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.73.0 -> 0.75.0, `IronHive.Core` 0.73.0 -> 0.75.0, `IronHive.Extensions.AI` 0.73.0 -> 0.75.0, `IronHive.Providers.Anthropic` 0.73.0 -> 0.75.0, `IronHive.Providers.GoogleAI` 0.73.0 -> 0.75.0, `IronHive.Providers.OpenAI` 0.73.0 -> 0.75.0, `IronHive.Providers.OpenAI.Compatible` 0.73.0 -> 0.75.0.
 - Re-pinned third-party packages: `Microsoft.ML.OnnxRuntime` 1.31.0 -> 1.31.1, `OpenAI` 2.14.0 -> 2.15.0.
+- Re-pinned third-party packages: `Polly` 8.9.0 -> 8.9.1.
 
 ## [0.30.1] - 2026-10-25
 
