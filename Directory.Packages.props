@@ -63,7 +63,7 @@
   <ItemGroup Label="Testing">
     <!-- xUnit v3/MTP native mode: no Microsoft.NET.Test.Sdk needed, coverlet.collector was a dead
          reference (CI never invoked the coverage collector flag) -->
-    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+    <PackageVersion Include="xunit.v3" Version="4.0.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="2.5.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.5.2" />
