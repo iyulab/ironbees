@@ -206,7 +206,6 @@ dotnet build
 
 | Type | Old Namespace | New Namespace |
 |------|--------------|---------------|
-| `ICodingAgent` | `Ironbees.AgentMode.Core.Agents` | `Ironbees.AgentMode.Agents` |
 | `IAgentExecutor` | `Ironbees.AgentMode.Core.Agents` | `Ironbees.AgentMode.Agents` |
 | `IAgentExecutorFactory` | `Ironbees.AgentMode.Core.Agents` | `Ironbees.AgentMode.Agents` |
 

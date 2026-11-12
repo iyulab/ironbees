@@ -3,8 +3,7 @@ using Ironbees.AgentMode.Models;
 namespace Ironbees.AgentMode.Workflow;
 
 /// <summary>
-/// Generic interface for workflow orchestration.
-/// Extends beyond CodingState to support any workflow execution context.
+/// Generic interface for workflow orchestration over any workflow execution state.
 /// </summary>
 /// <typeparam name="TState">Type of workflow state.</typeparam>
 public interface IWorkflowOrchestrator<TState> where TState : class

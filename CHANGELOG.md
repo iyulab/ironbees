@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Breaking: the coding-agent contract in `Ironbees.AgentMode` is removed - `ICodingAgent`, `CodingState`, `BuildResult`, `CompilationError`, `CompilationWarning`, `ExecutionPlan`, `PlanStep`, `FileEdit`, `EditType`, `TestResult`, `TestFailure`, `AgentResponse`, and the exception `AgentExecutionException` that nothing threw.** Nothing in the package implemented `ICodingAgent` or read these types, and no other package of the family referenced them; the workflow engine (`YamlDrivenOrchestrator`, `IWorkflowOrchestrator<TState>`, `ApprovalDecision`) is unchanged. A consumer that implemented its own `ICodingAgent` or built a `CodingState` must carry its own copy of the types; the generic orchestration surface needs no replacement.
+
 ### Dependencies
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.75.0 -> 0.76.0, `IronHive.Core` 0.75.0 -> 0.76.0, `IronHive.Extensions.AI` 0.75.0 -> 0.76.0, `IronHive.Providers.Anthropic` 0.75.0 -> 0.76.0, `IronHive.Providers.GoogleAI` 0.75.0 -> 0.76.0, `IronHive.Providers.OpenAI` 0.75.0 -> 0.76.0, `IronHive.Providers.OpenAI.Compatible` 0.75.0 -> 0.76.0.
 
