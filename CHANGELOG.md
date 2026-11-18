@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.75.0 -> 0.76.0, `IronHive.Core` 0.75.0 -> 0.76.0, `IronHive.Extensions.AI` 0.75.0 -> 0.76.0, `IronHive.Providers.Anthropic` 0.75.0 -> 0.76.0, `IronHive.Providers.GoogleAI` 0.75.0 -> 0.76.0, `IronHive.Providers.OpenAI` 0.75.0 -> 0.76.0, `IronHive.Providers.OpenAI.Compatible` 0.75.0 -> 0.76.0.
 - Re-pinned sibling package(s) `IronHive.Abstractions` 0.76.0 -> 0.77.0, `IronHive.Core` 0.76.0 -> 0.77.0, `IronHive.Extensions.AI` 0.76.0 -> 0.77.0, `IronHive.Providers.Anthropic` 0.76.0 -> 0.77.0, `IronHive.Providers.GoogleAI` 0.76.0 -> 0.77.0, `IronHive.Providers.OpenAI` 0.76.0 -> 0.77.0, `IronHive.Providers.OpenAI.Compatible` 0.76.0 -> 0.77.0.
+- Re-pinned sibling package(s) `IronHive.Abstractions` 0.77.0 -> 0.78.0, `IronHive.Core` 0.77.0 -> 0.78.0, `IronHive.Extensions.AI` 0.77.0 -> 0.78.0, `IronHive.Providers.Anthropic` 0.77.0 -> 0.78.0, `IronHive.Providers.GoogleAI` 0.77.0 -> 0.78.0, `IronHive.Providers.OpenAI` 0.77.0 -> 0.78.0, `IronHive.Providers.OpenAI.Compatible` 0.77.0 -> 0.78.0.
 
 ## [0.31.0] - 2026-11-09
 
