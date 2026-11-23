@@ -5,7 +5,7 @@ All notable changes to the Ironbees project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.32.0] - 2026-11-23
 
 ### Removed
 - **Breaking: the coding-agent contract in `Ironbees.AgentMode` is removed - `ICodingAgent`, `CodingState`, `BuildResult`, `CompilationError`, `CompilationWarning`, `ExecutionPlan`, `PlanStep`, `FileEdit`, `EditType`, `TestResult`, `TestFailure`, `AgentResponse`, and the exception `AgentExecutionException` that nothing threw.** Nothing in the package implemented `ICodingAgent` or read these types, and no other package of the family referenced them; the workflow engine (`YamlDrivenOrchestrator`, `IWorkflowOrchestrator<TState>`, `ApprovalDecision`) is unchanged. A consumer that implemented its own `ICodingAgent` or built a `CodingState` must carry its own copy of the types; the generic orchestration surface needs no replacement.
